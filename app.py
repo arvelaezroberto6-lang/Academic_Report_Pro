@@ -1,1276 +1,1055 @@
-import { useState, useEffect } from 'react';
-import {
-  Box,
-  Container,
-  Typography,
-  TextField,
-  Button,
-  Paper,
-  Grid,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Chip,
-  IconButton,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Alert,
-  LinearProgress,
-  Tooltip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Card,
-  CardContent,
-  CardActions,
-  Divider,
-  Tab,
-  Tabs,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Switch,
-  FormControlLabel,
-  Snackbar,
-  Badge,
-  AppBar,
-  Toolbar,
-  Drawer,
-  Fab,
-  SpeedDial,
-  SpeedDialAction,
-  SpeedDialIcon,
-  Stepper,
-  Step,
-  StepLabel,
-  CircularProgress,
-} from '@mui/material';
-import {
-  ExpandMore,
-  Delete,
-  Add,
-  Save,
-  Download,
-  Preview,
-  History,
-  Help,
-  Settings,
-  DarkMode,
-  LightMode,
-  Article,
-  Science,
-  Business,
-  School,
-  ContentCopy,
-  AutoAwesome,
-  CheckCircle,
-  Info,
-  Warning,
-  Error as ErrorIcon,
-  Close,
-  Edit,
-  RestartAlt,
-  Share,
-  Print,
-  FileDownload,
-  CloudUpload,
-  Bookmark,
-  BookmarkBorder,
-} from '@mui/icons-material';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import { toast, Toaster } from 'sonner';
+from flask import Flask, render_template, request, jsonify, send_file
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.lib.units import inch
+from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER, TA_LEFT, TA_RIGHT
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, Table, TableStyle, Image
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+import os
+import uuid
+from datetime import datetime
+import re
+import requests
+import html
+import logging
+from functools import wraps
+import time
 
-// ========== CONFIGURACIÓN DE NORMAS ==========
-const NORMAS_CONFIG = {
-  apa7: { 
-    nombre: 'APA 7ª Edición', 
-    descripcion: 'American Psychological Association - Séptima Edición',
-    color: '#1976d2'
-  },
-  apa6: { 
-    nombre: 'APA 6ª Edición', 
-    descripcion: 'American Psychological Association - Sexta Edición',
-    color: '#1565c0'
-  },
-  icontec: { 
-    nombre: 'ICONTEC', 
-    descripcion: 'Instituto Colombiano de Normas Técnicas',
-    color: '#388e3c'
-  },
-  vancouver: { 
-    nombre: 'Vancouver', 
-    descripcion: 'Estilo Vancouver para ciencias de la salud',
-    color: '#d32f2f'
-  },
-  chicago: { 
-    nombre: 'Chicago', 
-    descripcion: 'Manual de Estilo Chicago',
-    color: '#f57c00'
-  },
-  harvard: { 
-    nombre: 'Harvard', 
-    descripcion: 'Sistema de Referenciación Harvard',
-    color: '#7b1fa2'
-  },
-  mla: { 
-    nombre: 'MLA 9ª Edición', 
-    descripcion: 'Modern Language Association',
-    color: '#0288d1'
-  },
-  ieee: { 
-    nombre: 'IEEE', 
-    descripcion: 'Institute of Electrical and Electronics Engineers',
-    color: '#5d4037'
-  },
-};
+# Configuración de logging mejorado
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
-// ========== TIPOS DE INFORME ==========
-const TIPOS_INFORME = {
-  academico: {
-    nombre: 'Académico General',
-    icon: <Article />,
-    color: '#1976d2',
-    secciones: ['Introducción', 'Objetivos', 'Marco Teórico', 'Metodología', 'Desarrollo', 'Conclusiones', 'Recomendaciones', 'Referencias']
-  },
-  laboratorio: {
-    nombre: 'Laboratorio',
-    icon: <Science />,
-    color: '#9c27b0',
-    secciones: ['Introducción', 'Materiales', 'Procedimiento', 'Resultados', 'Discusión', 'Conclusiones', 'Recomendaciones', 'Referencias']
-  },
-  empresarial: {
-    nombre: 'Empresarial/Ejecutivo',
-    icon: <Business />,
-    color: '#f57c00',
-    secciones: ['Resumen Ejecutivo', 'Introducción', 'Análisis', 'Oportunidades', 'Recomendaciones', 'Conclusiones', 'Referencias']
-  },
-  tesis: {
-    nombre: 'Tesis/Monografía',
-    icon: <School />,
-    color: '#388e3c',
-    secciones: ['Resumen', 'Introducción', 'Planteamiento', 'Objetivos', 'Hipótesis', 'Marco Teórico', 'Metodología', 'Resultados', 'Conclusiones', 'Referencias']
-  },
-};
+app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB máximo
+app.config['JSON_AS_ASCII'] = False
 
-// ========== PLANTILLAS PREDEFINIDAS ==========
-const PLANTILLAS = [
-  {
-    id: 'educacion',
-    nombre: 'Educación y Pedagogía',
-    tema: 'Metodologías de enseñanza innovadoras en el siglo XXI',
-    tipo: 'academico',
-    norma: 'apa7'
-  },
-  {
-    id: 'ciencias',
-    nombre: 'Ciencias Experimentales',
-    tema: 'Análisis de compuestos químicos orgánicos',
-    tipo: 'laboratorio',
-    norma: 'vancouver'
-  },
-  {
-    id: 'negocios',
-    nombre: 'Análisis de Negocios',
-    tema: 'Plan estratégico de marketing digital',
-    tipo: 'empresarial',
-    norma: 'apa7'
-  },
-  {
-    id: 'investigacion',
-    nombre: 'Investigación Avanzada',
-    tema: 'Impacto de la tecnología en la sociedad moderna',
-    tipo: 'tesis',
-    norma: 'apa7'
-  },
-];
+# Crear directorio para informes
+os.makedirs('informes_generados', exist_ok=True)
+os.makedirs('logs', exist_ok=True)
 
-interface FormData {
-  nombre: string;
-  otros_autores: string[];
-  tema: string;
-  asignatura: string;
-  profesor: string;
-  institucion: string;
-  fecha_entrega: string;
-  tipo_informe: keyof typeof TIPOS_INFORME;
-  norma: keyof typeof NORMAS_CONFIG;
-  texto_completo: string;
+# ========== CONFIGURACIÓN DE GROQ ==========
+GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_MODELS = [
+    "llama-3.3-70b-versatile",
+    "llama-3.1-70b-versatile",
+    "mixtral-8x7b-32768"
+]
+
+logger.info("=" * 60)
+logger.info("🚀 ACADEMIC REPORT PRO - VERSIÓN MEJORADA v2.0")
+logger.info(f"🔑 Groq API Key configurada: {'SÍ ✅' if GROQ_API_KEY else 'NO ❌'}")
+logger.info(f"📁 Directorio de informes: {os.path.abspath('informes_generados')}")
+logger.info("=" * 60)
+
+# ========== CONFIGURACIÓN DE NORMAS ACADÉMICAS ==========
+NORMAS_CONFIG = {
+    'apa7': {
+        'nombre': 'APA 7ª Edición',
+        'descripcion': 'American Psychological Association - Séptima Edición',
+        'margen_superior': 72,
+        'margen_inferior': 72,
+        'margen_izquierdo': 72,
+        'margen_derecho': 72,
+        'fuente': 'Times-Roman',
+        'tamaño': 12,
+        'interlineado': 24,
+        'sangria': 36,
+        'color_titulo': '#1a365d'
+    },
+    'apa6': {
+        'nombre': 'APA 6ª Edición',
+        'descripcion': 'American Psychological Association - Sexta Edición',
+        'margen_superior': 72,
+        'margen_inferior': 72,
+        'margen_izquierdo': 72,
+        'margen_derecho': 72,
+        'fuente': 'Times-Roman',
+        'tamaño': 12,
+        'interlineado': 24,
+        'sangria': 36,
+        'color_titulo': '#1a365d'
+    },
+    'icontec': {
+        'nombre': 'ICONTEC',
+        'descripcion': 'Instituto Colombiano de Normas Técnicas',
+        'margen_superior': 85,
+        'margen_inferior': 85,
+        'margen_izquierdo': 113,
+        'margen_derecho': 85,
+        'fuente': 'Helvetica',
+        'tamaño': 12,
+        'interlineado': 18,
+        'sangria': 0,
+        'color_titulo': '#2c5f2d'
+    },
+    'vancouver': {
+        'nombre': 'Vancouver',
+        'descripcion': 'Estilo Vancouver para ciencias de la salud',
+        'margen_superior': 72,
+        'margen_inferior': 72,
+        'margen_izquierdo': 72,
+        'margen_derecho': 72,
+        'fuente': 'Times-Roman',
+        'tamaño': 11,
+        'interlineado': 16,
+        'sangria': 0,
+        'color_titulo': '#8b0000'
+    },
+    'chicago': {
+        'nombre': 'Chicago',
+        'descripcion': 'Manual de Estilo Chicago',
+        'margen_superior': 72,
+        'margen_inferior': 72,
+        'margen_izquierdo': 72,
+        'margen_derecho': 72,
+        'fuente': 'Times-Roman',
+        'tamaño': 12,
+        'interlineado': 18,
+        'sangria': 36,
+        'color_titulo': '#8b4513'
+    },
+    'harvard': {
+        'nombre': 'Harvard',
+        'descripcion': 'Sistema de Referenciación Harvard',
+        'margen_superior': 72,
+        'margen_inferior': 72,
+        'margen_izquierdo': 72,
+        'margen_derecho': 72,
+        'fuente': 'Times-Roman',
+        'tamaño': 12,
+        'interlineado': 18,
+        'sangria': 36,
+        'color_titulo': '#4b0082'
+    },
+    'mla': {
+        'nombre': 'MLA 9ª Edición',
+        'descripcion': 'Modern Language Association',
+        'margen_superior': 72,
+        'margen_inferior': 72,
+        'margen_izquierdo': 72,
+        'margen_derecho': 72,
+        'fuente': 'Times-Roman',
+        'tamaño': 12,
+        'interlineado': 24,
+        'sangria': 36,
+        'color_titulo': '#191970'
+    },
+    'ieee': {
+        'nombre': 'IEEE',
+        'descripcion': 'Institute of Electrical and Electronics Engineers',
+        'margen_superior': 72,
+        'margen_inferior': 72,
+        'margen_izquierdo': 72,
+        'margen_derecho': 72,
+        'fuente': 'Times-Roman',
+        'tamaño': 10,
+        'interlineado': 12,
+        'sangria': 0,
+        'color_titulo': '#003366'
+    }
 }
 
-interface HistorialItem {
-  id: string;
-  fecha: string;
-  tema: string;
-  tipo: string;
-  norma: string;
-}
+# ========== DECORADOR PARA MANEJAR ERRORES ==========
+def handle_errors(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except Exception as e:
+            logger.error(f"Error en {f.__name__}: {str(e)}", exc_info=True)
+            return jsonify({
+                'success': False,
+                'error': f'Error interno del servidor: {str(e)}'
+            }), 500
+    return decorated_function
 
-export default function App() {
-  // ========== ESTADOS ==========
-  const [formData, setFormData] = useState<FormData>({
-    nombre: '',
-    otros_autores: [],
-    tema: '',
-    asignatura: '',
-    profesor: '',
-    institucion: '',
-    fecha_entrega: new Date().toISOString().split('T')[0],
-    tipo_informe: 'academico',
-    norma: 'apa7',
-    texto_completo: '',
-  });
+# ========== FUNCIÓN MEJORADA DE LIMPIEZA DE TEXTO ==========
+def limpiar_texto(texto):
+    """Limpia y normaliza texto para ReportLab con manejo robusto de errores"""
+    if not texto:
+        return ""
+    
+    try:
+        # Convertir bytes a string si es necesario
+        if isinstance(texto, bytes):
+            texto = texto.decode('utf-8', errors='ignore')
+        
+        # Escape HTML para seguridad
+        texto = html.escape(texto)
+        
+        # Reemplazos de caracteres especiales
+        reemplazos = {
+            '\xa0': ' ',
+            '\xad': '-',
+            '\u2013': '-',
+            '\u2014': '--',
+            '\u2018': "'",
+            '\u2019': "'",
+            '\u201c': '"',
+            '\u201d': '"',
+            '\u2026': '...',
+            '\u2022': '•',
+            '\u00a9': '(c)',
+            '\u00ae': '(R)',
+            '\u2122': '(TM)',
+        }
+        
+        for viejo, nuevo in reemplazos.items():
+            texto = texto.replace(viejo, nuevo)
+        
+        # Normalizar saltos de línea múltiples
+        texto = re.sub(r'\n{3,}', '<br/><br/>', texto)
+        
+        # Correcciones automáticas comunes
+        correcciones = {
+            'INFORMÉ': 'INFORME',
+            'Conclusions': 'CONCLUSIONES',
+            'CONCLUSIONS': 'CONCLUSIONES',
+            'References': 'REFERENCIAS',
+            'REFERENCES': 'REFERENCIAS',
+        }
+        
+        for viejo, nuevo in correcciones.items():
+            texto = texto.replace(viejo, nuevo)
+        
+        # Eliminar caracteres de control
+        texto = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]', '', texto)
+        
+        # Limpiar espacios múltiples
+        texto = re.sub(r' {2,}', ' ', texto)
+        
+        return texto.strip()
+        
+    except Exception as e:
+        logger.error(f"Error limpiando texto: {e}")
+        return str(texto) if texto else ""
 
-  const [nuevoAutor, setNuevoAutor] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
-  const [tabValue, setTabValue] = useState(0);
-  const [historial, setHistorial] = useState<HistorialItem[]>([]);
-  const [openPreview, setOpenPreview] = useState(false);
-  const [openHistory, setOpenHistory] = useState(false);
-  const [openHelp, setOpenHelp] = useState(false);
-  const [openTemplates, setOpenTemplates] = useState(false);
-  const [activeStep, setActiveStep] = useState(0);
-  const [savedDrafts, setSavedDrafts] = useState<any[]>([]);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [wordCount, setWordCount] = useState(0);
-  const [charCount, setCharCount] = useState(0);
-  const [bookmark, setBookmark] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-
-  // ========== TEMA MUI ==========
-  const theme = createTheme({
-    palette: {
-      mode: darkMode ? 'dark' : 'light',
-      primary: {
-        main: '#1976d2',
-      },
-      secondary: {
-        main: '#dc004e',
-      },
-    },
-    typography: {
-      fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-    },
-    components: {
-      MuiButton: {
-        styleOverrides: {
-          root: {
-            textTransform: 'none',
-            borderRadius: 8,
-          },
-        },
-      },
-      MuiPaper: {
-        styleOverrides: {
-          root: {
-            borderRadius: 12,
-          },
-        },
-      },
-    },
-  });
-
-  // ========== EFECTOS ==========
-  useEffect(() => {
-    // Cargar datos guardados
-    const savedData = localStorage.getItem('academicReportDraft');
-    if (savedData) {
-      try {
-        const parsed = JSON.parse(savedData);
-        setFormData(parsed);
-        toast.success('Borrador recuperado');
-      } catch (e) {
-        console.error('Error al cargar borrador:', e);
-      }
+# ========== CONTENIDO GENÉRICO MEJORADO ==========
+def contenido_local_generico(tema, tipo_informe="academico"):
+    """Genera contenido genérico de respaldo más detallado"""
+    tema_limpio = tema if tema else "el tema de investigación"
+    fecha_actual = datetime.now().strftime('%Y')
+    
+    contenido_base = {
+        'introduccion': f"""El presente informe académico tiene como propósito abordar el estudio integral de {tema_limpio}. 
+        Este análisis se enmarca en un contexto contemporáneo donde la investigación rigurosa y metodológica 
+        resulta fundamental para comprender la complejidad del tema en cuestión. 
+        
+        A lo largo de este documento se presentarán diversos aspectos relacionados con {tema_limpio}, 
+        incluyendo su fundamentación teórica, metodología de análisis y principales hallazgos.""",
+        
+        'objetivos': f"""<b>Objetivo General</b><br/>
+        Analizar de manera integral y sistemática {tema_limpio}, considerando sus múltiples dimensiones 
+        y aplicaciones en el contexto actual.<br/><br/>
+        
+        <b>Objetivos Específicos</b><br/>
+        1. Identificar y describir los factores clave que componen {tema_limpio}.<br/>
+        2. Caracterizar las principales variables y elementos involucrados.<br/>
+        3. Analizar las implicaciones teóricas y prácticas del estudio.<br/>
+        4. Proponer recomendaciones basadas en evidencia para futuras investigaciones.<br/>
+        5. Evaluar el impacto y relevancia del tema en el ámbito académico y profesional.""",
+        
+        'marco_teorico': f"""<b>Fundamentos Teóricos</b><br/>
+        Para comprender adecuadamente {tema_limpio}, es necesario establecer un marco conceptual 
+        que permita contextualizar el análisis. La literatura especializada ha desarrollado diversos 
+        enfoques y perspectivas que enriquecen nuestra comprensión del fenómeno.<br/><br/>
+        
+        <b>Conceptos Fundamentales</b><br/>
+        Los principales conceptos relacionados con {tema_limpio} incluyen elementos teóricos y 
+        prácticos que han sido ampliamente estudiados por diversos autores en los últimos años.<br/><br/>
+        
+        <b>Estado del Arte</b><br/>
+        Las investigaciones recientes demuestran un creciente interés en {tema_limpio}, 
+        evidenciando su relevancia en el contexto académico y profesional actual.""",
+        
+        'metodologia': f"""<b>Enfoque Metodológico</b><br/>
+        Para el desarrollo de esta investigación se ha adoptado un enfoque mixto que combina 
+        elementos cualitativos y cuantitativos, permitiendo un análisis integral de {tema_limpio}.<br/><br/>
+        
+        <b>Diseño de la Investigación</b><br/>
+        Tipo: Descriptivo-Analítico<br/>
+        Enfoque: Mixto (Cualitativo-Cuantitativo)<br/>
+        Alcance: Exploratorio y descriptivo<br/><br/>
+        
+        <b>Población y Muestra</b><br/>
+        Población objetivo: Definida según criterios de inclusión específicos<br/>
+        Muestra: 250 participantes seleccionados mediante muestreo probabilístico<br/>
+        Margen de error: ±5% con 95% de confianza<br/><br/>
+        
+        <b>Técnicas de Recolección</b><br/>
+        - Revisión documental y bibliográfica<br/>
+        - Entrevistas estructuradas<br/>
+        - Cuestionarios validados<br/>
+        - Observación sistemática""",
+        
+        'desarrollo': f"""<b>Análisis de Resultados</b><br/>
+        El análisis de los datos recopilados revela tendencias significativas en relación con {tema_limpio}. 
+        Los hallazgos principales indican patrones consistentes que merecen atención detallada.<br/><br/>
+        
+        <b>Hallazgos Principales</b><br/>
+        1. Se observa una correlación positiva entre las variables estudiadas.<br/>
+        2. Los datos cualitativos complementan los hallazgos cuantitativos.<br/>
+        3. Las tendencias identificadas son estadísticamente significativas (p < 0.05).<br/>
+        4. Los resultados se alinean con investigaciones previas en el campo.<br/><br/>
+        
+        <b>Interpretación</b><br/>
+        Los resultados obtenidos permiten comprender mejor las dinámicas relacionadas con {tema_limpio}, 
+        ofreciendo perspectivas valiosas para futuras investigaciones y aplicaciones prácticas.""",
+        
+        'conclusiones': f"""1. {tema_limpio} demuestra ser un área de estudio relevante y necesaria 
+        en el contexto académico actual, con implicaciones significativas para la teoría y la práctica.<br/><br/>
+        
+        2. Los hallazgos de esta investigación proporcionan evidencia empírica que respalda 
+        la importancia de continuar profundizando en el estudio de {tema_limpio}.<br/><br/>
+        
+        3. Se identificaron oportunidades de investigación futura que pueden contribuir 
+        al desarrollo del conocimiento en esta área específica.<br/><br/>
+        
+        4. Las metodologías empleadas demostraron ser efectivas para abordar los objetivos 
+        planteados, generando resultados confiables y válidos.<br/><br/>
+        
+        5. Los resultados obtenidos tienen potencial de aplicación práctica en diversos 
+        contextos profesionales y académicos.""",
+        
+        'recomendaciones': f"""1. <b>Para futuras investigaciones:</b> Se recomienda ampliar el alcance 
+        del estudio incorporando variables adicionales y aumentando el tamaño de la muestra 
+        para fortalecer la generalización de los hallazgos.<br/><br/>
+        
+        2. <b>Para la práctica profesional:</b> Implementar los hallazgos de esta investigación 
+        en contextos reales, evaluando su efectividad y realizando ajustes según sea necesario.<br/><br/>
+        
+        3. <b>Para el ámbito académico:</b> Desarrollar programas de formación que integren 
+        los conocimientos generados sobre {tema_limpio}, promoviendo una comprensión 
+        más profunda del tema.<br/><br/>
+        
+        4. <b>Para stakeholders:</b> Establecer mecanismos de difusión que permitan compartir 
+        los resultados con comunidades interesadas, fomentando el diálogo y la colaboración.""",
+        
+        'referencias': f"""1. Hernández Sampieri, R., Fernández Collado, C., & Baptista Lucio, P. ({fecha_actual}). 
+        Metodología de la Investigación (7ª ed.). McGraw-Hill Interamericana.<br/><br/>
+        
+        2. Bisquerra Alzina, R. (2016). Metodología de la investigación educativa (5ª ed.). La Muralla.<br/><br/>
+        
+        3. Arias, F. G. (2012). El proyecto de investigación: Introducción a la metodología 
+        científica (6ª ed.). Episteme.<br/><br/>
+        
+        4. Sabino, C. (2014). El proceso de investigación. Episteme.<br/><br/>
+        
+        5. Bernal Torres, C. A. (2010). Metodología de la investigación (3ª ed.). Pearson Educación.<br/><br/>
+        
+        6. Tamayo y Tamayo, M. (2012). El proceso de la investigación científica (5ª ed.). Limusa."""
     }
+    
+    return contenido_base
 
-    // Cargar historial
-    const savedHistory = localStorage.getItem('reportHistory');
-    if (savedHistory) {
-      try {
-        setHistorial(JSON.parse(savedHistory));
-      } catch (e) {
-        console.error('Error al cargar historial:', e);
-      }
-    }
-
-    // Cargar borradores
-    const drafts = localStorage.getItem('savedDrafts');
-    if (drafts) {
-      try {
-        setSavedDrafts(JSON.parse(drafts));
-      } catch (e) {
-        console.error('Error al cargar borradores:', e);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    // Calcular palabras y caracteres
-    const text = formData.texto_completo;
-    setCharCount(text.length);
-    setWordCount(text.trim() ? text.trim().split(/\s+/).length : 0);
-  }, [formData.texto_completo]);
-
-  // ========== MANEJADORES ==========
-  const handleInputChange = (field: keyof FormData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const agregarAutor = () => {
-    if (nuevoAutor.trim() && !formData.otros_autores.includes(nuevoAutor.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        otros_autores: [...prev.otros_autores, nuevoAutor.trim()]
-      }));
-      setNuevoAutor('');
-      toast.success('Autor agregado');
-    }
-  };
-
-  const eliminarAutor = (autor: string) => {
-    setFormData(prev => ({
-      ...prev,
-      otros_autores: prev.otros_autores.filter(a => a !== autor)
-    }));
-    toast.info('Autor eliminado');
-  };
-
-  const guardarBorrador = () => {
-    try {
-      localStorage.setItem('academicReportDraft', JSON.stringify(formData));
-      
-      // Guardar en lista de borradores
-      const newDraft = {
-        id: Date.now().toString(),
-        fecha: new Date().toLocaleString(),
-        tema: formData.tema || 'Sin título',
-        tipo: formData.tipo_informe,
-        data: formData
-      };
-      
-      const updatedDrafts = [newDraft, ...savedDrafts].slice(0, 10); // Máximo 10 borradores
-      setSavedDrafts(updatedDrafts);
-      localStorage.setItem('savedDrafts', JSON.stringify(updatedDrafts));
-      
-      toast.success('Borrador guardado exitosamente');
-    } catch (error) {
-      toast.error('Error al guardar borrador');
-    }
-  };
-
-  const cargarBorrador = (draft: any) => {
-    setFormData(draft.data);
-    setDrawerOpen(false);
-    toast.success('Borrador cargado');
-  };
-
-  const limpiarFormulario = () => {
-    const confirmReset = window.confirm('¿Estás seguro de que deseas limpiar todos los campos?');
-    if (confirmReset) {
-      setFormData({
-        nombre: '',
-        otros_autores: [],
-        tema: '',
-        asignatura: '',
-        profesor: '',
-        institucion: '',
-        fecha_entrega: new Date().toISOString().split('T')[0],
-        tipo_informe: 'academico',
-        norma: 'apa7',
-        texto_completo: '',
-      });
-      setActiveStep(0);
-      toast.info('Formulario limpiado');
-    }
-  };
-
-  const aplicarPlantilla = (plantilla: any) => {
-    setFormData(prev => ({
-      ...prev,
-      tema: plantilla.tema,
-      tipo_informe: plantilla.tipo,
-      norma: plantilla.norma,
-    }));
-    setOpenTemplates(false);
-    toast.success(`Plantilla "${plantilla.nombre}" aplicada`);
-  };
-
-  const validarFormulario = (): boolean => {
-    if (!formData.nombre.trim()) {
-      toast.error('Por favor ingresa tu nombre');
-      return false;
-    }
-    if (!formData.tema.trim() || formData.tema.length < 5) {
-      toast.error('El tema debe tener al menos 5 caracteres');
-      return false;
-    }
-    if (!formData.asignatura.trim()) {
-      toast.error('Por favor ingresa la asignatura');
-      return false;
-    }
-    if (!formData.institucion.trim()) {
-      toast.error('Por favor ingresa la institución');
-      return false;
-    }
-    return true;
-  };
-
-  const generarInforme = async () => {
-    if (!validarFormulario()) return;
-
-    setLoading(true);
-    toast.loading('Generando informe...', { id: 'generating' });
-
-    try {
-      // Simulación de generación (en producción conectarías con tu backend)
-      await new Promise(resolve => setTimeout(resolve, 3000));
-
-      // Agregar al historial
-      const nuevoItem: HistorialItem = {
-        id: Date.now().toString(),
-        fecha: new Date().toLocaleString(),
-        tema: formData.tema,
-        tipo: TIPOS_INFORME[formData.tipo_informe].nombre,
-        norma: NORMAS_CONFIG[formData.norma].nombre,
-      };
-
-      const nuevoHistorial = [nuevoItem, ...historial].slice(0, 20);
-      setHistorial(nuevoHistorial);
-      localStorage.setItem('reportHistory', JSON.stringify(nuevoHistorial));
-
-      toast.success('¡Informe generado exitosamente!', { id: 'generating' });
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 5000);
-
-      // Aquí simularíamos la descarga del PDF
-      toast.info('Descarga iniciada...');
-
-    } catch (error) {
-      toast.error('Error al generar el informe', { id: 'generating' });
-      console.error('Error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const steps = ['Información Personal', 'Detalles del Informe', 'Contenido Adicional', 'Revisión'];
-
-  // ========== RENDERIZADO ==========
-  return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Toaster position="top-right" richColors expand={true} />
-      
-      <Box sx={{ flexGrow: 1, minHeight: '100vh', backgroundColor: darkMode ? '#121212' : '#f5f5f5' }}>
-        {/* AppBar */}
-        <AppBar position="sticky" elevation={2}>
-          <Toolbar>
-            <Article sx={{ mr: 2 }} />
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              Academic Report Pro
-            </Typography>
+# ========== EXTRACCIÓN DE SECCIONES MEJORADA ==========
+def extraer_seccion(contenido, nombre):
+    """Extrae secciones del contenido generado con múltiples patrones de respaldo"""
+    if not contenido or not nombre:
+        return ""
+    
+    # Intentar múltiples patrones
+    patrones = [
+        rf'\*\*{nombre}\*\*:?(.*?)(?=\*\*[A-Z]|REFERENCIAS|CONCLUSIONES|RECOMENDACIONES|$)',
+        rf'{nombre}:?(.*?)(?=\n\n[A-Z]|REFERENCIAS|CONCLUSIONES|RECOMENDACIONES|$)',
+        rf'##\s*{nombre}\s*(.*?)(?=##|$)',
+    ]
+    
+    for patron in patrones:
+        match = re.search(patron, contenido, re.DOTALL | re.IGNORECASE)
+        if match:
+            texto = match.group(1).strip()
+            # Convertir markdown a HTML básico
+            texto = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', texto)
+            texto = re.sub(r'\*(.*?)\*', r'<i>\1</i>', texto)
+            texto = re.sub(r'```(.*?)```', r'<pre>\1</pre>', texto, flags=re.DOTALL)
             
-            <Tooltip title="Plantillas">
-              <IconButton color="inherit" onClick={() => setOpenTemplates(true)}>
-                <Badge badgeContent={PLANTILLAS.length} color="error">
-                  <ContentCopy />
-                </Badge>
-              </IconButton>
-            </Tooltip>
+            # Limpiar y retornar
+            if len(texto) > 20:  # Asegurar que tenga contenido sustancial
+                return limpiar_texto(texto)
+    
+    return ""
 
-            <Tooltip title="Historial">
-              <IconButton color="inherit" onClick={() => setOpenHistory(true)}>
-                <Badge badgeContent={historial.length} color="error">
-                  <History />
-                </Badge>
-              </IconButton>
-            </Tooltip>
+# ========== GENERACIÓN CON IA MEJORADA ==========
+def generar_informe_con_ia(tema, tipo_informe="academico", info_extra="", norma="apa7"):
+    """Genera informe usando IA con reintentos y manejo robusto de errores"""
+    
+    if not GROQ_API_KEY:
+        logger.warning("❌ No hay API key configurada, usando contenido genérico")
+        return None
 
-            <Tooltip title="Borradores">
-              <IconButton color="inherit" onClick={() => setDrawerOpen(true)}>
-                <Badge badgeContent={savedDrafts.length} color="error">
-                  <Save />
-                </Badge>
-              </IconButton>
-            </Tooltip>
+    logger.info(f"🤖 Generando informe tipo '{tipo_informe}' sobre: {tema[:80]}...")
+    
+    # Construir prompt según tipo de informe
+    prompts = {
+        "laboratorio": f"""Genera un INFORME DE LABORATORIO completo, profesional y detallado sobre: "{tema}"
 
-            <Tooltip title="Ayuda">
-              <IconButton color="inherit" onClick={() => setOpenHelp(true)}>
-                <Help />
-              </IconButton>
-            </Tooltip>
+Información adicional del usuario: {info_extra if info_extra else 'No se proporcionaron datos específicos'}
 
-            <Tooltip title={darkMode ? "Modo Claro" : "Modo Oscuro"}>
-              <IconButton color="inherit" onClick={() => setDarkMode(!darkMode)}>
-                {darkMode ? <LightMode /> : <DarkMode />}
-              </IconButton>
-            </Tooltip>
-          </Toolbar>
-        </AppBar>
+⚠️ ESTRUCTURA OBLIGATORIA (debe seguirse exactamente):
 
-        {/* Progreso de carga */}
-        {loading && <LinearProgress />}
+**1. INTRODUCCIÓN**
+- Objetivo del experimento (2-3 párrafos)
+- Fundamento teórico detallado
+- Hipótesis planteada
 
-        {/* Contenido Principal */}
-        <Container maxWidth="lg" sx={{ py: 4 }}>
-          {/* Alert de éxito */}
-          {showSuccess && (
-            <Alert 
-              severity="success" 
-              icon={<CheckCircle />}
-              sx={{ mb: 3 }}
-              onClose={() => setShowSuccess(false)}
-            >
-              <Typography variant="h6">¡Informe generado exitosamente!</Typography>
-              <Typography>Tu informe académico ha sido creado y está listo para descargar.</Typography>
-            </Alert>
-          )}
+**2. MATERIALES Y REACTIVOS**
+- Lista completa de materiales de laboratorio
+- Reactivos químicos utilizados con concentraciones
+- Equipos e instrumentos de medición
 
-          {/* Stepper */}
-          <Paper sx={{ p: 3, mb: 3 }}>
-            <Stepper activeStep={activeStep} alternativeLabel>
-              {steps.map((label) => (
-                <Step key={label}>
-                  <StepLabel>{label}</StepLabel>
-                </Step>
-              ))}
-            </Stepper>
-          </Paper>
+**3. PROCEDIMIENTO EXPERIMENTAL**
+- Descripción paso a paso (mínimo 8 pasos)
+- Precauciones de seguridad
+- Controles positivos y negativos
+- Tiempo y temperatura de cada etapa
 
-          {/* Formulario Principal */}
-          <Paper elevation={3} sx={{ p: 4 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-              <Typography variant="h4" gutterBottom>
-                Generador de Informes Académicos
-              </Typography>
-              <Tooltip title={bookmark ? "Marcado" : "Marcar como importante"}>
-                <IconButton onClick={() => setBookmark(!bookmark)} color={bookmark ? "primary" : "default"}>
-                  {bookmark ? <Bookmark /> : <BookmarkBorder />}
-                </IconButton>
-              </Tooltip>
-            </Box>
+**4. RESULTADOS**
+- Tabla de resultados observados
+- Datos cuantitativos (si aplica)
+- Fotografías o esquemas descriptivos (mencionar)
 
-            <Divider sx={{ mb: 3 }} />
+**5. DISCUSIÓN**
+- Análisis detallado de resultados
+- Comparación con valores teóricos
+- Explicación de reacciones químicas o procesos
+- Errores y factores que afectaron resultados
 
-            {/* Tabs */}
-            <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)} sx={{ mb: 3 }}>
-              <Tab label="Información Básica" />
-              <Tab label="Configuración Avanzada" />
-              <Tab label="Contenido" />
-            </Tabs>
+**6. CONCLUSIONES**
+- Mínimo 5 conclusiones específicas y numeradas
+- Relacionar con los objetivos planteados
+- Validación o rechazo de hipótesis
 
-            {/* Tab 1: Información Básica */}
-            {tabValue === 0 && (
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    required
-                    label="Nombre del Autor Principal"
-                    value={formData.nombre}
-                    onChange={(e) => handleInputChange('nombre', e.target.value)}
-                    placeholder="Ej: Juan Pérez"
-                    helperText="Ingresa tu nombre completo"
-                    InputProps={{
-                      startAdornment: <Edit sx={{ mr: 1, color: 'action.active' }} />
-                    }}
-                  />
-                </Grid>
+**7. RECOMENDACIONES**
+- 3-4 sugerencias para mejorar el experimento
+- Aplicaciones prácticas
 
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    required
-                    label="Tema del Informe"
-                    value={formData.tema}
-                    onChange={(e) => handleInputChange('tema', e.target.value)}
-                    placeholder="Ej: Análisis de metodologías educativas"
-                    helperText={`${formData.tema.length} caracteres`}
-                    InputProps={{
-                      startAdornment: <Article sx={{ mr: 1, color: 'action.active' }} />
-                    }}
-                  />
-                </Grid>
+**8. REFERENCIAS**
+- 5-6 fuentes bibliográficas en formato {NORMAS_CONFIG.get(norma, NORMAS_CONFIG['apa7'])['nombre']}
 
-                <Grid item xs={12}>
-                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
-                    <TextField
-                      fullWidth
-                      label="Agregar Co-autores"
-                      value={nuevoAutor}
-                      onChange={(e) => setNuevoAutor(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && agregarAutor()}
-                      placeholder="Presiona Enter para agregar"
-                    />
-                    <Button 
-                      variant="contained" 
-                      startIcon={<Add />} 
-                      onClick={agregarAutor}
-                      sx={{ height: 56 }}
-                    >
-                      Agregar
-                    </Button>
-                  </Box>
-                  
-                  {formData.otros_autores.length > 0 && (
-                    <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                      {formData.otros_autores.map((autor) => (
-                        <Chip
-                          key={autor}
-                          label={autor}
-                          onDelete={() => eliminarAutor(autor)}
-                          color="primary"
-                          variant="outlined"
-                        />
-                      ))}
-                    </Box>
-                  )}
-                </Grid>
+IMPORTANTE: Escribe en español con tono técnico-profesional. Usa **negritas** para títulos y subtítulos.""",
 
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    required
-                    label="Asignatura"
-                    value={formData.asignatura}
-                    onChange={(e) => handleInputChange('asignatura', e.target.value)}
-                    placeholder="Ej: Metodología de la Investigación"
-                  />
-                </Grid>
+        "empresarial": f"""Genera un INFORME EJECUTIVO completo y profesional sobre: "{tema}"
 
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    label="Profesor/Docente"
-                    value={formData.profesor}
-                    onChange={(e) => handleInputChange('profesor', e.target.value)}
-                    placeholder="Ej: Dr. Carlos García"
-                  />
-                </Grid>
+Contexto adicional: {info_extra if info_extra else 'Sin información adicional'}
 
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    required
-                    label="Institución Educativa"
-                    value={formData.institucion}
-                    onChange={(e) => handleInputChange('institucion', e.target.value)}
-                    placeholder="Ej: Universidad Nacional"
-                  />
-                </Grid>
+**ESTRUCTURA OBLIGATORIA:**
 
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    type="date"
-                    label="Fecha de Entrega"
-                    value={formData.fecha_entrega}
-                    onChange={(e) => handleInputChange('fecha_entrega', e.target.value)}
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </Grid>
-              </Grid>
-            )}
+**RESUMEN EJECUTIVO**
+- Síntesis de hallazgos clave (1 página)
+- Recomendaciones principales
 
-            {/* Tab 2: Configuración Avanzada */}
-            {tabValue === 1 && (
-              <Grid container spacing={3}>
-                <Grid item xs={12}>
-                  <Typography variant="h6" gutterBottom>
-                    Tipo de Informe
-                  </Typography>
-                  <Grid container spacing={2}>
-                    {Object.entries(TIPOS_INFORME).map(([key, tipo]) => (
-                      <Grid item xs={12} sm={6} md={3} key={key}>
-                        <Card 
-                          sx={{ 
-                            cursor: 'pointer',
-                            border: formData.tipo_informe === key ? `2px solid ${tipo.color}` : '1px solid #e0e0e0',
-                            transition: 'all 0.3s',
-                            '&:hover': {
-                              transform: 'translateY(-4px)',
-                              boxShadow: 4,
-                            }
-                          }}
-                          onClick={() => handleInputChange('tipo_informe', key)}
-                        >
-                          <CardContent sx={{ textAlign: 'center' }}>
-                            <Box sx={{ color: tipo.color, mb: 1 }}>
-                              {tipo.icon}
-                            </Box>
-                            <Typography variant="subtitle2">
-                              {tipo.nombre}
-                            </Typography>
-                            {formData.tipo_informe === key && (
-                              <CheckCircle sx={{ color: tipo.color, mt: 1 }} />
-                            )}
-                          </CardContent>
-                        </Card>
-                      </Grid>
-                    ))}
-                  </Grid>
-                </Grid>
+**1. INTRODUCCIÓN**
+- Contexto empresarial
+- Propósito del informe
+- Alcance y limitaciones
 
-                <Grid item xs={12}>
-                  <Divider sx={{ my: 2 }} />
-                </Grid>
+**2. ANÁLISIS DE SITUACIÓN**
+- Análisis FODA (Fortalezas, Oportunidades, Debilidades, Amenazas)
+- Análisis de mercado
+- Análisis de competencia
+- Indicadores clave de desempeño (KPIs)
 
-                <Grid item xs={12}>
-                  <Typography variant="h6" gutterBottom>
-                    Norma Académica
-                  </Typography>
-                  <FormControl fullWidth>
-                    <InputLabel>Seleccionar Norma</InputLabel>
-                    <Select
-                      value={formData.norma}
-                      onChange={(e) => handleInputChange('norma', e.target.value)}
-                      label="Seleccionar Norma"
-                    >
-                      {Object.entries(NORMAS_CONFIG).map(([key, norma]) => (
-                        <MenuItem key={key} value={key}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            <Box 
-                              sx={{ 
-                                width: 12, 
-                                height: 12, 
-                                borderRadius: '50%', 
-                                backgroundColor: norma.color 
-                              }} 
-                            />
-                            <Box>
-                              <Typography variant="body1">{norma.nombre}</Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {norma.descripcion}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
+**3. OPORTUNIDADES Y AMENAZAS**
+- Identificación de oportunidades de negocio
+- Riesgos y amenazas potenciales
+- Análisis de tendencias del sector
 
-                <Grid item xs={12}>
-                  <Alert severity="info" icon={<Info />}>
-                    <Typography variant="body2">
-                      <strong>Secciones incluidas en {TIPOS_INFORME[formData.tipo_informe].nombre}:</strong>
-                    </Typography>
-                    <Box component="ul" sx={{ mt: 1, pl: 2 }}>
-                      {TIPOS_INFORME[formData.tipo_informe].secciones.map((seccion) => (
-                        <li key={seccion}>{seccion}</li>
-                      ))}
-                    </Box>
-                  </Alert>
-                </Grid>
-              </Grid>
-            )}
+**4. RECOMENDACIONES ESTRATÉGICAS**
+- Estrategias a corto plazo (0-6 meses)
+- Estrategias a mediano plazo (6-12 meses)
+- Estrategias a largo plazo (1-3 años)
+- Plan de implementación
 
-            {/* Tab 3: Contenido */}
-            {tabValue === 2 && (
-              <Grid container spacing={3}>
-                <Grid item xs={12}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                    <Typography variant="h6">
-                      Información Adicional (Opcional)
-                    </Typography>
-                    <Box sx={{ display: 'flex', gap: 2 }}>
-                      <Chip 
-                        icon={<Article />} 
-                        label={`${wordCount} palabras`} 
-                        color="primary" 
-                        variant="outlined" 
-                      />
-                      <Chip 
-                        icon={<Article />} 
-                        label={`${charCount} caracteres`} 
-                        color="secondary" 
-                        variant="outlined" 
-                      />
-                    </Box>
-                  </Box>
-                  
-                  <TextField
-                    fullWidth
-                    multiline
-                    rows={12}
-                    value={formData.texto_completo}
-                    onChange={(e) => handleInputChange('texto_completo', e.target.value)}
-                    placeholder="Aquí puedes agregar contexto adicional, datos específicos, resultados previos, o cualquier información que ayude a generar un informe más preciso y personalizado..."
-                    variant="outlined"
-                    helperText="Esta información será utilizada por la IA para generar un contenido más específico y relevante"
-                  />
-                </Grid>
+**5. PROYECCIONES FINANCIERAS**
+- Estimaciones de inversión
+- Retorno de inversión esperado (ROI)
+- Análisis costo-beneficio
 
-                <Grid item xs={12}>
-                  <Alert severity="success" icon={<AutoAwesome />}>
-                    <Typography variant="body2">
-                      <strong>Consejo:</strong> Mientras más detalles proporciones, más personalizado y específico será tu informe. 
-                      Incluye datos, estadísticas, observaciones o cualquier información relevante.
-                    </Typography>
-                  </Alert>
-                </Grid>
-              </Grid>
-            )}
+**6. CONCLUSIONES**
+- 5 conclusiones principales
+- Próximos pasos
 
-            <Divider sx={{ my: 4 }} />
+**7. REFERENCIAS**
+- Fuentes consultadas en formato {NORMAS_CONFIG.get(norma, NORMAS_CONFIG['apa7'])['nombre']}
 
-            {/* Botones de Acción */}
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'space-between' }}>
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                <Button
-                  variant="outlined"
-                  startIcon={<RestartAlt />}
-                  onClick={limpiarFormulario}
-                  color="error"
-                >
-                  Limpiar
-                </Button>
+Escribe en español con tono ejecutivo profesional.""",
 
-                <Button
-                  variant="outlined"
-                  startIcon={<Save />}
-                  onClick={guardarBorrador}
-                  color="info"
-                >
-                  Guardar Borrador
-                </Button>
+        "tesis": f"""Genera una estructura completa de TESIS/MONOGRAFÍA sobre: "{tema}"
 
-                <Button
-                  variant="outlined"
-                  startIcon={<Preview />}
-                  onClick={() => setOpenPreview(true)}
-                >
-                  Vista Previa
-                </Button>
-              </Box>
+Información adicional: {info_extra if info_extra else 'Sin información adicional'}
 
-              <Button
-                variant="contained"
-                size="large"
-                startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <Download />}
-                onClick={generarInforme}
-                disabled={loading}
-                sx={{ 
-                  minWidth: 200,
-                  background: 'linear-gradient(45deg, #1976d2 30%, #42a5f5 90%)',
-                  boxShadow: '0 3px 5px 2px rgba(25, 118, 210, .3)',
-                }}
-              >
-                {loading ? 'Generando...' : 'Generar Informe PDF'}
-              </Button>
-            </Box>
+**ESTRUCTURA OBLIGATORIA:**
 
-            {/* Navegación de Stepper */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
-              <Button
-                disabled={activeStep === 0}
-                onClick={() => setActiveStep(prev => prev - 1)}
-              >
-                Anterior
-              </Button>
-              <Button
-                variant="contained"
-                onClick={() => activeStep < steps.length - 1 ? setActiveStep(prev => prev + 1) : generarInforme()}
-              >
-                {activeStep === steps.length - 1 ? 'Finalizar' : 'Siguiente'}
-              </Button>
-            </Box>
-          </Paper>
+**RESUMEN**
+- Abstract en español (250 palabras)
+- Palabras clave (5-7 términos)
 
-          {/* Información Adicional */}
-          <Grid container spacing={3} sx={{ mt: 2 }}>
-            <Grid item xs={12} md={4}>
-              <Card>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <CheckCircle sx={{ color: 'success.main', mr: 1 }} />
-                    <Typography variant="h6">Profesional</Typography>
-                  </Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Informes generados con estándares académicos internacionales y formato profesional.
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
+**1. INTRODUCCIÓN**
+- Contextualización del tema
+- Justificación de la investigación
+- Antecedentes relevantes
 
-            <Grid item xs={12} md={4}>
-              <Card>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <AutoAwesome sx={{ color: 'primary.main', mr: 1 }} />
-                    <Typography variant="h6">IA Avanzada</Typography>
-                  </Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Contenido generado con inteligencia artificial de última generación para resultados óptimos.
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
+**2. PLANTEAMIENTO DEL PROBLEMA**
+- Descripción del problema
+- Formulación del problema (pregunta de investigación)
+- Delimitación espacial y temporal
 
-            <Grid item xs={12} md={4}>
-              <Card>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <School sx={{ color: 'secondary.main', mr: 1 }} />
-                    <Typography variant="h6">8 Normas</Typography>
-                  </Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Soporte completo para APA, IEEE, MLA, Vancouver, Chicago, Harvard, ICONTEC y más.
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-        </Container>
+**3. OBJETIVOS**
+- Objetivo general (1)
+- Objetivos específicos (4-5)
 
-        {/* Dialog: Vista Previa */}
-        <Dialog open={openPreview} onClose={() => setOpenPreview(false)} maxWidth="md" fullWidth>
-          <DialogTitle>
-            Vista Previa del Informe
-            <IconButton
-              onClick={() => setOpenPreview(false)}
-              sx={{ position: 'absolute', right: 8, top: 8 }}
-            >
-              <Close />
-            </IconButton>
-          </DialogTitle>
-          <DialogContent dividers>
-            <Typography variant="h6" gutterBottom>Portada</Typography>
-            <Paper sx={{ p: 3, mb: 2, backgroundColor: 'grey.100' }}>
-              <Typography variant="h4" align="center" gutterBottom>
-                INFORME ACADÉMICO
-              </Typography>
-              <Typography align="center" gutterBottom sx={{ mt: 3 }}>
-                <strong>{formData.tema || 'Tema del Informe'}</strong>
-              </Typography>
-              <Typography align="center" sx={{ mt: 4 }}>
-                <strong>Presentado por:</strong> {formData.nombre || 'Nombre del Autor'}
-              </Typography>
-              {formData.otros_autores.length > 0 && (
-                <Typography align="center">
-                  <strong>Con la participación de:</strong> {formData.otros_autores.join(', ')}
-                </Typography>
-              )}
-              <Typography align="center">
-                <strong>Asignatura:</strong> {formData.asignatura || 'Asignatura'}
-              </Typography>
-              <Typography align="center">
-                <strong>Docente:</strong> {formData.profesor || 'Docente'}
-              </Typography>
-              <Typography align="center">
-                <strong>Institución:</strong> {formData.institucion || 'Institución'}
-              </Typography>
-              <Typography align="center" sx={{ mt: 2 }}>
-                <strong>Fecha:</strong> {formData.fecha_entrega}
-              </Typography>
-            </Paper>
+**4. HIPÓTESIS**
+- Hipótesis general
+- Hipótesis específicas
+- Variables: dependientes e independientes
 
-            <Typography variant="h6" gutterBottom>Configuración</Typography>
-            <List>
-              <ListItem>
-                <ListItemIcon>
-                  {TIPOS_INFORME[formData.tipo_informe].icon}
-                </ListItemIcon>
-                <ListItemText 
-                  primary="Tipo de Informe"
-                  secondary={TIPOS_INFORME[formData.tipo_informe].nombre}
-                />
-              </ListItem>
-              <ListItem>
-                <ListItemIcon>
-                  <Article />
-                </ListItemIcon>
-                <ListItemText 
-                  primary="Norma Académica"
-                  secondary={NORMAS_CONFIG[formData.norma].nombre}
-                />
-              </ListItem>
-            </List>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpenPreview(false)}>Cerrar</Button>
-            <Button variant="contained" onClick={generarInforme}>
-              Generar Ahora
-            </Button>
-          </DialogActions>
-        </Dialog>
+**5. MARCO TEÓRICO**
+- Bases teóricas fundamentales
+- Teorías relacionadas
+- Definición de términos básicos
+- Marco conceptual
 
-        {/* Dialog: Historial */}
-        <Dialog open={openHistory} onClose={() => setOpenHistory(false)} maxWidth="md" fullWidth>
-          <DialogTitle>
-            Historial de Informes Generados
-            <IconButton
-              onClick={() => setOpenHistory(false)}
-              sx={{ position: 'absolute', right: 8, top: 8 }}
-            >
-              <Close />
-            </IconButton>
-          </DialogTitle>
-          <DialogContent dividers>
-            {historial.length === 0 ? (
-              <Box sx={{ textAlign: 'center', py: 4 }}>
-                <History sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-                <Typography variant="h6" color="text.secondary">
-                  No hay informes en el historial
-                </Typography>
-                <Typography color="text.secondary">
-                  Los informes generados aparecerán aquí
-                </Typography>
-              </Box>
-            ) : (
-              <List>
-                {historial.map((item, index) => (
-                  <ListItem key={item.id} divider={index < historial.length - 1}>
-                    <ListItemIcon>
-                      <Article />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={item.tema}
-                      secondary={
-                        <>
-                          <Typography component="span" variant="body2" color="text.primary">
-                            {item.tipo}
-                          </Typography>
-                          {` — ${item.norma} — ${item.fecha}`}
-                        </>
-                      }
-                    />
-                    <IconButton size="small">
-                      <Download />
-                    </IconButton>
-                  </ListItem>
-                ))}
-              </List>
-            )}
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpenHistory(false)}>Cerrar</Button>
-          </DialogActions>
-        </Dialog>
+**6. METODOLOGÍA**
+- Tipo y diseño de investigación
+- Población y muestra
+- Técnicas e instrumentos de recolección
+- Procedimiento de investigación
+- Análisis de datos
 
-        {/* Dialog: Ayuda */}
-        <Dialog open={openHelp} onClose={() => setOpenHelp(false)} maxWidth="md" fullWidth>
-          <DialogTitle>
-            Centro de Ayuda
-            <IconButton
-              onClick={() => setOpenHelp(false)}
-              sx={{ position: 'absolute', right: 8, top: 8 }}
-            >
-              <Close />
-            </IconButton>
-          </DialogTitle>
-          <DialogContent dividers>
-            <Typography variant="h6" gutterBottom>
-              ¿Cómo usar Academic Report Pro?
-            </Typography>
+**7. RESULTADOS ESPERADOS**
+- Descripción de resultados anticipados
+- Posibles hallazgos
+- Limitaciones del estudio
+
+**8. CRONOGRAMA**
+- Fases de la investigación
+- Tiempos estimados
+
+**9. PRESUPUESTO**
+- Recursos humanos
+- Recursos materiales
+- Costos estimados
+
+**10. CONCLUSIONES PRELIMINARES**
+- 5 conclusiones basadas en el marco teórico
+
+**11. REFERENCIAS**
+- Mínimo 15 fuentes en formato {NORMAS_CONFIG.get(norma, NORMAS_CONFIG['apa7'])['nombre']}
+
+Escribe en español académico formal."""
+    }
+    
+    # Prompt por defecto (académico)
+    prompt_default = f"""Genera un INFORME ACADÉMICO completo, riguroso y profesional sobre: "{tema}"
+
+Información adicional proporcionada: {info_extra if info_extra else 'Sin información adicional'}
+
+**ESTRUCTURA OBLIGATORIA:**
+
+**INTRODUCCIÓN**
+- Contextualización del tema (2-3 párrafos)
+- Justificación e importancia
+- Planteamiento inicial
+
+**OBJETIVOS**
+- 1 objetivo general claro y específico
+- 4-5 objetivos específicos medibles
+
+**MARCO TEÓRICO**
+- Fundamentos teóricos detallados
+- Conceptos clave explicados
+- Antecedentes y estado del arte
+- Teorías relacionadas
+
+**METODOLOGÍA**
+- Tipo de investigación y diseño
+- Población y muestra (con números específicos)
+- Técnicas de recolección de datos
+- Procedimiento detallado
+- Análisis de datos
+
+**DESARROLLO**
+- Presentación de resultados con datos
+- Análisis e interpretación
+- Tablas o gráficos (describir en texto)
+- Discusión de hallazgos
+
+**CONCLUSIONES**
+- Mínimo 5 conclusiones específicas y numeradas
+- Relacionadas con los objetivos
+- Basadas en evidencia del desarrollo
+
+**RECOMENDACIONES**
+- 3-4 recomendaciones prácticas y específicas
+- Para investigadores futuros
+- Para aplicación práctica
+
+**REFERENCIAS**
+- 6-8 fuentes bibliográficas académicas
+- Formato: {NORMAS_CONFIG.get(norma, NORMAS_CONFIG['apa7'])['nombre']}
+- Incluir libros, artículos y fuentes digitales
+
+REQUISITOS:
+- Escribe en español académico formal
+- Usa **negritas** para todos los títulos y subtítulos
+- Proporciona contenido sustancial (no solo títulos)
+- Incluye datos específicos cuando sea posible
+- Mantén coherencia y cohesión entre secciones"""
+
+    prompt = prompts.get(tipo_informe, prompt_default)
+    
+    # Headers para API
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    
+    # Intentar con diferentes modelos si falla
+    for attempt, model in enumerate(GROQ_MODELS, 1):
+        try:
+            logger.info(f"Intento {attempt} con modelo: {model}")
             
-            <Accordion>
-              <AccordionSummary expandIcon={<ExpandMore />}>
-                <Typography>1. Completar Información Básica</Typography>
-              </AccordionSummary>
-              <AccordionDetails>
-                <Typography>
-                  Ingresa tu nombre, el tema del informe, asignatura, institución y fecha de entrega. 
-                  Puedes agregar co-autores si es un trabajo en equipo.
-                </Typography>
-              </AccordionDetails>
-            </Accordion>
-
-            <Accordion>
-              <AccordionSummary expandIcon={<ExpandMore />}>
-                <Typography>2. Seleccionar Tipo y Norma</Typography>
-              </AccordionSummary>
-              <AccordionDetails>
-                <Typography>
-                  Elige el tipo de informe (Académico, Laboratorio, Empresarial o Tesis) y la norma 
-                  académica que prefieras (APA, IEEE, MLA, etc.).
-                </Typography>
-              </AccordionDetails>
-            </Accordion>
-
-            <Accordion>
-              <AccordionSummary expandIcon={<ExpandMore />}>
-                <Typography>3. Agregar Contenido Opcional</Typography>
-              </AccordionSummary>
-              <AccordionDetails>
-                <Typography>
-                  Proporciona información adicional para que la IA genere un contenido más específico 
-                  y personalizado. Incluye datos, observaciones o contexto relevante.
-                </Typography>
-              </AccordionDetails>
-            </Accordion>
-
-            <Accordion>
-              <AccordionSummary expandIcon={<ExpandMore />}>
-                <Typography>4. Generar y Descargar</Typography>
-              </AccordionSummary>
-              <AccordionDetails>
-                <Typography>
-                  Haz clic en "Generar Informe PDF" y espera unos segundos. El sistema creará tu 
-                  informe profesional que podrás descargar inmediatamente.
-                </Typography>
-              </AccordionDetails>
-            </Accordion>
-
-            <Box sx={{ mt: 3, p: 2, backgroundColor: 'info.light', borderRadius: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
-                💡 Consejos Útiles:
-              </Typography>
-              <Typography variant="body2">
-                • Guarda borradores mientras trabajas
-                <br />
-                • Usa plantillas predefinidas para comenzar rápido
-                <br />
-                • Revisa la vista previa antes de generar
-                <br />
-                • Cuanta más información proporciones, mejor será el resultado
-              </Typography>
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpenHelp(false)}>Entendido</Button>
-          </DialogActions>
-        </Dialog>
-
-        {/* Dialog: Plantillas */}
-        <Dialog open={openTemplates} onClose={() => setOpenTemplates(false)} maxWidth="md" fullWidth>
-          <DialogTitle>
-            Plantillas Predefinidas
-            <IconButton
-              onClick={() => setOpenTemplates(false)}
-              sx={{ position: 'absolute', right: 8, top: 8 }}
-            >
-              <Close />
-            </IconButton>
-          </DialogTitle>
-          <DialogContent dividers>
-            <Grid container spacing={2}>
-              {PLANTILLAS.map((plantilla) => (
-                <Grid item xs={12} sm={6} key={plantilla.id}>
-                  <Card 
-                    sx={{ 
-                      cursor: 'pointer',
-                      transition: 'all 0.3s',
-                      '&:hover': {
-                        transform: 'scale(1.02)',
-                        boxShadow: 4,
-                      }
-                    }}
-                  >
-                    <CardContent>
-                      <Typography variant="h6" gutterBottom>
-                        {plantilla.nombre}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
-                        {plantilla.tema}
-                      </Typography>
-                      <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-                        <Chip label={TIPOS_INFORME[plantilla.tipo as keyof typeof TIPOS_INFORME].nombre} size="small" />
-                        <Chip label={NORMAS_CONFIG[plantilla.norma as keyof typeof NORMAS_CONFIG].nombre} size="small" color="primary" />
-                      </Box>
-                    </CardContent>
-                    <CardActions>
-                      <Button 
-                        size="small" 
-                        fullWidth 
-                        variant="contained"
-                        onClick={() => aplicarPlantilla(plantilla)}
-                      >
-                        Usar Plantilla
-                      </Button>
-                    </CardActions>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpenTemplates(false)}>Cerrar</Button>
-          </DialogActions>
-        </Dialog>
-
-        {/* Drawer: Borradores */}
-        <Drawer
-          anchor="right"
-          open={drawerOpen}
-          onClose={() => setDrawerOpen(false)}
-        >
-          <Box sx={{ width: 350, p: 2 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6">Borradores Guardados</Typography>
-              <IconButton onClick={() => setDrawerOpen(false)}>
-                <Close />
-              </IconButton>
-            </Box>
-            <Divider sx={{ mb: 2 }} />
+            data = {
+                "model": model,
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "Eres un asistente académico experto en redactar informes profesionales. Generas contenido detallado, riguroso y bien estructurado."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                "max_tokens": 6000,
+                "temperature": 0.7,
+                "top_p": 0.9
+            }
             
-            {savedDrafts.length === 0 ? (
-              <Box sx={{ textAlign: 'center', py: 4 }}>
-                <Save sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-                <Typography variant="body2" color="text.secondary">
-                  No hay borradores guardados
-                </Typography>
-              </Box>
-            ) : (
-              <List>
-                {savedDrafts.map((draft, index) => (
-                  <ListItem 
-                    key={draft.id}
-                    divider={index < savedDrafts.length - 1}
-                    sx={{ 
-                      cursor: 'pointer',
-                      '&:hover': { backgroundColor: 'action.hover' }
-                    }}
-                    onClick={() => cargarBorrador(draft)}
-                  >
-                    <ListItemIcon>
-                      <Article />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={draft.tema}
-                      secondary={draft.fecha}
-                    />
-                  </ListItem>
-                ))}
-              </List>
-            )}
-          </Box>
-        </Drawer>
+            response = requests.post(
+                GROQ_URL,
+                headers=headers,
+                json=data,
+                timeout=120
+            )
+            
+            if response.status_code == 200:
+                resultado = response.json()
+                contenido = resultado['choices'][0]['message']['content']
+                contenido = limpiar_texto(contenido)
+                
+                logger.info(f"✅ Contenido generado exitosamente ({len(contenido)} caracteres)")
+                
+                # Extraer secciones según tipo de informe
+                if tipo_informe == "laboratorio":
+                    secciones = {
+                        'introduccion': extraer_seccion(contenido, '1. INTRODUCCIÓN') or extraer_seccion(contenido, 'INTRODUCCIÓN'),
+                        'materiales': extraer_seccion(contenido, '2. MATERIALES Y REACTIVOS') or extraer_seccion(contenido, 'MATERIALES'),
+                        'procedimiento': extraer_seccion(contenido, '3. PROCEDIMIENTO EXPERIMENTAL') or extraer_seccion(contenido, 'PROCEDIMIENTO'),
+                        'resultados': extraer_seccion(contenido, '4. RESULTADOS'),
+                        'discusion': extraer_seccion(contenido, '5. DISCUSIÓN') or extraer_seccion(contenido, 'DISCUSIÓN'),
+                        'conclusiones': extraer_seccion(contenido, '6. CONCLUSIONES') or extraer_seccion(contenido, 'CONCLUSIONES'),
+                        'recomendaciones': extraer_seccion(contenido, '7. RECOMENDACIONES') or extraer_seccion(contenido, 'RECOMENDACIONES'),
+                        'referencias': extraer_seccion(contenido, '8. REFERENCIAS') or extraer_seccion(contenido, 'REFERENCIAS')
+                    }
+                else:
+                    secciones = {
+                        'introduccion': extraer_seccion(contenido, 'INTRODUCCIÓN'),
+                        'objetivos': extraer_seccion(contenido, 'OBJETIVOS'),
+                        'marco_teorico': extraer_seccion(contenido, 'MARCO TEÓRICO'),
+                        'metodologia': extraer_seccion(contenido, 'METODOLOGÍA'),
+                        'desarrollo': extraer_seccion(contenido, 'DESARROLLO') or extraer_seccion(contenido, 'RESULTADOS'),
+                        'conclusiones': extraer_seccion(contenido, 'CONCLUSIONES'),
+                        'recomendaciones': extraer_seccion(contenido, 'RECOMENDACIONES'),
+                        'referencias': extraer_seccion(contenido, 'REFERENCIAS')
+                    }
+                
+                # Validar y completar secciones vacías
+                contenido_respaldo = contenido_local_generico(tema, tipo_informe)
+                for key in secciones:
+                    if not secciones[key] or len(secciones[key]) < 50:
+                        logger.warning(f"⚠️ Sección '{key}' vacía o muy corta, usando contenido genérico")
+                        secciones[key] = contenido_respaldo.get(key, "")
+                
+                logger.info(f"✅ Informe tipo '{tipo_informe}' generado correctamente")
+                return secciones
+                
+            else:
+                logger.warning(f"❌ Error con modelo {model}: HTTP {response.status_code}")
+                if attempt < len(GROQ_MODELS):
+                    time.sleep(2)  # Esperar antes de reintentar
+                    continue
+                    
+        except requests.exceptions.Timeout:
+            logger.error(f"⏱️ Timeout con modelo {model}")
+            if attempt < len(GROQ_MODELS):
+                continue
+                
+        except Exception as e:
+            logger.error(f"❌ Error con modelo {model}: {str(e)}")
+            if attempt < len(GROQ_MODELS):
+                continue
+    
+    logger.warning("⚠️ Todos los intentos fallaron, retornando None")
+    return None
 
-        {/* FAB de Acciones Rápidas */}
-        <SpeedDial
-          ariaLabel="Acciones rápidas"
-          sx={{ position: 'fixed', bottom: 16, right: 16 }}
-          icon={<SpeedDialIcon />}
-        >
-          <SpeedDialAction
-            icon={<Save />}
-            tooltipTitle="Guardar Borrador"
-            onClick={guardarBorrador}
-          />
-          <SpeedDialAction
-            icon={<Preview />}
-            tooltipTitle="Vista Previa"
-            onClick={() => setOpenPreview(true)}
-          />
-          <SpeedDialAction
-            icon={<Download />}
-            tooltipTitle="Generar PDF"
-            onClick={generarInforme}
-          />
-          <SpeedDialAction
-            icon={<RestartAlt />}
-            tooltipTitle="Limpiar"
-            onClick={limpiarFormulario}
-          />
-        </SpeedDial>
-      </Box>
-    </ThemeProvider>
-  );
-}
+# ========== GENERADOR DE PDF MEJORADO ==========
+class GeneradorPDF:
+    """Clase mejorada para generar PDFs profesionales"""
+    
+    def crear_estilos(self, config_norma):
+        """Crea estilos personalizados según la norma académica"""
+        styles = getSampleStyleSheet()
+        
+        # Estilo para texto justificado
+        styles.add(ParagraphStyle(
+            name='TextoJustificado',
+            parent=styles['Normal'],
+            alignment=TA_JUSTIFY,
+            fontSize=config_norma['tamaño'],
+            fontName=config_norma['fuente'],
+            spaceAfter=12,
+            spaceBefore=6,
+            leading=config_norma['interlineado'],
+            leftIndent=config_norma['sangria']
+        ))
+        
+        # Estilo para títulos principales
+        styles.add(ParagraphStyle(
+            name='Titulo1',
+            parent=styles['Heading1'],
+            fontSize=config_norma['tamaño'] + 4,
+            fontName='Helvetica-Bold',
+            textColor=colors.HexColor(config_norma.get('color_titulo', '#1a365d')),
+            spaceBefore=24,
+            spaceAfter=16,
+            alignment=TA_LEFT
+        ))
+        
+        # Estilo para subtítulos
+        styles.add(ParagraphStyle(
+            name='Titulo2',
+            parent=styles['Heading2'],
+            fontSize=config_norma['tamaño'] + 2,
+            fontName='Helvetica-Bold',
+            textColor=colors.HexColor(config_norma.get('color_titulo', '#1a365d')),
+            spaceBefore=18,
+            spaceAfter=12,
+            alignment=TA_LEFT
+        ))
+        
+        # Estilo para portada
+        styles.add(ParagraphStyle(
+            name='TituloPortada',
+            parent=styles['Title'],
+            fontSize=24,
+            fontName='Helvetica-Bold',
+            alignment=TA_CENTER,
+            spaceAfter=20,
+            textColor=colors.HexColor(config_norma.get('color_titulo', '#1a365d'))
+        ))
+        
+        # Estilo para texto centrado
+        styles.add(ParagraphStyle(
+            name='TextoCentrado',
+            parent=styles['Normal'],
+            alignment=TA_CENTER,
+            fontSize=config_norma['tamaño'],
+            fontName=config_norma['fuente'],
+            spaceAfter=10
+        ))
+        
+        return styles
+    
+    def generar_pdf(self, datos_usuario, secciones):
+        """Genera el archivo PDF completo"""
+        
+        # Extraer y validar datos
+        nombre = datos_usuario.get('nombre', 'Estudiante') or "Estudiante"
+        otros_autores = datos_usuario.get('otros_autores', '')
+        tema = datos_usuario.get('tema', 'Tema de Investigación') or "Tema de Investigación"
+        asignatura = datos_usuario.get('asignatura', 'Asignatura') or "Asignatura"
+        profesor = datos_usuario.get('profesor', 'Docente') or "Docente"
+        institucion = datos_usuario.get('institucion', 'Institución Educativa') or "Institución Educativa"
+        fecha_entrega = datos_usuario.get('fecha_entrega', datetime.now().strftime('%d/%m/%Y'))
+        tipo_informe = datos_usuario.get('tipo_informe', 'academico')
+        norma = datos_usuario.get('norma', 'apa7')
+        
+        # Obtener configuración de norma
+        config_norma = NORMAS_CONFIG.get(norma, NORMAS_CONFIG['apa7'])
+        
+        # Generar nombre único para el archivo
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        unique_id = uuid.uuid4().hex[:6]
+        filename = f"informe_{tipo_informe}_{timestamp}_{unique_id}.pdf"
+        filepath = os.path.join('informes_generados', filename)
+        
+        # Crear estilos
+        styles = self.crear_estilos(config_norma)
+        
+        # Crear documento
+        doc = SimpleDocTemplate(
+            filepath,
+            pagesize=letter,
+            rightMargin=config_norma['margen_derecho'],
+            leftMargin=config_norma['margen_izquierdo'],
+            topMargin=config_norma['margen_superior'],
+            bottomMargin=config_norma['margen_inferior'],
+            title=tema,
+            author=nombre
+        )
+        
+        story = []
+        
+        # ========== PORTADA ==========
+        story.append(Spacer(1, 1.5*inch))
+        story.append(Paragraph("INFORME ACADÉMICO", styles['TituloPortada']))
+        story.append(Spacer(1, 0.3*inch))
+        story.append(Paragraph(tema.upper(), styles['TextoCentrado']))
+        story.append(Spacer(1, 1.5*inch))
+        
+        # Información del autor
+        story.append(Paragraph(f"<b>Presentado por:</b> {nombre}", styles['TextoCentrado']))
+        
+        if otros_autores:
+            if isinstance(otros_autores, list):
+                otros_autores = ", ".join(otros_autores)
+            story.append(Paragraph(f"<b>Colaboradores:</b> {otros_autores}", styles['TextoCentrado']))
+        
+        story.append(Spacer(1, 0.5*inch))
+        story.append(Paragraph(f"<b>Asignatura:</b> {asignatura}", styles['TextoCentrado']))
+        story.append(Paragraph(f"<b>Docente:</b> {profesor}", styles['TextoCentrado']))
+        story.append(Paragraph(f"<b>Institución:</b> {institucion}", styles['TextoCentrado']))
+        story.append(Spacer(1, 0.5*inch))
+        story.append(Paragraph(f"<b>Fecha de entrega:</b> {fecha_entrega}", styles['TextoCentrado']))
+        story.append(Paragraph(f"<b>Norma aplicada:</b> {config_norma['nombre']}", styles['TextoCentrado']))
+        
+        story.append(PageBreak())
+        
+        # ========== ÍNDICE ==========
+        story.append(Paragraph("ÍNDICE", styles['Titulo1']))
+        story.append(Spacer(1, 0.2*inch))
+        
+        indices = [
+            "1. INTRODUCCIÓN",
+            "2. OBJETIVOS",
+            "3. MARCO TEÓRICO",
+            "4. METODOLOGÍA",
+            "5. DESARROLLO",
+            "6. CONCLUSIONES",
+            "7. RECOMENDACIONES",
+            "8. REFERENCIAS"
+        ]
+        
+        for idx in indices:
+            story.append(Paragraph(f"• {idx}", styles['TextoJustificado']))
+            story.append(Spacer(1, 0.1*inch))
+        
+        story.append(PageBreak())
+        
+        # ========== SECCIONES DEL CONTENIDO ==========
+        secciones_estructura = [
+            ("1. INTRODUCCIÓN", 'introduccion'),
+            ("2. OBJETIVOS", 'objetivos'),
+            ("3. MARCO TEÓRICO", 'marco_teorico'),
+            ("4. METODOLOGÍA", 'metodologia'),
+            ("5. DESARROLLO", 'desarrollo'),
+            ("6. CONCLUSIONES", 'conclusiones'),
+            ("7. RECOMENDACIONES", 'recomendaciones'),
+            ("8. REFERENCIAS", 'referencias')
+        ]
+        
+        for titulo, clave in secciones_estructura:
+            story.append(Paragraph(titulo, styles['Titulo1']))
+            story.append(Spacer(1, 0.2*inch))
+            
+            contenido = secciones.get(clave, '')
+            if contenido:
+                # Dividir en párrafos si es necesario
+                parrafos = contenido.split('<br/><br/>')
+                for parrafo in parrafos:
+                    if parrafo.strip():
+                        story.append(Paragraph(parrafo.strip(), styles['TextoJustificado']))
+                        story.append(Spacer(1, 0.1*inch))
+            else:
+                story.append(Paragraph(f"Contenido no disponible para {titulo}", styles['TextoJustificado']))
+            
+            story.append(PageBreak())
+        
+        # Construir PDF
+        try:
+            doc.build(story)
+            file_size = os.path.getsize(filepath)
+            logger.info(f"✅ PDF generado: {filename} ({file_size} bytes)")
+            return filename, filepath
+        except Exception as e:
+            logger.error(f"❌ Error generando PDF: {e}")
+            raise
+
+# Instancia global del generador
+generador = GeneradorPDF()
+
+# ========== RUTAS DE LA API ==========
+
+@app.route('/')
+def index():
+    """Página principal"""
+    return render_template('index.html')
+
+@app.route('/health')
+def health():
+    """Endpoint de health check"""
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': datetime.now().isoformat(),
+        'groq_configured': bool(GROQ_API_KEY)
+    })
+
+@app.route('/api/normas')
+def get_normas():
+    """Obtiene lista de normas disponibles"""
+    return jsonify({
+        'success': True,
+        'normas': NORMAS_CONFIG
+    })
+
+@app.route('/generar', methods=['POST'])
+@handle_errors
+def generar():
+    """Endpoint principal para generar informes"""
+    
+    datos = request.json
+    if not datos:
+        return jsonify({
+            'success': False,
+            'error': 'No se recibieron datos'
+        }), 400
+    
+    # Validar campos requeridos
+    tema = datos.get('tema', '').strip()
+    if not tema or len(tema) < 3:
+        return jsonify({
+            'success': False,
+            'error': 'El tema debe tener al menos 3 caracteres'
+        }), 400
+    
+    nombre = datos.get('nombre', '').strip()
+    if not nombre:
+        return jsonify({
+            'success': False,
+            'error': 'El nombre del autor es requerido'
+        }), 400
+    
+    # Extraer datos
+    texto_auto = datos.get('texto_completo', '')
+    tipo_informe = datos.get('tipo_informe', 'academico')
+    norma = datos.get('norma', 'apa7')
+    
+    logger.info(f"📨 Solicitud de informe: tipo={tipo_informe}, norma={norma}, tema={tema[:60]}...")
+    
+    # Generar con IA
+    secciones = generar_informe_con_ia(tema, tipo_informe, texto_auto, norma)
+    
+    # Si falla IA, usar contenido genérico
+    if not secciones:
+        logger.warning("⚠️ Generación con IA falló, usando contenido genérico")
+        secciones = contenido_local_generico(tema, tipo_informe)
+    
+    # Procesar autores múltiples
+    otros_autores = datos.get('otros_autores', '')
+    if otros_autores and isinstance(otros_autores, list):
+        otros_autores = ", ".join(otros_autores)
+    
+    # Preparar datos de usuario
+    datos_usuario = {
+        'nombre': nombre,
+        'otros_autores': otros_autores,
+        'tema': tema,
+        'asignatura': datos.get('asignatura', ''),
+        'profesor': datos.get('profesor', ''),
+        'institucion': datos.get('institucion', ''),
+        'fecha_entrega': datos.get('fecha_entrega', ''),
+        'tipo_informe': tipo_informe,
+        'norma': norma
+    }
+    
+    # Generar PDF
+    try:
+        filename, filepath = generador.generar_pdf(datos_usuario, secciones)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Informe generado exitosamente',
+            'filename': filename,
+            'download_url': f'/descargar/{filename}',
+            'metadata': {
+                'tipo': tipo_informe,
+                'norma': NORMAS_CONFIG.get(norma, {}).get('nombre', norma),
+                'fecha_generacion': datetime.now().isoformat()
+            }
+        })
+    except Exception as e:
+        logger.error(f"❌ Error generando PDF: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'Error al generar PDF: {str(e)}'
+        }), 500
+
+@app.route('/descargar/<filename>')
+def descargar(filename):
+    """Descarga un archivo PDF generado"""
+    filepath = os.path.join('informes_generados', filename)
+    
+    if not os.path.exists(filepath):
+        return jsonify({
+            'success': False,
+            'error': 'Archivo no encontrado'
+        }), 404
+    
+    try:
+        return send_file(
+            filepath,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/pdf'
+        )
+    except Exception as e:
+        logger.error(f"❌ Error descargando archivo: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'Error al descargar el archivo'
+        }), 500
+
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({
+        'success': False,
+        'error': 'Ruta no encontrada'
+    }), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return jsonify({
+        'success': False,
+        'error': 'Error interno del servidor'
+    }), 500
+
+# ========== INICIO DE LA APLICACIÓN ==========
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 10000))
+    debug = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+    
+    logger.info(f"🚀 Iniciando servidor en puerto {port}")
+    logger.info(f"🔧 Modo debug: {debug}")
+    
+    app.run(
+        debug=debug,
+        host='0.0.0.0',
+        port=port,
+        threaded=True
+    )
