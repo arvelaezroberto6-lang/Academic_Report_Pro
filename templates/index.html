@@ -17,6 +17,16 @@
         html { scroll-behavior: smooth; }
         .bg-grid { background-image: radial-gradient(circle at 1px 1px, rgba(0,0,0,0.05) 1px, transparent 0); background-size: 32px 32px; }
         .dark .bg-grid { background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0); }
+        
+        .tab-btn {
+            transition: all 0.2s ease;
+        }
+        .tab-btn.active {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
         .input-modern {
             width: 100%;
             padding: 12px 16px;
@@ -36,6 +46,7 @@
             border-color: #3b82f6;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
         }
+        
         .btn-agregar {
             background-color: #3b82f6;
             color: white;
@@ -44,11 +55,13 @@
             font-size: 14px;
             font-weight: 500;
             transition: all 0.2s ease;
+            cursor: pointer;
         }
         .btn-agregar:hover {
             background-color: #2563eb;
             transform: translateY(-1px);
         }
+        
         .autor-tag {
             display: inline-flex;
             align-items: center;
@@ -72,12 +85,17 @@
         .remove-autor:hover {
             opacity: 1;
         }
+        
+        .modo-container {
+            transition: all 0.3s ease;
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 font-sans">
     
     <div class="fixed inset-0 bg-grid z-[-1] opacity-50"></div>
     
+    <!-- Header -->
     <header class="border-b border-slate-200/50 dark:border-slate-800/50 bg-white/70 dark:bg-slate-950/70 backdrop-blur-md sticky top-0 z-50">
         <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -85,6 +103,7 @@
                     <span class="text-white text-sm font-black">AR</span>
                 </div>
                 <span class="font-extrabold text-xl">Academic Report Pro</span>
+                <span class="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full">Beta</span>
             </div>
             <div class="flex items-center gap-4">
                 <button id="themeToggle" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
@@ -94,18 +113,37 @@
         </div>
     </header>
     
-    <section class="max-w-4xl mx-auto px-4 py-12">
+    <!-- Hero -->
+    <section class="text-center pt-12 pb-8 px-4">
+        <div class="max-w-3xl mx-auto">
+            <h1 class="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                Academic Report Pro
+            </h1>
+            <p class="text-lg text-slate-600 dark:text-slate-400">
+                Generador de informes académicos con IA. <span class="font-semibold">8 normas • 3 modos • IA integrada</span>
+            </p>
+        </div>
+    </section>
+    
+    <!-- Generador principal -->
+    <section class="max-w-4xl mx-auto px-4 pb-12">
         <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200/80 dark:border-slate-800/80 overflow-hidden">
-            <div class="h-2 w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
+            <div class="h-1 w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
             
-            <div class="p-8">
-                <h1 class="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                    Generador de Informes con IA
-                </h1>
+            <div class="p-6 md:p-8">
                 
-                <!-- Tipo de informe -->
-                <div class="mb-6">
-                    <label class="block text-sm font-bold mb-2">📋 Tipo de informe</label>
+                <!-- TABS DE MODO (3 modos: Rápido, Automático, Manual) -->
+                <div class="flex gap-2 mb-6 bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl">
+                    <button id="btnRapido" class="tab-btn flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all active">⚡ Rápido</button>
+                    <button id="btnAuto" class="tab-btn flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all">🤖 Automático</button>
+                    <button id="btnManual" class="tab-btn flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all">✍️ Manual</button>
+                </div>
+                
+                <!-- Tipo de informe (NUEVO) -->
+                <div class="mb-5">
+                    <label class="block text-sm font-bold mb-2 text-slate-700 dark:text-slate-300">
+                        <i class="fas fa-flask text-blue-500 mr-2"></i> Tipo de informe
+                    </label>
                     <select id="tipoInforme" class="input-modern">
                         <option value="academico">📚 Académico general</option>
                         <option value="laboratorio">🔬 Informe de laboratorio</option>
@@ -114,27 +152,59 @@
                     </select>
                 </div>
                 
-                <!-- Tema -->
-                <div class="mb-6">
-                    <label class="block text-sm font-bold mb-2">📌 Tema del informe</label>
-                    <input type="text" id="tema" placeholder="Ej: Reconocimiento de carbohidratos, lípidos y proteínas" class="input-modern">
+                <!-- Tema principal -->
+                <div class="mb-5">
+                    <label class="block text-sm font-bold mb-2 text-slate-700 dark:text-slate-300">
+                        <i class="fas fa-tag text-blue-500 mr-2"></i> Tema del informe
+                    </label>
+                    <input type="text" id="tema" placeholder="Ej: Impacto de la inteligencia artificial en la educación" class="input-modern">
                 </div>
                 
-                <!-- Información adicional para el modo rápido -->
-                <div class="mb-6">
-                    <label class="block text-sm font-bold mb-2">📝 Información adicional (opcional)</label>
-                    <textarea id="infoAdicional" rows="4" placeholder="Ej: Procedimiento: Se usó reactivo de Benedict, lugol, Sudán III, nitrato de plata, ácido nítrico y Biuret. Resultados: positivo para glucosa (naranja), positivo para almidón (negro), positivo para lípidos (rojo), positivo para cloruros (blanco lechoso), positivo para proteínas (amarillo y violeta)..." class="input-modern resize-y"></textarea>
+                <!-- Modo Rápido (visible por defecto) -->
+                <div id="modoRapido" class="modo-container mb-5">
+                    <label class="block text-sm font-bold mb-2 text-slate-700 dark:text-slate-300">
+                        <i class="fas fa-pen text-blue-500 mr-2"></i> Descripción o instrucciones
+                    </label>
+                    <textarea id="temaRapido" rows="4" placeholder="Describe tu tema en detalle o da instrucciones específicas..." class="input-modern resize-y"></textarea>
+                </div>
+                
+                <!-- Modo Automático (oculto inicialmente) -->
+                <div id="modoAuto" class="modo-container mb-5" style="display:none;">
+                    <label class="block text-sm font-bold mb-2 text-slate-700 dark:text-slate-300">
+                        <i class="fas fa-file-alt text-blue-500 mr-2"></i> Contenido completo
+                    </label>
+                    <textarea id="textoCompleto" rows="8" placeholder="Pega aquí TODO tu contenido. La IA lo organizará y mejorará..." class="input-modern resize-y"></textarea>
+                </div>
+                
+                <!-- Modo Manual (oculto inicialmente) -->
+                <div id="modoManual" class="modo-container mb-5" style="display:none;">
+                    <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl mb-4">
+                        <p class="text-sm text-blue-800 dark:text-blue-300"><i class="fas fa-info-circle mr-2"></i> Completa cada sección manualmente. La IA respetará tu contenido.</p>
+                    </div>
+                    <div class="space-y-4">
+                        <div><label class="text-xs font-bold text-slate-500 uppercase">1. INTRODUCCIÓN</label><textarea id="introManual" rows="3" class="input-modern mt-1"></textarea></div>
+                        <div><label class="text-xs font-bold text-slate-500 uppercase">2. OBJETIVOS</label><textarea id="objetivosManual" rows="3" class="input-modern mt-1"></textarea></div>
+                        <div><label class="text-xs font-bold text-slate-500 uppercase">3. MARCO TEÓRICO</label><textarea id="marcoManual" rows="4" class="input-modern mt-1"></textarea></div>
+                        <div><label class="text-xs font-bold text-slate-500 uppercase">4. METODOLOGÍA</label><textarea id="metodologiaManual" rows="3" class="input-modern mt-1"></textarea></div>
+                        <div><label class="text-xs font-bold text-slate-500 uppercase">5. DESARROLLO</label><textarea id="desarrolloManual" rows="5" class="input-modern mt-1"></textarea></div>
+                        <div><label class="text-xs font-bold text-slate-500 uppercase">6. CONCLUSIONES</label><textarea id="conclusionesManual" rows="3" class="input-modern mt-1"></textarea></div>
+                        <div><label class="text-xs font-bold text-slate-500 uppercase">7. RECOMENDACIONES</label><textarea id="recomendacionesManual" rows="3" class="input-modern mt-1"></textarea></div>
+                    </div>
                 </div>
                 
                 <!-- Autor principal -->
                 <div class="mb-4">
-                    <label class="block text-sm font-bold mb-2">👤 Autor principal</label>
+                    <label class="block text-sm font-bold mb-2 text-slate-700 dark:text-slate-300">
+                        <i class="fas fa-user text-blue-500 mr-2"></i> Autor principal
+                    </label>
                     <input type="text" id="nombre" placeholder="Nombre del estudiante" class="input-modern">
                 </div>
                 
-                <!-- Autores adicionales -->
+                <!-- Autores adicionales (NUEVO) -->
                 <div class="mb-4">
-                    <label class="block text-sm font-bold mb-2">👥 Autores adicionales</label>
+                    <label class="block text-sm font-bold mb-2 text-slate-700 dark:text-slate-300">
+                        <i class="fas fa-users text-blue-500 mr-2"></i> Autores adicionales
+                    </label>
                     <div class="flex gap-2 mb-2">
                         <input type="text" id="nuevoAutor" placeholder="Nombre del compañero" class="input-modern flex-1">
                         <button id="btnAgregarAutor" class="btn-agregar"><i class="fas fa-plus mr-1"></i> Agregar</button>
@@ -142,70 +212,108 @@
                     <div id="listaAutores" class="flex flex-wrap gap-2 mt-2"></div>
                 </div>
                 
-                <!-- Asignatura, profesor, institución -->
+                <!-- Datos adicionales -->
                 <div class="grid md:grid-cols-3 gap-4 mb-4">
                     <input type="text" id="asignatura" placeholder="Asignatura" class="input-modern">
                     <input type="text" id="profesor" placeholder="Profesor" class="input-modern">
                     <input type="text" id="institucion" placeholder="Institución" class="input-modern">
                 </div>
                 
-                <!-- Fecha personalizable -->
-                <div class="mb-6">
-                    <label class="block text-sm font-bold mb-2">📅 Fecha de entrega</label>
+                <!-- Fecha personalizable (NUEVO) -->
+                <div class="mb-5">
+                    <label class="block text-sm font-bold mb-2 text-slate-700 dark:text-slate-300">
+                        <i class="fas fa-calendar-alt text-blue-500 mr-2"></i> Fecha de entrega
+                    </label>
                     <input type="date" id="fechaEntrega" class="input-modern">
                 </div>
                 
-                <!-- Norma académica -->
-                <div class="mb-6">
-                    <label class="block text-sm font-bold mb-2">📚 Norma académica</label>
+                <!-- Norma académica (8 normas) -->
+                <div class="mb-5">
+                    <label class="block text-sm font-bold mb-2 text-slate-700 dark:text-slate-300">
+                        <i class="fas fa-book text-blue-500 mr-2"></i> Norma académica
+                    </label>
                     <select id="norma" class="input-modern">
-                        <option value="apa7">APA 7ª Edición</option>
-                        <option value="apa6">APA 6ª Edición</option>
-                        <option value="icontec">ICONTEC (Colombia)</option>
-                        <option value="vancouver">Vancouver</option>
-                        <option value="chicago">Chicago</option>
-                        <option value="harvard">Harvard</option>
-                        <option value="mla">MLA</option>
-                        <option value="ieee">IEEE</option>
+                        <option value="apa7">📘 APA 7ª Edición</option>
+                        <option value="apa6">📗 APA 6ª Edición</option>
+                        <option value="icontec">🇨🇴 ICONTEC (Colombia)</option>
+                        <option value="vancouver">🩺 Vancouver</option>
+                        <option value="chicago">📖 Chicago</option>
+                        <option value="harvard">💼 Harvard</option>
+                        <option value="mla">✍️ MLA</option>
+                        <option value="ieee">⚡ IEEE</option>
                     </select>
                 </div>
                 
                 <!-- Modo referencias -->
-                <div class="mb-6">
-                    <label class="block text-sm font-bold mb-2">📖 Modo referencias</label>
+                <div class="mb-5">
+                    <label class="block text-sm font-bold mb-2 text-slate-700 dark:text-slate-300">
+                        <i class="fas fa-cog text-blue-500 mr-2"></i> Modo referencias
+                    </label>
                     <select id="modoReferencias" class="input-modern">
-                        <option value="auto">🤖 Automático (IA genera)</option>
+                        <option value="auto">🤖 Automático (IA genera referencias)</option>
                         <option value="manual">📝 Manual (tú escribes)</option>
                         <option value="mixto">🔄 Mixto (ambos)</option>
                     </select>
                 </div>
                 
-                <div id="campoReferenciasManual" style="display:none;" class="mb-6">
-                    <label class="block text-sm font-bold mb-2">✏️ Tus referencias</label>
+                <!-- Campo referencias manuales -->
+                <div id="campoReferenciasManual" class="mb-5" style="display:none;">
+                    <label class="block text-sm font-bold mb-2 text-slate-700 dark:text-slate-300">
+                        <i class="fas fa-list-alt text-blue-500 mr-2"></i> Tus referencias
+                    </label>
                     <textarea id="referenciasManual" rows="3" placeholder="Ej: Pérez, J. (2022). Título. Editorial." class="input-modern"></textarea>
                 </div>
                 
+                <!-- Botón generar -->
                 <button id="btnGenerar" class="w-full py-4 rounded-xl font-extrabold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-xl transition-all text-lg">
                     <i class="fas fa-magic mr-2"></i> Generar Informe PDF
                 </button>
                 
                 <div class="flex justify-center gap-6 mt-6 text-xs text-slate-500">
-                    <span><i class="fas fa-lock"></i> Seguro</span>
+                    <span><i class="fas fa-lock"></i> Privado</span>
                     <span><i class="fas fa-bolt"></i> Rápido</span>
                     <span><i class="fas fa-tag"></i> Gratis</span>
+                    <span><i class="fas fa-check-circle"></i> 8 normas</span>
                 </div>
             </div>
         </div>
     </section>
     
-    <footer class="text-center py-8 text-sm text-slate-400 border-t border-slate-200 dark:border-slate-800">
+    <!-- Footer -->
+    <footer class="border-t border-slate-200 dark:border-slate-800 py-6 text-center text-sm text-slate-400">
         <p>Academic Report Pro — Generador de informes académicos con IA</p>
+        <p class="text-xs mt-1">"De la idea al informe profesional en segundos"</p>
     </footer>
     
     <script>
+        // ========== TODAS LAS FUNCIONES ORIGINALES ==========
+        
+        let modoActual = 'rapido';
         let autores = [];
         
-        // Agregar autor
+        // Tabs de modo
+        function actualizarModo(modo) {
+            modoActual = modo;
+            document.getElementById('modoRapido').style.display = modo === 'rapido' ? 'block' : 'none';
+            document.getElementById('modoAuto').style.display = modo === 'auto' ? 'block' : 'none';
+            document.getElementById('modoManual').style.display = modo === 'manual' ? 'block' : 'none';
+            
+            const btns = { btnRapido: 'rapido', btnAuto: 'auto', btnManual: 'manual' };
+            for (const [btnId, modoId] of Object.entries(btns)) {
+                const btn = document.getElementById(btnId);
+                if (modoId === modo) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            }
+        }
+        
+        document.getElementById('btnRapido').onclick = () => actualizarModo('rapido');
+        document.getElementById('btnAuto').onclick = () => actualizarModo('auto');
+        document.getElementById('btnManual').onclick = () => actualizarModo('manual');
+        
+        // Autores adicionales
         document.getElementById('btnAgregarAutor').onclick = () => {
             const nuevoAutor = document.getElementById('nuevoAutor').value.trim();
             if (nuevoAutor && !autores.includes(nuevoAutor)) {
@@ -233,7 +341,7 @@
             });
         }
         
-        // Tema oscuro
+        // Tema oscuro/claro
         const themeToggle = document.getElementById('themeToggle');
         const themeIcon = document.getElementById('themeIcon');
         
@@ -267,13 +375,14 @@
         
         // Generar informe
         document.getElementById('btnGenerar').onclick = async () => {
-            const tema = document.getElementById('tema').value.trim();
-            if (!tema) {
-                Swal.fire('Error', 'Por favor ingresa un tema', 'error');
+            let tema = document.getElementById('tema').value;
+            let temaRapido = document.getElementById('temaRapido').value;
+            if (modoActual === 'rapido') tema = temaRapido;
+            
+            if (!tema || tema.trim() === '') {
+                Swal.fire('Error', 'Por favor ingresa un tema para el informe', 'error');
                 return;
             }
-            
-            Swal.fire({ title: 'Generando informe...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
             
             // Formatear fecha
             let fechaEntrega = document.getElementById('fechaEntrega').value;
@@ -282,20 +391,42 @@
                 fechaEntrega = `${day}/${month}/${year}`;
             }
             
+            Swal.fire({
+                title: '🤖 Generando informe...',
+                text: 'La IA está procesando tu información',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+            
             const datos = {
-                tema: tema,
-                texto_completo: document.getElementById('infoAdicional').value,
-                tipo_informe: document.getElementById('tipoInforme').value,
-                nombre: document.getElementById('nombre').value,
+                modo: modoActual,
+                nombre: document.getElementById('nombre').value || '',
                 otros_autores: autores,
-                asignatura: document.getElementById('asignatura').value,
-                profesor: document.getElementById('profesor').value,
-                institucion: document.getElementById('institucion').value,
+                tema: tema,
+                profesor: document.getElementById('profesor').value || '',
+                asignatura: document.getElementById('asignatura').value || '',
+                institucion: document.getElementById('institucion').value || '',
                 fecha_entrega: fechaEntrega,
-                norma: document.getElementById('norma').value,
+                tipo_informe: document.getElementById('tipoInforme').value,
+                norma: document.getElementById('norma').value || 'apa7',
                 modo_referencias: document.getElementById('modoReferencias').value,
-                referencias_manuales: document.getElementById('referenciasManual').value
+                referencias_manuales: document.getElementById('referenciasManual').value || '',
+                incluir_recomendaciones: true
             };
+            
+            if (modoActual === 'auto') {
+                datos.texto_completo = document.getElementById('textoCompleto').value;
+            } else if (modoActual === 'manual') {
+                datos.introduccion = document.getElementById('introManual').value;
+                datos.objetivos = document.getElementById('objetivosManual').value;
+                datos.marco_teorico = document.getElementById('marcoManual').value;
+                datos.metodologia = document.getElementById('metodologiaManual').value;
+                datos.desarrollo = document.getElementById('desarrolloManual').value;
+                datos.conclusiones = document.getElementById('conclusionesManual').value;
+                datos.recomendaciones = document.getElementById('recomendacionesManual').value;
+            } else {
+                datos.texto_completo = document.getElementById('temaRapido').value;
+            }
             
             try {
                 const response = await fetch('/generar', {
@@ -316,7 +447,7 @@
                     Swal.fire('Error', result.error, 'error');
                 }
             } catch (error) {
-                Swal.fire('Error', 'No se pudo generar', 'error');
+                Swal.fire('Error', 'No se pudo generar el informe', 'error');
             }
         };
     </script>
