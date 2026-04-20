@@ -24,7 +24,7 @@ print("🚀 ACADEMIC REPORT PRO - VERSIÓN COMPLETA")
 print(f"🔑 Groq API Key cargada: {'SÍ ✅' if GROQ_API_KEY else 'NO ❌'}")
 print("=" * 50)
 
-# ========== NORMAS ACADÉMICAS ==========
+# ========== NORMAS ACADÉMICAS (TODAS) ==========
 NORMAS_CONFIG = {
     'apa7': {'nombre': 'APA 7ª Edición', 'margen_superior': 72, 'margen_inferior': 72,
              'margen_izquierdo': 72, 'margen_derecho': 72, 'fuente': 'Times-Roman', 
@@ -53,10 +53,8 @@ NORMAS_CONFIG = {
 }
 
 def limpiar_texto(texto):
-    """Limpia caracteres especiales y prepara texto para ReportLab"""
     if not texto:
         return ""
-    
     try:
         if isinstance(texto, bytes):
             texto = texto.decode('utf-8')
@@ -76,7 +74,6 @@ def limpiar_texto(texto):
     texto = texto.replace('Conclusions', 'CONCLUSIONES')
     texto = texto.replace('CONCLUSIONS', 'CONCLUSIONES')
     texto = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]', '', texto)
-    
     return texto
 
 def contenido_local_generico(tema):
@@ -102,20 +99,20 @@ def extraer_seccion(contenido, nombre):
     return ""
 
 def generar_informe_con_ia(tema, tipo_informe="academico", info_extra=""):
-    """Genera el informe completo usando IA según el tipo de informe"""
-    
     if not GROQ_API_KEY:
         print("❌ No hay API key configurada")
         return None
 
     print(f"🤖 Generando informe de tipo: {tipo_informe} para: {tema[:50]}...")
 
+    # ========== PROMPTS ESPECÍFICOS POR TIPO DE INFORME ==========
+    
     if tipo_informe == "laboratorio":
         prompt = f"""Genera un INFORME DE LABORATORIO completo y profesional sobre: "{tema}"
 
 Información adicional: {info_extra if info_extra else 'No se proporcionaron datos específicos'}
 
-⚠️ ESTRUCTURA OBLIGATORIA (debe ser exacta):
+⚠️ ESTRUCTURA OBLIGATORIA:
 
 **TÍTULO**
 **1. INTRODUCCIÓN** (Objetivo, fundamento teórico)
@@ -185,7 +182,8 @@ Escribe en español, tono académico-profesional. Usa **negritas** para títulos
     data = {
         "model": "llama-3.3-70b-versatile",
         "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": 6000
+        "max_tokens": 6000,
+        "temperature": 0.7
     }
     
     try:
@@ -350,9 +348,15 @@ def index():
 def generar():
     try:
         datos = request.json
+        modo = datos.get('modo', 'rapido')
         tema = datos.get('tema', '')
-        texto_auto = datos.get('texto_completo', '')
+        texto_auto = datos.get('texto_completo', '') if modo in ['auto', 'rapido'] else ''
         tipo_informe = datos.get('tipo_informe', 'academico')
+        modo_referencias = datos.get('modo_referencias', 'auto')
+        referencias_manuales = datos.get('referencias_manuales', '')
+        
+        if modo == 'rapido' and texto_auto:
+            tema = texto_auto
         
         if not tema or len(tema) < 3:
             return jsonify({'success': False, 'error': 'Por favor ingresa un tema válido'}), 400
@@ -379,7 +383,9 @@ def generar():
             'institucion': datos.get('institucion', ''),
             'fecha_entrega': datos.get('fecha_entrega', ''),
             'tipo_informe': tipo_informe,
-            'norma': datos.get('norma', 'apa7')
+            'norma': datos.get('norma', 'apa7'),
+            'modo_referencias': modo_referencias,
+            'referencias_manuales': referencias_manuales
         }
         
         filename, filepath = generador.generar_pdf(datos_usuario, secciones)
