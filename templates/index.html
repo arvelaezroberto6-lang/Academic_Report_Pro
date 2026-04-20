@@ -1,485 +1,56 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Academic Report Pro | Generador de Informes Académicos</title>
-    
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
-        }
-        
-        body {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
-            min-height: 100vh;
-            color: #e2e8f0;
-        }
-        
-        /* Contenedor principal */
-        .container {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 40px 24px;
-        }
-        
-        /* Header */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 50px;
-            flex-wrap: wrap;
-            gap: 16px;
-        }
-        
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .logo-icon {
-            width: 45px;
-            height: 45px;
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .logo-icon i {
-            font-size: 24px;
-            color: white;
-        }
-        
-        .logo-text h1 {
-            font-size: 22px;
-            font-weight: 700;
-            background: linear-gradient(135deg, #fff, #94a3b8);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-        
-        .logo-text p {
-            font-size: 12px;
-            color: #94a3b8;
-        }
-        
-        .badge {
-            background: rgba(59,130,246,0.2);
-            padding: 6px 14px;
-            border-radius: 30px;
-            font-size: 12px;
-            font-weight: 500;
-            color: #60a5fa;
-            border: 1px solid rgba(59,130,246,0.3);
-        }
-        
-        /* Hero */
-        .hero {
-            text-align: center;
-            margin-bottom: 50px;
-        }
-        
-        .hero h2 {
-            font-size: 42px;
-            font-weight: 700;
-            margin-bottom: 16px;
-            background: linear-gradient(135deg, #fff, #94a3b8);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-        
-        .hero p {
-            color: #94a3b8;
-            font-size: 18px;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        
-        /* Tarjeta principal */
-        .card {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(10px);
-            border-radius: 28px;
-            padding: 32px;
-            border: 1px solid rgba(255,255,255,0.1);
-            margin-bottom: 40px;
-        }
-        
-        /* Input principal */
-        .input-group {
-            margin-bottom: 24px;
-        }
-        
-        .input-group label {
-            display: block;
-            font-size: 14px;
-            font-weight: 500;
-            margin-bottom: 8px;
-            color: #cbd5e1;
-        }
-        
-        .input-principal {
-            width: 100%;
-            padding: 16px 20px;
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 16px;
-            font-size: 16px;
-            color: white;
-            transition: all 0.3s ease;
-        }
-        
-        .input-principal:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
-        }
-        
-        .input-principal::placeholder {
-            color: #64748b;
-        }
-        
-        /* Campos secundarios */
-        .campos-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-        
-        .campo {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 14px;
-            padding: 12px 16px;
-            font-size: 14px;
-            color: white;
-            transition: all 0.3s ease;
-        }
-        
-        .campo:focus {
-            outline: none;
-            border-color: #3b82f6;
-        }
-        
-        .campo::placeholder {
-            color: #64748b;
-        }
-        
-        /* Selector de normas */
-        .normas-selector {
-            margin-bottom: 24px;
-        }
-        
-        .normas-selector select {
-            width: 100%;
-            padding: 14px 16px;
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 14px;
-            color: white;
-            font-size: 14px;
-            cursor: pointer;
-        }
-        
-        /* Botón principal */
-        .btn-generar {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-            border: none;
-            border-radius: 16px;
-            font-size: 18px;
-            font-weight: 600;
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 8px;
-        }
-        
-        .btn-generar:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px -5px rgba(59,130,246,0.4);
-        }
-        
-        .btn-generar:active {
-            transform: translateY(0);
-        }
-        
-        /* Mensaje de resultado */
-        .resultado {
-            margin-top: 24px;
-            padding: 20px;
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            border-radius: 16px;
-            display: none;
-        }
-        
-        .resultado.show {
-            display: block;
-            animation: fadeIn 0.3s ease;
-        }
-        
-        .resultado h4 {
-            color: #10b981;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .resultado p {
-            color: #cbd5e1;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-        
-        /* Grid de beneficios */
-        .beneficios {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-        
-        .beneficio-card {
-            background: rgba(30, 41, 59, 0.5);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 24px;
-            text-align: center;
-            border: 1px solid rgba(255,255,255,0.05);
-            transition: all 0.3s ease;
-        }
-        
-        .beneficio-card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(59,130,246,0.3);
-        }
-        
-        .beneficio-icon {
-            width: 55px;
-            height: 55px;
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-            border-radius: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 16px;
-        }
-        
-        .beneficio-icon i {
-            font-size: 26px;
-            color: white;
-        }
-        
-        .beneficio-card h3 {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-        
-        .beneficio-card p {
-            font-size: 13px;
-            color: #94a3b8;
-        }
-        
-        /* Footer */
-        .footer {
-            text-align: center;
-            padding-top: 30px;
-            border-top: 1px solid #334155;
-            color: #64748b;
-            font-size: 13px;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        /* Responsive */
-        @media (max-width: 640px) {
-            .container {
-                padding: 20px 16px;
-            }
-            .hero h2 {
-                font-size: 28px;
-            }
-            .card {
-                padding: 20px;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<title>Academic Report Pro</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
-<body>
-    <div class="container">
-        
-        <!-- Header -->
-        <div class="header">
-            <div class="logo">
-                <div class="logo-icon">
-                    <i class="fas fa-file-alt"></i>
-                </div>
-                <div class="logo-text">
-                    <h1>Academic Report Pro</h1>
-                    <p>Generador de informes con IA</p>
-                </div>
-            </div>
-            <div class="badge">
-                <i class="fas fa-rocket"></i> Beta
-            </div>
-        </div>
-        
-        <!-- Hero -->
-        <div class="hero">
-            <h2>📄 Generador de Informes<br>Académicos</h2>
-            <p>Crea informes profesionales con formato académico en segundos</p>
-        </div>
-        
-        <!-- Tarjeta principal -->
-        <div class="card">
-            
-            <!-- Input principal -->
-            <div class="input-group">
-                <label><i class="fas fa-tag"></i> Tema del informe</label>
-                <input type="text" id="tema" class="input-principal" 
-                       placeholder="Ej: Impacto de la inteligencia artificial en la educación">
-            </div>
-            
-            <!-- Campos adicionales -->
-            <div class="campos-grid">
-                <input type="text" id="nombre" class="campo" placeholder="Nombre del estudiante">
-                <input type="text" id="profesor" class="campo" placeholder="Nombre del profesor">
-                <input type="text" id="asignatura" class="campo" placeholder="Asignatura">
-                <input type="text" id="institucion" class="campo" placeholder="Institución">
-            </div>
-            
-            <!-- Selector de normas -->
-            <div class="normas-selector">
-                <select id="norma">
-                    <option value="apa7">📘 APA 7ª Edición (Recomendado)</option>
-                    <option value="apa6">📗 APA 6ª Edición</option>
-                    <option value="icontec">🇨🇴 ICONTEC (Colombia)</option>
-                    <option value="vancouver">🩺 Vancouver (Medicina)</option>
-                    <option value="chicago">📖 Chicago</option>
-                    <option value="harvard">💼 Harvard</option>
-                    <option value="mla">✍️ MLA</option>
-                    <option value="ieee">⚡ IEEE (Ingeniería)</option>
-                </select>
-            </div>
-            
-            <!-- Botón -->
-            <button class="btn-generar" onclick="generarInforme()">
-                <i class="fas fa-file-pdf"></i> Generar Informe PDF
-            </button>
-            
-            <!-- Resultado (simulación) -->
-            <div id="resultado" class="resultado">
-                <h4><i class="fas fa-check-circle"></i> ¡Informe generado!</h4>
-                <p id="resultadoTexto">Tu informe académico está listo para descargar...</p>
-            </div>
-        </div>
-        
-        <!-- Beneficios -->
-        <div class="beneficios">
-            <div class="beneficio-card">
-                <div class="beneficio-icon">
-                    <i class="fas fa-robot"></i>
-                </div>
-                <h3>IA integrada</h3>
-                <p>Generación inteligente de contenido</p>
-            </div>
-            <div class="beneficio-card">
-                <div class="beneficio-icon">
-                    <i class="fas fa-graduation-cap"></i>
-                </div>
-                <h3>8 normas académicas</h3>
-                <p>APA, ICONTEC, Vancouver, Harvard, MLA, IEEE, Chicago</p>
-            </div>
-            <div class="beneficio-card">
-                <div class="beneficio-icon">
-                    <i class="fas fa-search"></i>
-                </div>
-                <h3>Referencias reales</h3>
-                <p>Búsqueda en arXiv y OpenAlex</p>
-            </div>
-            <div class="beneficio-card">
-                <div class="beneficio-icon">
-                    <i class="fas fa-bolt"></i>
-                </div>
-                <h3>3 modos de uso</h3>
-                <p>Manual, Automático y Rápido</p>
-            </div>
-        </div>
-        
-        <!-- Footer -->
-        <div class="footer">
-            <p>© 2024 Academic Report Pro — Generador de informes académicos con IA</p>
-            <p style="margin-top: 8px; font-size: 11px;">
-                <i class="fas fa-shield-alt"></i> Formato profesional · Referencias reales · Listo para entregar
-            </p>
-        </div>
-    </div>
-    
-    <script>
-        function generarInforme() {
-            // Obtener valores
-            const tema = document.getElementById('tema').value;
-            const nombre = document.getElementById('nombre').value;
-            const profesor = document.getElementById('profesor').value;
-            const asignatura = document.getElementById('asignatura').value;
-            const institucion = document.getElementById('institucion').value;
-            const normaSelect = document.getElementById('norma');
-            const norma = normaSelect.options[normaSelect.selectedIndex].text;
-            
-            // Validar tema
-            if (!tema) {
-                alert('⚠️ Por favor, ingresa un tema para el informe');
-                return;
-            }
-            
-            // Mostrar resultado
-            const resultadoDiv = document.getElementById('resultado');
-            const resultadoTexto = document.getElementById('resultadoTexto');
-            
-            resultadoTexto.innerHTML = `
-                <strong>Tema:</strong> ${tema}<br>
-                <strong>Estudiante:</strong> ${nombre || 'No especificado'}<br>
-                <strong>Profesor:</strong> ${profesor || 'No especificado'}<br>
-                <strong>Asignatura:</strong> ${asignatura || 'No especificada'}<br>
-                <strong>Institución:</strong> ${institucion || 'No especificada'}<br>
-                <strong>Norma seleccionada:</strong> ${norma}<br><br>
-                🎓 Generando informe académico profesional...<br>
-                ✅ Formato aplicado correctamente<br>
-                📚 Referencias buscadas en bases académicas<br>
-                📄 PDF listo para descargar
-            `;
-            
-            resultadoDiv.classList.add('show');
-            
-            // Scroll al resultado
-            resultadoDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            
-            // Opcional: efecto de confeti (diversión)
-            console.log('🎉 Informe generado para:', tema);
-        }
-    </script>
+
+<body class="bg-gray-900 text-white flex items-center justify-center h-screen">
+
+<div class="bg-gray-800 p-8 rounded-xl w-96">
+    <h1 class="text-2xl mb-4 text-center">📄 Generador de Informes</h1>
+
+    <input id="tema" placeholder="Tema"
+    class="w-full mb-3 p-2 rounded bg-gray-700">
+
+    <input id="nombre" placeholder="Nombre"
+    class="w-full mb-3 p-2 rounded bg-gray-700">
+
+    <button onclick="generar()"
+    class="w-full bg-blue-600 p-2 rounded">Generar</button>
+</div>
+
+<script>
+async function generar(){
+    const tema = document.getElementById('tema').value;
+
+    Swal.fire({
+        title:'Generando...',
+        allowOutsideClick:false,
+        didOpen:()=>Swal.showLoading()
+    });
+
+    const r = await fetch('/generar',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+            tema:tema,
+            nombre:document.getElementById('nombre').value
+        })
+    });
+
+    const data = await r.json();
+
+    if(data.success){
+        Swal.close();
+        window.location = data.download_url;
+    }else{
+        Swal.fire('Error',data.error,'error');
+    }
+}
+</script>
+
 </body>
 </html>
