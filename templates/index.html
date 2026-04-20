@@ -1,56 +1,415 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-<meta charset="UTF-8">
-<title>Academic Report Pro</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic Report Pro | Generador de Informes Académicos con IA</title>
+    <meta name="description"
+        content="Genera informes académicos profesionales con IA. 8 normas académicas, 3 modos de uso, referencias automáticas y PDF listo para entregar.">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {'sans': ['Inter', 'sans-serif']},
+                }
+            }
+        }
+    </script>
+
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+
+        .step-number {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            margin: 0 auto 16px auto;
+        }
+    </style>
 </head>
 
-<body class="bg-gray-900 text-white flex items-center justify-center h-screen">
+<body class="bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100 font-sans">
 
-<div class="bg-gray-800 p-8 rounded-xl w-96">
-    <h1 class="text-2xl mb-4 text-center">📄 Generador de Informes</h1>
+    <!-- Header -->
+    <header class="border-b border-slate-200 dark:border-slate-800 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div
+                    class="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+                    <span class="text-white text-sm font-bold">AR</span>
+                </div>
+                <span class="font-bold text-lg">Academic Report Pro</span>
+                <span class="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">Beta</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <button id="themeToggle" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                    <i id="themeIcon" class="fas fa-moon text-slate-600 dark:text-slate-400"></i>
+                </button>
+                <a href="#generador"
+                    class="hidden sm:inline-flex px-4 py-2 bg-slate-900 text-white dark:bg-white dark:text-slate-900 rounded-lg text-sm font-medium hover:opacity-90 transition">
+                    Generar informe
+                </a>
+            </div>
+        </div>
+    </header>
 
-    <input id="tema" placeholder="Tema"
-    class="w-full mb-3 p-2 rounded bg-gray-700">
+    <!-- Hero -->
+    <section class="text-center py-12 px-4">
+        <div class="max-w-3xl mx-auto">
+            <h1
+                class="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                Generador de Informes Académicos con IA
+            </h1>
+            <p class="text-lg text-slate-600 dark:text-slate-400 mb-6">
+                Escribe tu tema y obtén un informe profesional en PDF con formato académico.
+                <span class="font-semibold text-slate-800 dark:text-slate-200">8 normas • 3 modos • IA integrada</span>
+            </p>
 
-    <input id="nombre" placeholder="Nombre"
-    class="w-full mb-3 p-2 rounded bg-gray-700">
+            <div class="flex justify-center gap-8 text-sm">
+                <div class="flex items-center gap-2"><i class="fas fa-check-circle text-green-500 text-xs"></i> APA 7ª
+                </div>
+                <div class="flex items-center gap-2"><i class="fas fa-check-circle text-green-500 text-xs"></i> ICONTEC
+                </div>
+                <div class="flex items-center gap-2"><i class="fas fa-check-circle text-green-500 text-xs"></i>
+                    Vancouver</div>
+                <div class="flex items-center gap-2"><i class="fas fa-check-circle text-green-500 text-xs"></i> 5 más
+                </div>
+            </div>
+        </div>
+    </section>
 
-    <button onclick="generar()"
-    class="w-full bg-blue-600 p-2 rounded">Generar</button>
-</div>
+    <!-- Sección CÓMO FUNCIONA (nueva) -->
+    <section class="max-w-5xl mx-auto px-4 py-12">
+        <h2 class="text-2xl font-bold text-center mb-8">📋 Cómo funciona</h2>
+        <div class="grid md:grid-cols-3 gap-6">
+            <div class="text-center p-4 rounded-xl bg-slate-50 dark:bg-slate-900/30">
+                <div class="step-number">1</div>
+                <h3 class="font-semibold text-lg mb-2">Escribe tu tema</h3>
+                <p class="text-sm text-slate-500">Ingresa el tema de tu informe o describe tu idea</p>
+            </div>
+            <div class="text-center p-4 rounded-xl bg-slate-50 dark:bg-slate-900/30">
+                <div class="step-number">2</div>
+                <h3 class="font-semibold text-lg mb-2">IA genera contenido</h3>
+                <p class="text-sm text-slate-500">La inteligencia artificial crea el informe automáticamente</p>
+            </div>
+            <div class="text-center p-4 rounded-xl bg-slate-50 dark:bg-slate-900/30">
+                <div class="step-number">3</div>
+                <h3 class="font-semibold text-lg mb-2">Descarga PDF</h3>
+                <p class="text-sm text-slate-500">Obtén tu informe profesional listo para entregar</p>
+            </div>
+        </div>
+    </section>
 
-<script>
-async function generar(){
-    const tema = document.getElementById('tema').value;
+    <!-- Generador principal -->
+    <section id="generador" class="max-w-4xl mx-auto px-4 pb-8">
+        <div
+            class="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
 
-    Swal.fire({
-        title:'Generando...',
-        allowOutsideClick:false,
-        didOpen:()=>Swal.showLoading()
-    });
+            <div class="flex border-b border-slate-200 dark:border-slate-800">
+                <button id="btnRapido"
+                    class="tab-btn flex-1 py-3 text-sm font-medium transition-all bg-blue-600 text-white">⚡
+                    Rápido</button>
+                <button id="btnAuto"
+                    class="tab-btn flex-1 py-3 text-sm font-medium transition-all text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800">🤖
+                    Automático</button>
+                <button id="btnManual"
+                    class="tab-btn flex-1 py-3 text-sm font-medium transition-all text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800">✍️
+                    Manual</button>
+            </div>
 
-    const r = await fetch('/generar',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-            tema:tema,
-            nombre:document.getElementById('nombre').value
-        })
-    });
+            <div class="p-6">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-1">📌 Tema del informe</label>
+                    <input type="text" id="tema" placeholder="Ej: Impacto de la inteligencia artificial en la educación"
+                        class="w-full p-3 border rounded-xl dark:bg-slate-800 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                </div>
 
-    const data = await r.json();
+                <div class="grid md:grid-cols-2 gap-3 mb-4">
+                    <input type="text" id="nombre" placeholder="Nombre del estudiante"
+                        class="p-3 border rounded-xl dark:bg-slate-800 dark:border-slate-700">
+                    <input type="text" id="asignatura" placeholder="Asignatura"
+                        class="p-3 border rounded-xl dark:bg-slate-800 dark:border-slate-700">
+                    <input type="text" id="profesor" placeholder="Profesor (opcional)"
+                        class="p-3 border rounded-xl dark:bg-slate-800 dark:border-slate-700">
+                    <input type="text" id="institucion" placeholder="Institución (opcional)"
+                        class="p-3 border rounded-xl dark:bg-slate-800 dark:border-slate-700">
+                </div>
 
-    if(data.success){
-        Swal.close();
-        window.location = data.download_url;
-    }else{
-        Swal.fire('Error',data.error,'error');
-    }
-}
-</script>
+                <details class="mb-4">
+                    <summary class="text-sm text-slate-500 cursor-pointer py-2">⚙️ Opciones avanzadas (normas,
+                        referencias)</summary>
+                    <div class="mt-3 space-y-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">📚 Norma académica</label>
+                            <select id="norma"
+                                class="w-full p-2 border rounded-xl dark:bg-slate-800 dark:border-slate-700">
+                                <option value="apa7">📘 APA 7ª Edición</option>
+                                <option value="apa6">📗 APA 6ª Edición</option>
+                                <option value="icontec">🇨🇴 ICONTEC (Colombia)</option>
+                                <option value="vancouver">🩺 Vancouver</option>
+                                <option value="chicago">📖 Chicago</option>
+                                <option value="harvard">💼 Harvard</option>
+                                <option value="mla">✍️ MLA</option>
+                                <option value="ieee">⚡ IEEE</option>
+                            </select>
+                        </div>
 
+                        <div>
+                            <label class="block text-sm font-medium mb-1">📖 Modo referencias</label>
+                            <select id="modoReferencias"
+                                class="w-full p-2 border rounded-xl dark:bg-slate-800 dark:border-slate-700">
+                                <option value="auto">🤖 Automático (IA genera)</option>
+                                <option value="manual">📝 Manual (tú escribes)</option>
+                                <option value="mixto">🔄 Mixto (ambos)</option>
+                            </select>
+                        </div>
+
+                        <div id="campoReferenciasManual" style="display:none;">
+                            <label class="block text-sm font-medium mb-1">✏️ Tus referencias (una por línea)</label>
+                            <textarea id="referenciasManual" rows="3" placeholder="Pérez, J. (2022). Título. Editorial."
+                                class="w-full p-2 border rounded-xl dark:bg-slate-800 dark:border-slate-700"></textarea>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="incluirRecomendaciones" checked class="w-4 h-4">
+                            <label class="text-sm">Incluir sección de recomendaciones</label>
+                        </div>
+                    </div>
+                </details>
+
+                <div id="modoRapido" class="mb-4">
+                    <textarea id="temaRapido" rows="3" placeholder="Describe tu tema en detalle..."
+                        class="w-full p-3 border rounded-xl dark:bg-slate-800 dark:border-slate-700"></textarea>
+                </div>
+
+                <div id="modoAuto" style="display:none;" class="mb-4">
+                    <textarea id="textoCompleto" rows="6" placeholder="Escribe aquí TODO lo que sabes sobre el tema..."
+                        class="w-full p-3 border rounded-xl dark:bg-slate-800 dark:border-slate-700"></textarea>
+                </div>
+
+                <div id="modoManual" style="display:none;" class="space-y-3 mb-4">
+                    <textarea id="introManual" rows="3" placeholder="1. INTRODUCCIÓN"
+                        class="w-full p-3 border rounded-xl dark:bg-slate-800 dark:border-slate-700"></textarea>
+                    <textarea id="objetivosManual" rows="3" placeholder="2. OBJETIVOS"
+                        class="w-full p-3 border rounded-xl dark:bg-slate-800 dark:border-slate-700"></textarea>
+                    <textarea id="marcoManual" rows="4" placeholder="3. MARCO TEÓRICO"
+                        class="w-full p-3 border rounded-xl dark:bg-slate-800 dark:border-slate-700"></textarea>
+                    <textarea id="metodologiaManual" rows="3" placeholder="4. METODOLOGÍA"
+                        class="w-full p-3 border rounded-xl dark:bg-slate-800 dark:border-slate-700"></textarea>
+                    <textarea id="desarrolloManual" rows="4" placeholder="5. DESARROLLO"
+                        class="w-full p-3 border rounded-xl dark:bg-slate-800 dark:border-slate-700"></textarea>
+                    <textarea id="conclusionesManual" rows="3" placeholder="6. CONCLUSIONES"
+                        class="w-full p-3 border rounded-xl dark:bg-slate-800 dark:border-slate-700"></textarea>
+                    <textarea id="recomendacionesManual" rows="3" placeholder="7. RECOMENDACIONES"
+                        class="w-full p-3 border rounded-xl dark:bg-slate-800 dark:border-slate-700"></textarea>
+                </div>
+
+                <button id="btnGenerar"
+                    class="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-lg transition-all text-lg">
+                    🤖 Generar informe PDF
+                </button>
+
+                <p class="text-center text-xs text-slate-400 mt-4">
+                    Gratis • Sin registro • IA integrada • Formato profesional
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Características -->
+    <section class="max-w-5xl mx-auto px-4 py-12">
+        <div class="grid md:grid-cols-3 gap-4 text-center">
+            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50">
+                <i class="fas fa-book text-2xl text-blue-600 mb-2"></i>
+                <h3 class="font-semibold">8 normas académicas</h3>
+                <p class="text-sm text-slate-500">APA, ICONTEC, Vancouver, Chicago, Harvard, MLA, IEEE</p>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50">
+                <i class="fas fa-robot text-2xl text-blue-600 mb-2"></i>
+                <h3 class="font-semibold">IA integrada</h3>
+                <p class="text-sm text-slate-500">Generación inteligente de contenido</p>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50">
+                <i class="fas fa-file-pdf text-2xl text-blue-600 mb-2"></i>
+                <h3 class="font-semibold">PDF profesional</h3>
+                <p class="text-sm text-slate-500">Formato listo para entregar</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer completo -->
+    <footer class="border-t border-slate-200 dark:border-slate-800 py-8">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="grid md:grid-cols-3 gap-8 text-sm">
+                <div>
+                    <h4 class="font-semibold mb-3">Academic Report Pro</h4>
+                    <p class="text-slate-500 dark:text-slate-400 text-xs">Generador de informes académicos con
+                        inteligencia artificial. Formato profesional en segundos.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-3">Enlaces</h4>
+                    <ul class="space-y-1 text-xs text-slate-500 dark:text-slate-400">
+                        <li><a href="#generador" class="hover:text-blue-600">Generar informe</a></li>
+                        <li><a href="#" class="hover:text-blue-600">Cómo funciona</a></li>
+                        <li><a href="#" class="hover:text-blue-600">Preguntas frecuentes</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-3">Legal</h4>
+                    <ul class="space-y-1 text-xs text-slate-500 dark:text-slate-400">
+                        <li><a href="#" class="hover:text-blue-600">Términos de uso</a></li>
+                        <li><a href="#" class="hover:text-blue-600">Política de privacidad</a></li>
+                        <li><a href="#" class="hover:text-blue-600">Contacto</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="text-center text-xs text-slate-400 pt-8 mt-4 border-t border-slate-200 dark:border-slate-800">
+                <p>© 2025 Academic Report Pro — "De la idea al informe profesional en segundos"</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // ========== FUNCIONALIDAD COMPLETA ==========
+
+        let modoActual = 'rapido';
+
+        function actualizarModo(modo) {
+            modoActual = modo;
+            document.getElementById('modoRapido').style.display = modo === 'rapido' ? 'block' : 'none';
+            document.getElementById('modoAuto').style.display = modo === 'auto' ? 'block' : 'none';
+            document.getElementById('modoManual').style.display = modo === 'manual' ? 'block' : 'none';
+
+            const btns = {btnRapido: 'rapido', btnAuto: 'auto', btnManual: 'manual'};
+            for (const [btnId, modoId] of Object.entries(btns)) {
+                const btn = document.getElementById(btnId);
+                if (modoId === modo) {
+                    btn.className = 'tab-btn flex-1 py-3 text-sm font-medium transition-all bg-blue-600 text-white';
+                } else {
+                    btn.className = 'tab-btn flex-1 py-3 text-sm font-medium transition-all text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800';
+                }
+            }
+        }
+
+        document.getElementById('btnRapido').onclick = () => actualizarModo('rapido');
+        document.getElementById('btnAuto').onclick = () => actualizarModo('auto');
+        document.getElementById('btnManual').onclick = () => actualizarModo('manual');
+
+        const modoReferencias = document.getElementById('modoReferencias');
+        const campoReferenciasManual = document.getElementById('campoReferenciasManual');
+
+        function toggleCampoReferencias() {
+            campoReferenciasManual.style.display = (modoReferencias.value === 'manual' || modoReferencias.value === 'mixto') ? 'block' : 'none';
+        }
+        modoReferencias.addEventListener('change', toggleCampoReferencias);
+        toggleCampoReferencias();
+
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+
+        function setTheme(theme) {
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+                themeIcon.className = 'fas fa-sun';
+            } else {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+                themeIcon.className = 'fas fa-moon';
+            }
+        }
+
+        if (localStorage.getItem('theme') === 'dark') setTheme('dark');
+        themeToggle.addEventListener('click', () => {
+            const isDark = document.documentElement.classList.contains('dark');
+            setTheme(isDark ? 'light' : 'dark');
+        });
+
+        document.getElementById('btnGenerar').onclick = async () => {
+            let tema = document.getElementById('tema').value;
+            let temaRapido = document.getElementById('temaRapido').value;
+            if (modoActual === 'rapido') tema = temaRapido;
+
+            if (!tema || tema.trim() === '') {
+                Swal.fire('Error', 'Por favor ingresa un tema para el informe', 'error');
+                return;
+            }
+
+            Swal.fire({
+                title: '🤖 Generando informe...',
+                text: 'La IA está procesando tu información',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            const datos = {
+                modo: modoActual,
+                nombre: document.getElementById('nombre').value || '',
+                tema: tema,
+                profesor: document.getElementById('profesor').value || '',
+                asignatura: document.getElementById('asignatura').value || '',
+                institucion: document.getElementById('institucion').value || '',
+                norma: document.getElementById('norma').value || 'apa7',
+                modo_referencias: document.getElementById('modoReferencias').value,
+                referencias_manuales: document.getElementById('referenciasManual').value || '',
+                incluir_recomendaciones: document.getElementById('incluirRecomendaciones').checked
+            };
+
+            if (modoActual === 'auto') {
+                datos.texto_completo = document.getElementById('textoCompleto').value;
+            } else if (modoActual === 'manual') {
+                datos.introduccion = document.getElementById('introManual').value;
+                datos.objetivos = document.getElementById('objetivosManual').value;
+                datos.marco_teorico = document.getElementById('marcoManual').value;
+                datos.metodologia = document.getElementById('metodologiaManual').value;
+                datos.desarrollo = document.getElementById('desarrolloManual').value;
+                datos.conclusiones = document.getElementById('conclusionesManual').value;
+                datos.recomendaciones = document.getElementById('recomendacionesManual').value;
+            } else {
+                datos.texto_completo = document.getElementById('temaRapido').value;
+            }
+
+            try {
+                const response = await fetch('/generar', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(datos)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    Swal.fire({
+                        title: '¡Informe listo!',
+                        icon: 'success',
+                        confirmButtonText: '<i class="fas fa-download"></i> Descargar PDF'
+                    }).then(() => {
+                        window.location.href = result.download_url;
+                    });
+                } else {
+                    Swal.fire('Error', result.error, 'error');
+                }
+            } catch (error) {
+                Swal.fire('Error', 'No se pudo generar el informe', 'error');
+            }
+        };
+    </script>
 </body>
+
 </html>
