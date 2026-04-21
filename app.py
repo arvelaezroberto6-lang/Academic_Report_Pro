@@ -28,7 +28,6 @@ logger.info(f"🔑 API Key configurada: {'SÍ ✅' if DEEPSEEK_API_KEY else 'NO 
 logger.info("=" * 60)
 
 def llamar_deepseek(prompt):
-    """Llama a la API de DeepSeek - versión probada"""
     headers = {
         "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
         "Content-Type": "application/json"
@@ -54,7 +53,6 @@ def llamar_deepseek(prompt):
         return None
 
 def extraer_seccion(contenido, nombre):
-    """Extrae una sección del contenido"""
     patron = rf'\*\*{nombre}\*\*:?\s*(.*?)(?=\*\*[A-ZÁÉÍÓÚÜÑ]|\Z)'
     match = re.search(patron, contenido, re.DOTALL | re.IGNORECASE)
     if match:
@@ -65,7 +63,6 @@ def extraer_seccion(contenido, nombre):
     return ""
 
 def generar_pdf(tema, nombre, secciones):
-    """Genera el PDF"""
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     filename = f"informe_{timestamp}_{uuid.uuid4().hex[:8]}.pdf"
     filepath = os.path.join('informes_generados', filename)
