@@ -1,232 +1,407 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Informala - Generador profesional de informes con IA</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        * { font-family: 'Inter', sans-serif; }
-        body { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); min-height: 100vh; }
-        .glass-card { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); transition: all 0.3s ease; }
-        .glass-card:hover { border-color: rgba(139,92,246,0.5); }
-        .btn-primary { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); transition: all 0.3s ease; }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 20px 25px -5px rgba(99,102,241,0.4); }
-        .section-active { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; }
-        .progress-bar { transition: width 0.3s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .fade-in { animation: fadeIn 0.5s ease-out; }
-    </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Academic Report Pro — Generador IA de Informes Académicos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+:root {
+  --bg:#080b12; --surface:#0d1117; --surface2:#111720;
+  --border:rgba(255,255,255,.07); --border2:rgba(255,255,255,.12);
+  --gold:#c9a84c; --gold2:#e8c96a; --gold-dim:rgba(201,168,76,.15);
+  --blue:#4f7cf7; --blue-dim:rgba(79,124,247,.12);
+  --text:#e8e6df; --text2:#8a8880; --text3:#4a4845;
+  --red:#e05c5c; --green:#56c489;
+  --radius:12px; --radius-lg:20px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;cursor:none;}
+#cursor{position:fixed;z-index:9999;pointer-events:none;width:10px;height:10px;border-radius:50%;background:var(--gold);transform:translate(-50%,-50%);transition:width .2s,height .2s;mix-blend-mode:difference;}
+#cursor-ring{position:fixed;z-index:9998;pointer-events:none;width:36px;height:36px;border-radius:50%;border:1px solid rgba(201,168,76,.4);transform:translate(-50%,-50%);transition:width .2s,height .2s;}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");opacity:.6;}
+body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse 80% 80% at 50% 0%,black 40%,transparent 100%);}
+main{position:relative;z-index:1;}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:.9rem 2.5rem;background:rgba(8,11,18,.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
+.nav-logo{display:flex;align-items:center;gap:.7rem;font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:700;color:var(--text);text-decoration:none;}
+.nav-logo-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--gold) 0%,#8b6914 100%);display:flex;align-items:center;justify-content:center;}
+.nav-badge{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--gold);background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);padding:.2rem .7rem;border-radius:100px;}
+.btn-gold{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.8rem;background:linear-gradient(135deg,var(--gold) 0%,#a8832a 100%);color:#000;font-family:'Syne',sans-serif;font-size:.88rem;font-weight:700;border:none;border-radius:var(--radius);cursor:pointer;transition:all .2s;}
+.btn-gold:hover{transform:translateY(-2px);box-shadow:0 8px 36px rgba(201,168,76,.45);}
+.btn-outline{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.8rem;background:transparent;color:var(--text);font-family:'Syne',sans-serif;font-size:.88rem;font-weight:600;border:1px solid var(--border2);border-radius:var(--radius);cursor:pointer;}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold);}
+
+.hero{min-height:80vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7rem 2rem 4rem;text-align:center;}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:.5rem;font-family:'JetBrains Mono',monospace;font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);background:var(--gold-dim);border:1px solid rgba(201,168,76,.25);padding:.4rem 1.1rem;border-radius:100px;margin-bottom:2rem;}
+.hero-title{font-family:'Cormorant Garamond',serif;font-size:clamp(3rem,8vw,6rem);font-weight:700;line-height:1.05;}
+.hero-title em{font-style:italic;background:linear-gradient(135deg,var(--gold) 0%,var(--gold2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.hero-sub{font-size:1.05rem;color:var(--text2);max-width:520px;margin:1.5rem auto;}
+.hero-stats{display:flex;gap:3rem;justify-content:center;flex-wrap:wrap;margin-top:3rem;padding-top:2rem;border-top:1px solid var(--border);}
+.stat-num{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700;color:var(--gold);display:block;}
+.stat-lbl{font-size:.7rem;color:var(--text2);letter-spacing:.08em;text-transform:uppercase;}
+
+.form-wrap{max-width:1200px;margin:0 auto;padding:0 1.5rem 4rem;}
+.g2c{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;}
+@media(max-width:640px){.g2c{grid-template-columns:1fr;}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1.2rem;}
+.card-hd{display:flex;align-items:center;gap:.7rem;margin-bottom:1rem;}
+.card-ico{width:34px;height:34px;border-radius:9px;background:var(--gold-dim);border:1px solid rgba(201,168,76,.2);display:flex;align-items:center;justify-content:center;}
+.mode-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;}
+.mode-tab{padding:.8rem;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text2);font-weight:600;cursor:pointer;text-align:center;}
+.mode-tab.active{background:var(--gold-dim);border-color:rgba(201,168,76,.35);color:var(--gold);}
+.tipo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.7rem;}
+.tipo-card{padding:1rem;background:transparent;border:1px solid var(--border);border-radius:12px;cursor:pointer;text-align:center;}
+.tipo-card.active{background:var(--gold-dim);border-color:rgba(201,168,76,.35);}
+.tipo-card.active .tn{color:var(--gold);}
+.chips{display:flex;flex-wrap:wrap;gap:.5rem;}
+.chip{padding:.35rem 1rem;background:transparent;border:1px solid var(--border);border-radius:100px;font-size:.75rem;font-weight:700;cursor:pointer;}
+.chip.active{background:var(--gold-dim);border-color:rgba(201,168,76,.4);color:var(--gold);}
+input,select,textarea{width:100%;padding:.75rem;background:var(--bg);border:1px solid var(--border);border-radius:10px;font-family:'Syne',sans-serif;font-size:.88rem;color:var(--text);outline:none;}
+input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.5);}
+.fld{display:flex;flex-direction:column;gap:.4rem;}
+.fld label{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text2);}
+.btn-gen{width:100%;padding:1.1rem;background:linear-gradient(135deg,var(--gold) 0%,#9a6e1a 100%);color:#000;border:none;border-radius:var(--radius);font-weight:800;cursor:pointer;margin-top:1rem;}
+.btn-gen:hover{transform:translateY(-2px);box-shadow:0 8px 40px rgba(201,168,76,.45);}
+
+/* Panel Lateral */
+.main-grid{display:grid;grid-template-columns:280px 1fr;gap:1.5rem;}
+@media(max-width:768px){.main-grid{grid-template-columns:1fr;}}
+.sidebar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;height:fit-content;position:sticky;top:80px;}
+.sidebar-item{display:flex;align-items:center;gap:.8rem;padding:.8rem 1rem;border-radius:10px;cursor:pointer;color:var(--text2);transition:all .2s;}
+.sidebar-item:hover{background:var(--surface2);color:var(--text);}
+.sidebar-item.active{background:var(--gold-dim);color:var(--gold);}
+.plan-card{background:var(--surface2);border-radius:var(--radius);padding:1rem;margin-top:1.5rem;text-align:center;}
+.progress-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin:1rem 0;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));width:0%;transition:width .3s;}
+
+#editorPanel{display:none;margin-top:1.5rem;}
+.editor-tabs{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem;}
+.editor-tab{padding:.5rem 1rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:.8rem;}
+.editor-tab.active{background:var(--gold-dim);border-color:var(--gold);color:var(--gold);}
+#editorTexto{width:100%;padding:1rem;background:var(--bg);border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:monospace;min-height:400px;resize:vertical;}
+
+footer{text-align:center;padding:2rem;border-top:1px solid var(--border);font-size:.78rem;color:var(--text3);}
+.hidden{display:none;}
+</style>
 </head>
-<body class="min-h-screen p-6">
-    <div class="container mx-auto max-w-7xl">
-        
-        <!-- Header con mensaje de diferenciación -->
-        <div class="text-center mb-8 fade-in">
-            <div class="inline-block px-4 py-1 rounded-full bg-purple-500/20 text-purple-300 text-sm mb-4 border border-purple-500/30">
-                ⚡ Más que IA - Informes estructurados listos para entregar
-            </div>
-            <h1 class="text-6xl font-bold text-white mb-2">Informala</h1>
-            <p class="text-purple-200 text-lg">Crea informes profesionales en minutos con IA</p>
-            <div class="flex justify-center gap-4 mt-4">
-                <div class="flex items-center gap-2 text-sm text-purple-300"><span class="w-2 h-2 rounded-full bg-green-400"></span>Estructura automática</div>
-                <div class="flex items-center gap-2 text-sm text-purple-300"><span class="w-2 h-2 rounded-full bg-green-400"></span>Múltiples normas</div>
-                <div class="flex items-center gap-2 text-sm text-purple-300"><span class="w-2 h-2 rounded-full bg-green-400"></span>Word + PDF</div>
-            </div>
-        </div>
+<body>
 
-        <div class="grid md:grid-cols-3 gap-6">
-            
-            <!-- Panel Lateral -->
-            <div class="glass-card rounded-2xl p-6 fade-in">
-                <div class="flex items-center gap-3 mb-6 pb-4 border-b border-white/10">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-lg">📄</div>
-                    <div><h3 class="font-bold text-white">Informala</h3><p class="text-xs text-purple-300">Generador profesional</p></div>
-                </div>
-                <nav class="space-y-1">
-                    <div class="flex items-center gap-3 p-3 rounded-xl bg-white/10 text-white"><span>✨</span><span class="text-sm font-medium">Crear informe</span></div>
-                    <div class="flex items-center gap-3 p-3 rounded-xl text-purple-300 hover:bg-white/5 transition"><span>📄</span><span class="text-sm">Mis informes</span></div>
-                    <div class="flex items-center gap-3 p-3 rounded-xl text-purple-300 hover:bg-white/5 transition"><span>📋</span><span class="text-sm">Plantillas</span></div>
-                    <div class="flex items-center gap-3 p-3 rounded-xl text-purple-300 hover:bg-white/5 transition"><span>📜</span><span class="text-sm">Historial</span></div>
-                </nav>
-                <div class="mt-8 pt-4 border-t border-white/10">
-                    <div class="bg-white/5 rounded-xl p-4">
-                        <p class="text-xs text-purple-300">Plan Actual</p>
-                        <p class="text-white font-bold">Gratuito</p>
-                        <p class="text-xs text-purple-300 mt-1">Informes restantes: <span class="text-white font-bold" id="informesRestantes">3</span>/3</p>
-                        <button class="w-full mt-3 bg-white/10 text-white text-sm py-2 rounded-lg hover:bg-white/20 transition">⭐ Mejorar plan</button>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Área Principal -->
-            <div class="md:col-span-2 space-y-6">
-                
-                <!-- Barra de progreso -->
-                <div id="progressContainer" class="glass-card rounded-2xl p-4" style="display: none;">
-                    <div class="flex justify-between text-sm text-purple-300 mb-2"><span id="progressStep">Paso 1 de 3</span><span id="progressPercent">0%</span></div>
-                    <div class="h-2 bg-white/10 rounded-full overflow-hidden"><div id="progressFill" class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full progress-bar" style="width: 0%"></div></div>
-                    <p id="progressMessage" class="text-xs text-purple-300 mt-2">Conectando con IA...</p>
-                </div>
-                
-                <!-- Paso 1 -->
-                <div class="glass-card rounded-2xl p-6 fade-in" id="step1">
-                    <div class="flex items-center gap-2 mb-4"><span class="w-6 h-6 rounded-full bg-indigo-500 text-white text-xs flex items-center justify-center">1</span><h3 class="text-white font-semibold">Tema del informe</h3></div>
-                    <input type="text" id="tema" class="w-full p-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-purple-300" placeholder="Ej: El impacto de las inteligencias artificiales en Colombia">
-                </div>
-                
-                <!-- Paso 2 -->
-                <div class="glass-card rounded-2xl p-6 fade-in" id="step2">
-                    <div class="flex items-center gap-2 mb-4"><span class="w-6 h-6 rounded-full bg-indigo-500 text-white text-xs flex items-center justify-center">2</span><h3 class="text-white font-semibold">Configura tu informe</h3></div>
-                    <div class="grid md:grid-cols-2 gap-4">
-                        <div><label class="text-sm text-purple-300 block mb-1">🎓 Nivel académico</label>
-                            <select id="nivel" class="w-full p-2 rounded-lg bg-white/10 border border-white/20 text-white">
-                                <option value="colegio">🏫 Colegio / Secundaria</option>
-                                <option value="tecnico">📚 Técnico / Pregrado</option>
-                                <option value="universitario" selected>🎓 Universitario / Avanzado</option>
-                            </select>
-                        </div>
-                        <div><label class="text-sm text-purple-300 block mb-1">🎯 Objetivo del informe</label>
-                            <select id="objetivo" class="w-full p-2 rounded-lg bg-white/10 border border-white/20 text-white">
-                                <option value="analizar">Analizar</option><option value="investigar">Investigar</option><option value="describir">Describir</option><option value="evaluar">Evaluar</option>
-                            </select>
-                        </div>
-                        <div><label class="text-sm text-purple-300 block mb-1">📋 Tipo de informe</label>
-                            <select id="tipoInforme" class="w-full p-2 rounded-lg bg-white/10 border border-white/20 text-white">
-                                <option value="academico">📄 Académico</option><option value="laboratorio">🔬 Laboratorio</option><option value="ejecutivo">💼 Ejecutivo</option><option value="tesis">🎓 Tesis</option>
-                            </select>
-                        </div>
-                        <div><label class="text-sm text-purple-300 block mb-1">📐 Norma de citación</label>
-                            <select id="norma" class="w-full p-2 rounded-lg bg-white/10 border border-white/20 text-white">
-                                <option value="APA 7">APA 7</option><option value="APA 6">APA 6</option><option value="ICONTEC">ICONTEC</option><option value="IEEE">IEEE</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="grid md:grid-cols-2 gap-4 mt-4">
-                        <div><label class="text-sm text-purple-300 block mb-1">👤 Tu nombre</label><input type="text" id="nombre" class="w-full p-2 rounded-lg bg-white/10 border border-white/20 text-white" placeholder="Nombre completo"></div>
-                        <div><label class="text-sm text-purple-300 block mb-1">📚 Asignatura</label><input type="text" id="asignatura" class="w-full p-2 rounded-lg bg-white/10 border border-white/20 text-white" placeholder="Asignatura"></div>
-                        <div><label class="text-sm text-purple-300 block mb-1">👨‍🏫 Docente</label><input type="text" id="profesor" class="w-full p-2 rounded-lg bg-white/10 border border-white/20 text-white" placeholder="Docente"></div>
-                        <div><label class="text-sm text-purple-300 block mb-1">🏛️ Institución</label><input type="text" id="institucion" class="w-full p-2 rounded-lg bg-white/10 border border-white/20 text-white" placeholder="Institución"></div>
-                    </div>
-                </div>
-                
-                <button id="generarBtn" class="btn-primary w-full py-4 rounded-xl text-white font-bold text-lg transition-all">🚀 Generar informe profesional</button>
-                
-                <!-- Ejemplo visible (WOW) -->
-                <div class="glass-card rounded-2xl p-6 text-center">
-                    <p class="text-purple-300 text-sm mb-2">✨ Mira este ejemplo real</p>
-                    <p class="text-white text-sm">"El impacto de las inteligencias artificiales en Colombia - Un análisis completo con datos 2023-2024"</p>
-                    <div class="flex justify-center gap-2 mt-3">
-                        <span class="text-xs text-purple-300">📄 8 secciones</span>
-                        <span class="text-xs text-purple-300">📊 Con tablas</span>
-                        <span class="text-xs text-purple-300">📚 6 referencias</span>
-                    </div>
-                </div>
-                
-                <!-- Editor -->
-                <div id="editorPanel" class="glass-card rounded-2xl p-6" style="display: none;">
-                    <h3 class="text-white font-bold text-xl mb-4">✏️ Edita tu informe</h3>
-                    <div class="flex gap-2 flex-wrap mb-4" id="seccionesTabs"></div>
-                    <textarea id="editorTexto" class="w-full p-4 rounded-xl bg-white/10 border border-white/20 text-white" rows="12"></textarea>
-                    <div class="flex gap-3 mt-4">
-                        <button id="exportarPDFBtn" class="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition">📄 Descargar PDF</button>
-                        <button id="exportarWordBtn" class="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">📝 Descargar Word</button>
-                    </div>
-                </div>
-                
-            </div>
-        </div>
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<nav>
+  <a href="#" class="nav-logo">
+    <div class="nav-logo-icon">📄</div>
+    Academic Report Pro
+  </a>
+  <div style="display:flex;align-items:center;gap:1rem;">
+    <span class="nav-badge">DeepSeek V3</span>
+  </div>
+</nav>
+
+<main>
+<section class="hero">
+  <div class="hero-eyebrow">⚡ Más que IA - Informes estructurados listos para entregar</div>
+  <h1 class="hero-title">Informes académicos<br><em>de nivel profesional</em></h1>
+  <p class="hero-sub">Escribe un tema y la IA genera un informe completo con portada, índice, marco teórico, conclusiones y referencias — listo para editar y descargar en PDF o Word.</p>
+  <div class="hero-stats">
+    <div class="stat"><span class="stat-num">8</span><span class="stat-lbl">Normas</span></div>
+    <div class="stat"><span class="stat-num">4</span><span class="stat-lbl">Tipos</span></div>
+    <div class="stat"><span class="stat-num">3</span><span class="stat-lbl">Modos</span></div>
+    <div class="stat"><span class="stat-num">PDF+Word</span><span class="stat-lbl">Descarga</span></div>
+  </div>
+</section>
+
+<div class="form-wrap">
+  <div class="main-grid">
+    
+    <!-- Panel Lateral -->
+    <div class="sidebar">
+      <div class="sidebar-item active" onclick="mostrarFormulario()">✨ Crear informe</div>
+      <div class="sidebar-item" onclick="mostrarEditor()">✏️ Mi informe</div>
+      <div class="sidebar-item">📄 Mis informes</div>
+      <div class="sidebar-item">📜 Historial</div>
+      
+      <div class="plan-card">
+        <p class="text2" style="font-size:.7rem;">Plan Actual</p>
+        <p style="font-weight:bold; margin:.5rem 0;">Gratuito</p>
+        <p style="font-size:.7rem; color:var(--text2);">Informes restantes: <span id="informesRestantes">3</span>/3</p>
+        <div class="progress-bar"><div class="progress-fill" id="planProgress" style="width:0%"></div></div>
+        <button class="btn-outline" style="width:100%; margin-top:.5rem; padding:.4rem;">⭐ Mejorar plan</button>
+      </div>
     </div>
+    
+    <!-- Área Principal -->
+    <div>
+      <div id="formularioPanel">
+        <!-- Modos -->
+        <div class="g2c">
+          <div class="card">
+            <div class="card-hd"><div class="card-ico">⚙️</div><div>Modo de generación</div></div>
+            <div class="mode-tabs" id="modoTabs">
+              <button class="mode-tab active" data-modo="rapido">⚡ Rápido</button>
+              <button class="mode-tab" data-modo="automatico">🔄 Automático</button>
+              <button class="mode-tab" data-modo="manual">✏️ Manual</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-hd"><div class="card-ico">🎓</div><div>Nivel educativo</div></div>
+            <select id="nivel" class="w-full">
+              <option value="colegio">🏫 Colegio / Secundaria</option>
+              <option value="tecnico">📚 Técnico / Pregrado</option>
+              <option value="universitario" selected>🎓 Universitario / Avanzado</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="g2c">
+          <div class="card">
+            <div class="card-hd"><div class="card-ico">📋</div><div>Tipo de informe</div></div>
+            <div class="tipo-grid" id="tipoGrid">
+              <div class="tipo-card active" data-tipo="academico">📄 Académico</div>
+              <div class="tipo-card" data-tipo="laboratorio">🔬 Laboratorio</div>
+              <div class="tipo-card" data-tipo="ejecutivo">💼 Ejecutivo</div>
+              <div class="tipo-card" data-tipo="tesis">🎓 Tesis</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-hd"><div class="card-ico">📐</div><div>Norma de citación</div></div>
+            <div class="chips" id="normaChips">
+              <div class="chip active" data-norma="APA 7">APA 7</div>
+              <div class="chip" data-norma="APA 6">APA 6</div>
+              <div class="chip" data-norma="ICONTEC">ICONTEC</div>
+              <div class="chip" data-norma="IEEE">IEEE</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-hd"><div class="card-ico">💡</div><div>Tema del informe</div></div>
+          <input type="text" id="tema" placeholder="Ej: Impacto de la inteligencia artificial en la educación superior">
+          <div id="textoUsuarioWrap" class="hidden" style="margin-top:1rem;">
+            <textarea id="textoUsuario" rows="4" placeholder="Pega aquí tus apuntes o información adicional..."></textarea>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-hd"><div class="card-ico">🏫</div><div>Datos académicos</div></div>
+          <div class="g2c">
+            <input type="text" id="asignatura" placeholder="Asignatura">
+            <input type="text" id="profesor" placeholder="Docente">
+            <input type="text" id="institucion" placeholder="Institución">
+            <input type="text" id="nombre" placeholder="Tu nombre">
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-hd"><div class="card-ico">👤</div><div>Autores adicionales</div></div>
+          <div id="autoresContainer"></div>
+          <button class="btn-outline" onclick="agregarAutor()" style="font-size:.8rem; margin-top:.5rem;">+ Agregar autor</button>
+        </div>
+        
+        <button id="generarBtn" class="btn-gen">🚀 GENERAR INFORME</button>
+        
+        <div class="card" style="margin-top:1rem; text-align:center;">
+          <p class="text2" style="font-size:.7rem;">✨ Mira este ejemplo real</p>
+          <p style="font-size:.8rem;">"El impacto de las inteligencias artificiales en Colombia - Análisis completo con datos 2023-2024"</p>
+          <div style="display:flex; gap:1rem; justify-content:center; margin-top:.5rem;">
+            <span style="font-size:.7rem;">📄 8 secciones</span>
+            <span style="font-size:.7rem;">📊 Con tablas</span>
+            <span style="font-size:.7rem;">📚 6 referencias</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Editor -->
+      <div id="editorPanel" class="card">
+        <div class="card-hd"><div class="card-ico">✏️</div><div>Edita tu informe</div></div>
+        <div class="editor-tabs" id="editorTabs"></div>
+        <textarea id="editorTexto" rows="12"></textarea>
+        <div style="display:flex; gap:1rem; margin-top:1rem;">
+          <button id="exportarPDFBtn" class="btn-gold" style="flex:1;">📄 Descargar PDF</button>
+          <button id="exportarWordBtn" class="btn-outline" style="flex:1;">📝 Descargar Word</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</main>
 
-    <script>
-        let seccionesActuales = {}, datosUsuarioActual = {};
-        let informesUsados = parseInt(localStorage.getItem('informesUsados') || '0');
-        document.getElementById('informesRestantes').innerText = Math.max(0, 3 - informesUsados);
-        
-        function actualizarProgreso(paso, mensaje, porcentaje) {
-            document.getElementById('progressStep').innerText = paso;
-            document.getElementById('progressMessage').innerText = mensaje;
-            document.getElementById('progressFill').style.width = porcentaje + '%';
-            document.getElementById('progressPercent').innerText = porcentaje + '%';
-        }
-        
-        document.getElementById('generarBtn').onclick = async () => {
-            const tema = document.getElementById('tema').value.trim();
-            if (!tema) { Swal.fire('Error', 'Escribe el tema del informe', 'error'); return; }
-            if (informesUsados >= 3) { Swal.fire('Límite alcanzado', 'Has usado tus 3 informes gratis. Mejora tu plan para continuar.', 'warning'); return; }
-            
-            document.getElementById('generarBtn').disabled = true;
-            document.getElementById('generarBtn').innerHTML = '⏳ Generando informe...';
-            document.getElementById('progressContainer').style.display = 'block';
-            
-            actualizarProgreso('Paso 1 de 3', 'Conectando con IA...', 10);
-            await new Promise(r => setTimeout(r, 500));
-            actualizarProgreso('Paso 1 de 3', 'Analizando tu tema...', 25);
-            await new Promise(r => setTimeout(r, 800));
-            actualizarProgreso('Paso 2 de 3', 'Generando contenido académico...', 50);
-            
-            try {
-                const res = await fetch('/generar', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        tema: tema, nivel: document.getElementById('nivel').value,
-                        objetivo: document.getElementById('objetivo').value, tipo_informe: document.getElementById('tipoInforme').value,
-                        nombre: document.getElementById('nombre').value || 'Estudiante',
-                        asignatura: document.getElementById('asignatura').value, profesor: document.getElementById('profesor').value,
-                        institucion: document.getElementById('institucion').value, norma: document.getElementById('norma').value
-                    })
-                });
-                actualizarProgreso('Paso 3 de 3', 'Estructurando el informe...', 75);
-                await new Promise(r => setTimeout(r, 500));
-                const data = await res.json();
-                if (data.success) {
-                    seccionesActuales = data.secciones; datosUsuarioActual = data.datos_usuario;
-                    informesUsados++; localStorage.setItem('informesUsados', informesUsados);
-                    document.getElementById('informesRestantes').innerText = Math.max(0, 3 - informesUsados);
-                    actualizarProgreso('¡Completado!', 'Informe listo para editar', 100);
-                    setTimeout(() => { document.getElementById('progressContainer').style.display = 'none'; mostrarEditor(); }, 800);
-                    Swal.fire('¡Éxito!', 'Informe generado correctamente', 'success');
-                } else { throw new Error(data.error); }
-            } catch (error) { 
-                document.getElementById('progressContainer').style.display = 'none';
-                Swal.fire('Error', error.message, 'error'); 
-            } finally {
-                document.getElementById('generarBtn').disabled = false;
-                document.getElementById('generarBtn').innerHTML = '🚀 Generar informe profesional';
-            }
-        };
-        
-        function mostrarEditor() {
-            const secciones = ['introduccion', 'objetivos', 'marco_teorico', 'metodologia', 'desarrollo', 'conclusiones', 'recomendaciones', 'referencias'];
-            const nombres = ['Introducción', 'Objetivos', 'Marco Teórico', 'Metodología', 'Desarrollo', 'Conclusiones', 'Recomendaciones', 'Referencias'];
-            const tabsDiv = document.getElementById('seccionesTabs');
-            tabsDiv.innerHTML = '';
-            secciones.forEach((sec, i) => {
-                const btn = document.createElement('button');
-                btn.textContent = nombres[i];
-                btn.className = 'px-3 py-1 rounded-lg bg-white/10 text-purple-300 hover:bg-white/20 transition text-sm';
-                btn.onclick = () => {
-                    document.querySelectorAll('#seccionesTabs button').forEach(b => b.classList.remove('section-active', 'bg-gradient-to-r', 'from-indigo-500', 'to-purple-500', 'text-white'));
-                    btn.classList.add('section-active', 'bg-gradient-to-r', 'from-indigo-500', 'to-purple-500', 'text-white');
-                    document.getElementById('editorTexto').value = seccionesActuales[sec] || '';
-                };
-                tabsDiv.appendChild(btn);
-            });
-            document.getElementById('editorPanel').style.display = 'block';
-            document.getElementById('editorTexto').value = seccionesActuales.introduccion || '';
-            document.getElementById('editorPanel').scrollIntoView({ behavior: 'smooth' });
-        }
-        
-        document.getElementById('exportarPDFBtn').onclick = async () => {
-            const res = await fetch('/exportar-pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ secciones: seccionesActuales, datos_usuario: datosUsuarioActual }) });
-            const blob = await res.blob(); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `informe_${Date.now()}.pdf`; a.click(); URL.revokeObjectURL(url);
-        };
-        document.getElementById('exportarWordBtn').onclick = async () => {
-            const res = await fetch('/exportar-word', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ secciones: seccionesActuales, datos_usuario: datosUsuarioActual }) });
-            const blob = await res.blob(); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `informe_${Date.now()}.docx`; a.click(); URL.revokeObjectURL(url);
-        };
-    </script>
+<footer>
+  <strong>Academic Report Pro</strong> · Generador profesional de informes con IA · 8 normas · 4 tipos · PDF + Word
+</footer>
+
+<script>
+// ========== CURSOR ==========
+const cur=document.getElementById('cursor'),curR=document.getElementById('cursor-ring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px';});
+(function anim(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;curR.style.left=rx+'px';curR.style.top=ry+'px';requestAnimationFrame(anim);})();
+document.querySelectorAll('button,.chip,.tipo-card,.mode-tab,.sidebar-item').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{cur.style.width='16px';cur.style.height='16px';curR.style.width='52px';curR.style.height='52px';});
+  el.addEventListener('mouseleave',()=>{cur.style.width='10px';cur.style.height='10px';curR.style.width='36px';curR.style.height='36px';});
+});
+
+// ========== ESTADO ==========
+let modo = 'rapido';
+let tipoActual = 'academico';
+let normaActual = 'APA 7';
+let seccionesGeneradas = {};
+let datosUsuario = {};
+let autorCount = 0;
+let informesUsados = parseInt(localStorage.getItem('informesUsados') || '0');
+
+document.getElementById('informesRestantes').innerText = Math.max(0, 3 - informesUsados);
+document.getElementById('planProgress').style.width = ((informesUsados / 3) * 100) + '%';
+
+// Modo
+document.querySelectorAll('#modoTabs .mode-tab').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('#modoTabs .mode-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    modo = btn.dataset.modo;
+    const wrap = document.getElementById('textoUsuarioWrap');
+    if (modo !== 'rapido') wrap.classList.remove('hidden');
+    else wrap.classList.add('hidden');
+  };
+});
+
+// Tipo
+document.querySelectorAll('#tipoGrid .tipo-card').forEach(card => {
+  card.onclick = () => {
+    document.querySelectorAll('#tipoGrid .tipo-card').forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+    tipoActual = card.dataset.tipo;
+  };
+});
+
+// Norma
+document.querySelectorAll('#normaChips .chip').forEach(chip => {
+  chip.onclick = () => {
+    document.querySelectorAll('#normaChips .chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    normaActual = chip.dataset.norma;
+  };
+});
+
+function agregarAutor() {
+  const container = document.getElementById('autoresContainer');
+  const div = document.createElement('div');
+  div.className = 'g2c';
+  div.style.marginBottom = '.5rem';
+  div.innerHTML = `<input type="text" class="autor-nombre" placeholder="Nombre completo"><input type="text" class="autor-cargo" placeholder="Código/Cargo"><button class="btn-outline" onclick="this.parentElement.remove()" style="padding:.3rem; font-size:.7rem;">✕</button>`;
+  container.appendChild(div);
+}
+
+function getAutores() {
+  const autores = [];
+  document.querySelectorAll('.autor-nombre').forEach((input, i) => {
+    if (input.value.trim()) {
+      autores.push({ nombre: input.value.trim(), cargo: document.querySelectorAll('.autor-cargo')[i]?.value.trim() || '' });
+    }
+  });
+  return autores;
+}
+
+function mostrarFormulario() {
+  document.getElementById('formularioPanel').style.display = 'block';
+  document.getElementById('editorPanel').style.display = 'none';
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+  document.querySelector('.sidebar-item').classList.add('active');
+}
+
+function mostrarEditor() {
+  if (Object.keys(seccionesGeneradas).length === 0) {
+    Swal.fire('Aviso', 'Primero genera un informe', 'info');
+    return;
+  }
+  document.getElementById('formularioPanel').style.display = 'none';
+  document.getElementById('editorPanel').style.display = 'block';
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item')[1].classList.add('active');
+}
+
+document.getElementById('generarBtn').onclick = async () => {
+  const tema = document.getElementById('tema').value.trim();
+  if (!tema) { Swal.fire('Error', 'Escribe el tema del informe', 'error'); return; }
+  if (informesUsados >= 3) { Swal.fire('Límite alcanzado', 'Usaste tus 3 informes gratis. Mejora tu plan.', 'warning'); return; }
+  
+  const autores = getAutores();
+  const nombrePrincipal = document.getElementById('nombre').value.trim() || (autores[0]?.nombre || 'Estudiante');
+  
+  Swal.fire({ title: 'Generando informe...', text: 'Esto puede tomar 30-60 segundos', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  
+  try {
+    const res = await fetch('/generar', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tema: tema, modo: modo, tipo_informe: tipoActual, norma: normaActual,
+        nivel: document.getElementById('nivel').value, nombre: nombrePrincipal,
+        asignatura: document.getElementById('asignatura').value,
+        profesor: document.getElementById('profesor').value,
+        institucion: document.getElementById('institucion').value,
+        autores: autores, texto_usuario: document.getElementById('textoUsuario').value
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      seccionesGeneradas = data.secciones;
+      datosUsuario = data.datos_usuario;
+      informesUsados++;
+      localStorage.setItem('informesUsados', informesUsados);
+      document.getElementById('informesRestantes').innerText = Math.max(0, 3 - informesUsados);
+      document.getElementById('planProgress').style.width = ((informesUsados / 3) * 100) + '%';
+      mostrarEditorYSecciones();
+      Swal.fire('¡Éxito!', 'Informe generado correctamente', 'success');
+    } else { Swal.fire('Error', data.error, 'error'); }
+  } catch (error) { Swal.fire('Error', 'Error de conexión', 'error'); }
+};
+
+function mostrarEditorYSecciones() {
+  const secciones = ['introduccion', 'objetivos', 'marco_teorico', 'metodologia', 'desarrollo', 'conclusiones', 'recomendaciones', 'referencias'];
+  const nombres = ['Introducción', 'Objetivos', 'Marco Teórico', 'Metodología', 'Desarrollo', 'Conclusiones', 'Recomendaciones', 'Referencias'];
+  const tabsDiv = document.getElementById('editorTabs');
+  tabsDiv.innerHTML = '';
+  secciones.forEach((sec, i) => {
+    const btn = document.createElement('button');
+    btn.textContent = nombres[i];
+    btn.className = 'editor-tab' + (i === 0 ? ' active' : '');
+    btn.onclick = () => {
+      document.querySelectorAll('.editor-tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('editorTexto').value = seccionesGeneradas[sec] || '';
+    };
+    tabsDiv.appendChild(btn);
+  });
+  document.getElementById('editorTexto').value = seccionesGeneradas.introduccion || '';
+  mostrarEditor();
+}
+
+document.getElementById('exportarPDFBtn').onclick = async () => {
+  const seccionesEditadas = { ...seccionesGeneradas };
+  const indiceActivo = Array.from(document.querySelectorAll('.editor-tab')).findIndex(t => t.classList.contains('active'));
+  if (indiceActivo !== -1) {
+    const claves = ['introduccion', 'objetivos', 'marco_teorico', 'metodologia', 'desarrollo', 'conclusiones', 'recomendaciones', 'referencias'];
+    seccionesEditadas[claves[indiceActivo]] = document.getElementById('editorTexto').value;
+  }
+  const res = await fetch('/exportar-pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ secciones: seccionesEditadas, datos_usuario: datosUsuario }) });
+  const blob = await res.blob(); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `informe_${Date.now()}.pdf`; a.click(); URL.revokeObjectURL(url);
+};
+
+document.getElementById('exportarWordBtn').onclick = async () => {
+  const seccionesEditadas = { ...seccionesGeneradas };
+  const indiceActivo = Array.from(document.querySelectorAll('.editor-tab')).findIndex(t => t.classList.contains('active'));
+  if (indiceActivo !== -1) {
+    const claves = ['introduccion', 'objetivos', 'marco_teorico', 'metodologia', 'desarrollo', 'conclusiones', 'recomendaciones', 'referencias'];
+    seccionesEditadas[claves[indiceActivo]] = document.getElementById('editorTexto').value;
+  }
+  const res = await fetch('/exportar-word', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ secciones: seccionesEditadas, datos_usuario: datosUsuario }) });
+  const blob = await res.blob(); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `informe_${Date.now()}.docx`; a.click(); URL.revokeObjectURL(url);
+};
+</script>
 </body>
 </html>
