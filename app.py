@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, jsonify, send_file
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
 from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from docx import Document
@@ -23,6 +23,11 @@ os.makedirs('informes_generados', exist_ok=True)
 
 DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
 DEEPSEEK_URL = "https://api.deepseek.com/v1/chat/completions"
+
+logger.info("=" * 60)
+logger.info("🚀 ACADEMIC REPORT PRO - VERSIÓN DEFINITIVA")
+logger.info(f"🔑 API Key configurada: {'SÍ ✅' if DEEPSEEK_API_KEY else 'NO ❌'}")
+logger.info("=" * 60)
 
 def llamar_deepseek(prompt):
     headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type": "application/json"}
@@ -145,20 +150,27 @@ def generar():
         data = request.json
         tema = data.get('tema', '').strip()
         nivel = data.get('nivel', 'universitario')
-        objetivo = data.get('objetivo', 'analizar')
+        modo = data.get('modo', 'rapido')
         tipo_informe = data.get('tipo_informe', 'academico')
+        norma = data.get('norma', 'APA 7')
         nombre = data.get('nombre', 'Estudiante')
         asignatura = data.get('asignatura', '')
         profesor = data.get('profesor', '')
         institucion = data.get('institucion', '')
-        norma = data.get('norma', 'APA 7')
         
         if not tema:
             return jsonify({'success': False, 'error': 'El tema es requerido'}), 400
         
+        # Obtener autores
+        autores = data.get('autores', [])
+        if autores:
+            nombre_principal = autores[0].get('nombre', nombre)
+        else:
+            nombre_principal = nombre
+        
         prompt = f"""Genera un informe académico profesional de tipo {tipo_informe} sobre: "{tema}"
 Nivel: {nivel}
-Objetivo: {objetivo}
+Modo: {modo}
 
 ESTRUCTURA OBLIGATORIA:
 **INTRODUCCIÓN**
@@ -176,7 +188,7 @@ Usa **negritas** solo para los títulos.
         
         contenido = llamar_deepseek(prompt)
         if not contenido:
-            return jsonify({'success': False, 'error': 'No se pudo generar'}), 500
+            return jsonify({'success': False, 'error': 'No se pudo generar el contenido'}), 500
         
         secciones = {
             'introduccion': extraer_seccion(contenido, 'INTRODUCCIÓN'),
@@ -189,10 +201,19 @@ Usa **negritas** solo para los títulos.
             'referencias': extraer_seccion(contenido, 'REFERENCIAS')
         }
         
-        datos_usuario = {'nombre': nombre, 'tema': tema, 'asignatura': asignatura, 'profesor': profesor, 'institucion': institucion, 'fecha': datetime.now().strftime('%Y-%m-%d'), 'norma': norma}
+        datos_usuario = {
+            'nombre': nombre_principal,
+            'tema': tema,
+            'asignatura': asignatura,
+            'profesor': profesor,
+            'institucion': institucion,
+            'fecha': datetime.now().strftime('%Y-%m-%d'),
+            'norma': norma
+        }
         
         return jsonify({'success': True, 'secciones': secciones, 'datos_usuario': datos_usuario})
     except Exception as e:
+        logger.error(f"Error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/exportar-pdf', methods=['POST'])
@@ -206,6 +227,23 @@ def exportar_word():
     data = request.json
     buffer = generar_word(data['datos_usuario'], data['secciones'])
     return send_file(buffer, as_attachment=True, download_name=f"informe_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx")
+
+@app.route('/preview', methods=['POST'])
+def preview():
+    try:
+        data = request.json
+        tema = data.get('tema', '')
+        prompt = f"Genera un breve resumen sobre: {tema}"
+        contenido = llamar_deepseek(prompt)
+        if contenido:
+            return jsonify({'success': True, 'contenido': contenido[:1000]})
+        return jsonify({'success': False, 'error': 'No se pudo generar'}), 500
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/health')
+def health():
+    return jsonify({'status': 'healthy', 'api_configured': bool(DEEPSEEK_API_KEY)})
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
