@@ -17,14 +17,12 @@ import re
 # ============================================================
 app = Flask(__name__)
 
-# Configurar logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-# Crear directorio para informes
 os.makedirs('informes_generados', exist_ok=True)
 
 # ============================================================
@@ -34,90 +32,94 @@ DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
 DEEPSEEK_URL = "https://api.deepseek.com/v1/chat/completions"
 
 logger.info("=" * 60)
-logger.info("🚀 ACADEMIC REPORT PRO - VERSIÓN CON DEEPSEEK")
+logger.info("🚀 ACADEMIC REPORT PRO")
 logger.info(f"🔑 API Key configurada: {'SÍ ✅' if DEEPSEEK_API_KEY else 'NO ❌'}")
 logger.info("=" * 60)
 
 # ============================================================
-# FUNCIÓN PARA GENERAR INFORME CON DEEPSEEK
+# CONFIGURACIÓN POR NIVEL EDUCATIVO
 # ============================================================
-def generar_informe_con_ia(tema, info_extra=""):
-    """Genera un informe académico profesional usando DeepSeek API"""
+def get_prompt_segun_nivel(tema, info_extra, nivel):
+    """Genera el prompt según el nivel educativo seleccionado"""
+    
+    prompts = {
+        "colegio": f"""Eres un asistente educativo. Genera un informe para estudiantes de colegio (14-17 años) sobre: "{tema}"
+
+Información adicional: {info_extra if info_extra else 'No hay información adicional'}
+
+ESTRUCTURA:
+**INTRODUCCIÓN** (explica el tema con un ejemplo cotidiano)
+**OBJETIVOS** (qué vamos a aprender)
+**DESARROLLO** (explicación clara y sencilla)
+**CONCLUSIONES** (lo más importante para recordar)
+**RECOMENDACIONES** (cómo aplicar lo aprendido)
+
+REQUISITOS:
+- Usa lenguaje sencillo y claro
+- Incluye ejemplos de la vida diaria
+- Evita términos técnicos complicados
+- Extensión: 2-3 páginas
+- Escribe en español""",
+
+        "tecnico": f"""Eres un instructor técnico. Genera un informe para estudiantes de nivel técnico o primeros años de universidad sobre: "{tema}"
+
+Información adicional: {info_extra if info_extra else 'No hay información adicional'}
+
+ESTRUCTURA:
+**INTRODUCCIÓN** (contexto y aplicación práctica)
+**OBJETIVOS** (1 general + 4 específicos)
+**MARCO TEÓRICO** (conceptos clave explicados)
+**METODOLOGÍA** (cómo se aborda el tema)
+**DESARROLLO** (análisis con datos concretos)
+**CONCLUSIONES** (4-5 puntos clave)
+**RECOMENDACIONES** (3-4 sugerencias aplicables)
+**REFERENCIAS** (4-5 fuentes)
+
+REQUISITOS:
+- Lenguaje profesional pero accesible
+- Incluye términos técnicos con explicación
+- Da ejemplos prácticos del campo
+- Extensión: 4-6 páginas
+- Escribe en español""",
+
+        "universitario": f"""Eres un académico experto. Genera un informe para nivel universitario avanzado sobre: "{tema}"
+
+Información adicional: {info_extra if info_extra else 'No hay información adicional'}
+
+ESTRUCTURA:
+**INTRODUCCIÓN** (contexto académico, estado del arte, justificación)
+**OBJETIVOS** (1 general + 5 específicos detallados)
+**MARCO TEÓRICO** (antecedentes, teorías, definiciones)
+**METODOLOGÍA** (diseño, población, instrumentos, procedimiento)
+**DESARROLLO** (análisis profundo, discusión de hallazgos)
+**CONCLUSIONES** (5-6 conclusiones con implicaciones)
+**RECOMENDACIONES** (4-5 sugerencias para investigadores)
+**REFERENCIAS** (mínimo 8 fuentes académicas)
+
+REQUISITOS:
+- Lenguaje académico riguroso
+- Profundidad analítica y crítica
+- Citas a autores relevantes
+- Extensión: 8-12 páginas
+- Escribe en español"""
+    }
+    
+    return prompts.get(nivel, prompts["universitario"])
+
+# ============================================================
+# FUNCIÓN PRINCIPAL DE GENERACIÓN CON IA
+# ============================================================
+def generar_informe_con_ia(tema, info_extra="", nivel="universitario"):
+    """Genera informe usando DeepSeek API - Contenido 100% real generado por IA"""
     
     if not DEEPSEEK_API_KEY:
-        logger.error("❌ No hay API key de DeepSeek")
+        logger.error("❌ No hay API key configurada")
         return None
     
-    logger.info(f"🤖 Generando informe con DeepSeek sobre: {tema[:50]}...")
+    logger.info(f"🤖 Generando informe - Nivel: {nivel} - Tema: {tema[:50]}...")
     
-    # Prompt profesional y detallado
-    prompt = f"""Eres un asistente académico experto. Genera un INFORME ACADÉMICO PROFESIONAL sobre: "{tema}"
-
-Información adicional proporcionada: {info_extra if info_extra else 'No hay información adicional'}
-
-⚠️ ESTRUCTURA OBLIGATORIA (debes seguir este formato exactamente):
-
-**INTRODUCCIÓN**
-Escribe 2-3 párrafos que incluyan:
-- Contexto general del tema
-- Planteamiento del problema
-- Justificación de la investigación
-- Objetivos generales del informe
-
-**OBJETIVOS**
-- Objetivo General: (1 objetivo claro y medible)
-- Objetivos Específicos: (4-5 objetivos detallados)
-
-**MARCO TEÓRICO**
-Desarrolla 3-4 párrafos con:
-- Conceptos fundamentales relacionados al tema
-- Teorías o enfoques principales
-- Antecedentes de investigaciones previas
-- Definición de términos clave
-
-**METODOLOGÍA**
-Describe detalladamente:
-- Tipo de investigación (ej: descriptiva, exploratoria)
-- Enfoque (cualitativo, cuantitativo o mixto)
-- Población y muestra (con datos específicos)
-- Técnicas e instrumentos de recolección
-- Procedimiento paso a paso
-
-**DESARROLLO Y RESULTADOS**
-Presenta:
-- Hallazgos principales (mínimo 4 puntos)
-- Análisis de datos (incluye porcentajes o cifras)
-- Tablas o gráficos descritos en texto
-- Discusión de resultados
-- Comparación con otros estudios
-
-**CONCLUSIONES**
-Escribe mínimo 5 conclusiones numeradas que:
-- Respondan a los objetivos planteados
-- Sean específicas y basadas en evidencia
-- Muestren el cumplimiento de la investigación
-
-**RECOMENDACIONES**
-Formula 4 recomendaciones prácticas:
-- Para futuras investigaciones
-- Para la comunidad académica
-- Para aplicación profesional
-- Para políticas o decisiones
-
-**REFERENCIAS**
-Lista 6-8 fuentes bibliográficas relevantes en formato APA 7ª edición (libros, artículos, tesis)
-
-REQUISITOS IMPORTANTES:
-- Escribe en español neutro y académico
-- Usa **negritas** SOLO para los títulos de sección
-- Proporciona contenido sustancial (no solo títulos vacíos)
-- Incluye datos específicos, fechas, nombres, cifras
-- Extensión total: mínimo 2000 palabras
-- Sé original y evita texto genérico
-- Mantén coherencia entre todas las secciones
-
-¡Genera un informe completo, riguroso y de alta calidad!"""
-
+    prompt = get_prompt_segun_nivel(tema, info_extra, nivel)
+    
     headers = {
         "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
         "Content-Type": "application/json"
@@ -126,16 +128,10 @@ REQUISITOS IMPORTANTES:
     data = {
         "model": "deepseek-chat",
         "messages": [
-            {
-                "role": "system",
-                "content": "Eres un asistente académico profesional con amplia experiencia en investigación. Generas informes detallados, rigurosos y bien estructurados en español. Siempre incluyes datos específicos, ejemplos concretos y análisis profundos."
-            },
-            {
-                "role": "user",
-                "content": prompt
-            }
+            {"role": "system", "content": "Eres un asistente académico profesional. Generas contenido original, bien estructurado y adaptado al nivel educativo solicitado."},
+            {"role": "user", "content": prompt}
         ],
-        "max_tokens": 6000,
+        "max_tokens": 6000 if nivel == "universitario" else (3500 if nivel == "tecnico" else 2000),
         "temperature": 0.7
     }
     
@@ -146,21 +142,64 @@ REQUISITOS IMPORTANTES:
         if response.status_code == 200:
             resultado = response.json()
             contenido = resultado['choices'][0]['message']['content']
-            logger.info(f"✅ Informe generado exitosamente ({len(contenido)} caracteres)")
+            logger.info(f"✅ Informe generado ({len(contenido)} caracteres)")
             return contenido
         else:
             logger.error(f"❌ Error HTTP {response.status_code}: {response.text}")
             return None
             
-    except requests.exceptions.Timeout:
-        logger.error("⏱️ Timeout: DeepSeek tardó más de 120 segundos")
-        return None
     except Exception as e:
         logger.error(f"❌ Error: {e}")
         return None
 
 # ============================================================
-# FUNCIÓN PARA EXTRAER SECCIONES
+# FUNCIÓN PARA MEJORAR REDACTAR (BOTONES DE MEJORA)
+# ============================================================
+def mejorar_redaccion(texto_original, accion="mejorar"):
+    """Mejora, expande o simplifica el texto usando IA"""
+    
+    if not DEEPSEEK_API_KEY:
+        return "Error: No hay API key configurada"
+    
+    acciones = {
+        "mejorar": "Mejora la redacción del siguiente texto. Hazlo más claro, profesional y bien estructurado. No cambies el contenido principal:",
+        "expandir": "Expande el siguiente texto. Añade más detalles, ejemplos y profundidad. Mantén la coherencia:",
+        "simplificar": "Simplifica el siguiente texto. Hazlo más fácil de entender, usa lenguaje claro y ejemplos sencillos:"
+    }
+    
+    prompt = f"""{acciones.get(accion, acciones['mejorar'])}
+
+TEXTO ORIGINAL:
+{texto_original}
+
+TEXTO MEJORADO:"""
+    
+    headers = {
+        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    
+    data = {
+        "model": "deepseek-chat",
+        "messages": [
+            {"role": "system", "content": "Eres un asistente de edición de textos. Mejoras la redacción manteniendo el significado original."},
+            {"role": "user", "content": prompt}
+        ],
+        "max_tokens": 2000,
+        "temperature": 0.5
+    }
+    
+    try:
+        response = requests.post(DEEPSEEK_URL, headers=headers, json=data, timeout=60)
+        if response.status_code == 200:
+            return response.json()['choices'][0]['message']['content']
+        return texto_original
+    except Exception as e:
+        logger.error(f"Error en mejora: {e}")
+        return texto_original
+
+# ============================================================
+# EXTRACCIÓN DE SECCIONES
 # ============================================================
 def extraer_secciones(contenido):
     """Extrae cada sección del contenido generado por IA"""
@@ -176,13 +215,13 @@ def extraer_secciones(contenido):
         'referencias': ''
     }
     
-    # Patrones de búsqueda
+    # Patrones flexibles para diferentes formatos
     patrones = {
         'introduccion': r'\*\*INTRODUCCIÓN\*\*:?(.*?)(?=\*\*OBJETIVOS|\*\*MARCO|\*\*METODOLOGÍA|\*\*DESARROLLO|\*\*CONCLUSIONES|$)',
         'objetivos': r'\*\*OBJETIVOS\*\*:?(.*?)(?=\*\*MARCO|\*\*METODOLOGÍA|\*\*DESARROLLO|\*\*CONCLUSIONES|$)',
         'marco_teorico': r'\*\*MARCO TEÓRICO\*\*:?(.*?)(?=\*\*METODOLOGÍA|\*\*DESARROLLO|\*\*CONCLUSIONES|$)',
-        'metodologia': r'\*\*METODOLOGÍA\*\*:?(.*?)(?=\*\*DESARROLLO|\*\*RESULTADOS|\*\*CONCLUSIONES|$)',
-        'desarrollo': r'\*\*DESARROLLO Y RESULTADOS\*\*:?(.*?)(?=\*\*CONCLUSIONES|$)',
+        'metodologia': r'\*\*METODOLOGÍA\*\*:?(.*?)(?=\*\*DESARROLLO|\*\*CONCLUSIONES|$)',
+        'desarrollo': r'\*\*DESARROLLO\*\*:?(.*?)(?=\*\*CONCLUSIONES|$)',
         'conclusiones': r'\*\*CONCLUSIONES\*\*:?(.*?)(?=\*\*RECOMENDACIONES|$)',
         'recomendaciones': r'\*\*RECOMENDACIONES\*\*:?(.*?)(?=\*\*REFERENCIAS|$)',
         'referencias': r'\*\*REFERENCIAS\*\*:?(.*?)$'
@@ -192,48 +231,27 @@ def extraer_secciones(contenido):
         match = re.search(patron, contenido, re.DOTALL | re.IGNORECASE)
         if match:
             texto = match.group(1).strip()
-            # Convertir markdown a HTML para ReportLab
             texto = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', texto)
-            texto = re.sub(r'\*(.*?)\*', r'<i>\1</i>', texto)
             texto = texto.replace('\n', '<br/>')
             secciones[key] = texto
-            logger.info(f"✅ Sección '{key}' extraída: {len(texto)} caracteres")
     
     return secciones
-
-# ============================================================
-# CONTENIDO DE RESPALDO (si la IA falla)
-# ============================================================
-def contenido_respaldo(tema):
-    """Contenido genérico de respaldo (solo si la IA falla)"""
-    return {
-        'introduccion': f"<b>Contexto</b><br/>Este informe aborda el tema: {tema}. La IA no está disponible en este momento, por favor verifica la conexión.",
-        'objetivos': "<b>Objetivo General</b><br/>Analizar el tema propuesto.<br/><br/><b>Objetivos Específicos</b><br/>1. Comprender los conceptos clave<br/>2. Identificar aplicaciones prácticas",
-        'marco_teorico': "Contenido no disponible temporalmente. Por favor, intenta nuevamente más tarde.",
-        'metodologia': "Contenido no disponible temporalmente.",
-        'desarrollo': "Contenido no disponible temporalmente.",
-        'conclusiones': "Contenido no disponible temporalmente.",
-        'recomendaciones': "Contenido no disponible temporalmente.",
-        'referencias': "No hay referencias disponibles en este momento."
-    }
 
 # ============================================================
 # GENERADOR DE PDF
 # ============================================================
 def generar_pdf(datos_usuario, secciones):
-    """Genera el PDF profesional con el contenido"""
+    """Genera el PDF con el contenido generado por IA"""
     
-    # Validar datos
     nombre = datos_usuario.get('nombre', 'Estudiante')
     tema = datos_usuario.get('tema', 'Tema de Investigación')
+    nivel = datos_usuario.get('nivel', 'universitario')
     
-    # Generar nombre único
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     unique_id = uuid.uuid4().hex[:8]
     filename = f"informe_{timestamp}_{unique_id}.pdf"
     filepath = os.path.join('informes_generados', filename)
     
-    # Configurar estilos
     styles = getSampleStyleSheet()
     
     styles.add(ParagraphStyle(
@@ -261,7 +279,6 @@ def generar_pdf(datos_usuario, secciones):
         parent=styles['Title'],
         fontSize=24,
         alignment=TA_CENTER,
-        spaceAfter=20,
         textColor=colors.HexColor('#1a365d')
     ))
     
@@ -269,39 +286,30 @@ def generar_pdf(datos_usuario, secciones):
         name='TextoCentrado',
         parent=styles['Normal'],
         alignment=TA_CENTER,
-        fontSize=12,
-        spaceAfter=10
+        fontSize=12
     ))
     
-    # Crear documento
-    doc = SimpleDocTemplate(
-        filepath,
-        pagesize=letter,
-        rightMargin=72,
-        leftMargin=72,
-        topMargin=72,
-        bottomMargin=72
-    )
-    
+    doc = SimpleDocTemplate(filepath, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=72)
     story = []
     
-    # PORTADA
+    # Portada
     story.append(Spacer(1, 2.5*inch))
     story.append(Paragraph("INFORME ACADÉMICO", styles['TituloPortada']))
     story.append(Spacer(1, 0.3*inch))
     story.append(Paragraph(tema.upper(), styles['TextoCentrado']))
     story.append(Spacer(1, 1.5*inch))
     story.append(Paragraph(f"<b>Presentado por:</b> {nombre}", styles['TextoCentrado']))
+    story.append(Paragraph(f"<b>Nivel:</b> {nivel}", styles['TextoCentrado']))
     story.append(Paragraph(f"<b>Fecha:</b> {datetime.now().strftime('%d/%m/%Y')}", styles['TextoCentrado']))
     story.append(PageBreak())
     
-    # SECCIONES
+    # Secciones
     secciones_orden = [
         ("1. INTRODUCCIÓN", 'introduccion'),
         ("2. OBJETIVOS", 'objetivos'),
         ("3. MARCO TEÓRICO", 'marco_teorico'),
         ("4. METODOLOGÍA", 'metodologia'),
-        ("5. DESARROLLO Y RESULTADOS", 'desarrollo'),
+        ("5. DESARROLLO", 'desarrollo'),
         ("6. CONCLUSIONES", 'conclusiones'),
         ("7. RECOMENDACIONES", 'recomendaciones'),
         ("8. REFERENCIAS", 'referencias')
@@ -310,25 +318,14 @@ def generar_pdf(datos_usuario, secciones):
     for titulo, clave in secciones_orden:
         story.append(Paragraph(titulo, styles['Titulo1']))
         story.append(Spacer(1, 0.2*inch))
-        
         contenido = secciones.get(clave, '')
-        if contenido and len(contenido) > 20:
-            # Dividir en párrafos
-            parrafos = contenido.split('<br/>')
-            for parrafo in parrafos:
-                if parrafo.strip():
-                    story.append(Paragraph(parrafo.strip(), styles['TextoJustificado']))
-                    story.append(Spacer(1, 0.1*inch))
+        if contenido:
+            story.append(Paragraph(contenido, styles['TextoJustificado']))
         else:
-            story.append(Paragraph("Contenido no disponible", styles['TextoJustificado']))
-        
+            story.append(Paragraph("Esta sección no fue generada automáticamente. Puedes agregar contenido manualmente si lo deseas.", styles['TextoJustificado']))
         story.append(PageBreak())
     
-    # Construir PDF
     doc.build(story)
-    file_size = os.path.getsize(filepath)
-    logger.info(f"✅ PDF generado: {filename} ({file_size} bytes)")
-    
     return filename, filepath
 
 # ============================================================
@@ -345,65 +342,73 @@ def generar():
         tema = data.get('tema', '').strip()
         info_extra = data.get('texto_completo', '')
         nombre = data.get('nombre', 'Estudiante')
+        nivel = data.get('nivel', 'universitario')
         
         if not tema:
             return jsonify({'success': False, 'error': 'El tema es requerido'}), 400
         
-        logger.info(f"📨 Generando informe para: {nombre} - Tema: {tema[:50]}...")
+        logger.info(f"📨 Generando - Nivel: {nivel} - Tema: {tema[:50]}")
         
-        # Generar con IA
-        contenido_ia = generar_informe_con_ia(tema, info_extra)
+        contenido_ia = generar_informe_con_ia(tema, info_extra, nivel)
         
         if contenido_ia:
             secciones = extraer_secciones(contenido_ia)
-            logger.info("✅ Informe generado con IA correctamente")
+            logger.info("✅ Informe generado con IA")
         else:
-            secciones = contenido_respaldo(tema)
-            logger.warning("⚠️ Usando contenido de respaldo (IA falló)")
+            return jsonify({'success': False, 'error': 'No se pudo generar el informe. Verifica tu conexión y saldo de DeepSeek.'}), 500
         
         datos_usuario = {
             'nombre': nombre,
-            'tema': tema
+            'tema': tema,
+            'nivel': nivel
         }
         
         filename, filepath = generar_pdf(datos_usuario, secciones)
         
         return jsonify({
             'success': True,
-            'message': 'Informe generado exitosamente',
             'download_url': f'/descargar/{filename}'
         })
         
     except Exception as e:
-        logger.error(f"❌ Error en /generar: {e}")
+        logger.error(f"❌ Error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/mejorar', methods=['POST'])
+def mejorar():
+    """Endpoint para mejorar/expandir/simplificar texto"""
+    try:
+        data = request.json
+        texto = data.get('texto', '')
+        accion = data.get('accion', 'mejorar')
+        
+        if not texto:
+            return jsonify({'success': False, 'error': 'No hay texto para mejorar'}), 400
+        
+        texto_mejorado = mejorar_redaccion(texto, accion)
+        
+        return jsonify({
+            'success': True,
+            'texto_mejorado': texto_mejorado
+        })
+    except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/descargar/<filename>')
 def descargar(filename):
     filepath = os.path.join('informes_generados', filename)
-    
     if not os.path.exists(filepath):
         return jsonify({'success': False, 'error': 'Archivo no encontrado'}), 404
-    
-    return send_file(
-        filepath,
-        as_attachment=True,
-        download_name=filename,
-        mimetype='application/pdf'
-    )
+    return send_file(filepath, as_attachment=True, download_name=filename, mimetype='application/pdf')
 
 @app.route('/health')
 def health():
     return jsonify({
         'status': 'healthy',
-        'deepseek_configured': bool(DEEPSEEK_API_KEY),
+        'api_configured': bool(DEEPSEEK_API_KEY),
         'timestamp': datetime.now().isoformat()
     })
 
-# ============================================================
-# INICIO DE LA APLICACIÓN
-# ============================================================
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
-    logger.info(f"🚀 Iniciando servidor en puerto {port}")
     app.run(host='0.0.0.0', port=port, debug=False)
