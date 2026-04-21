@@ -2,15 +2,19 @@ from flask import Flask, render_template, request, jsonify, send_file
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
 from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
+from docx import Document
+from docx.shared import Inches, Pt
+from io import BytesIO
 import os
 import uuid
 from datetime import datetime
 import requests
 import logging
 import re
+import json
 
 # ============================================================
 # CONFIGURACIÓN INICIAL
@@ -33,14 +37,16 @@ DEEPSEEK_URL = "https://api.deepseek.com/v1/chat/completions"
 
 logger.info("=" * 60)
 logger.info("🚀 ACADEMIC REPORT PRO")
+logger.info("🔧 Herramienta profesional de generación de informes académicos")
+logger.info("📊 No es ChatGPT - Es un generador especializado en informes")
 logger.info(f"🔑 API Key configurada: {'SÍ ✅' if DEEPSEEK_API_KEY else 'NO ❌'}")
 logger.info("=" * 60)
 
 # ============================================================
-# CONSTRUCCIÓN DE PROMPT
+# CONSTRUCCIÓN DE PROMPT MEJORADO (con datos numéricos y tablas)
 # ============================================================
 def construir_prompt(tema, info_extra, tipo_informe, norma):
-    """Construye el prompt para DeepSeek"""
+    """Construye el prompt para DeepSeek con énfasis en datos numéricos"""
     
     info_extra_texto = info_extra if info_extra else 'No hay información adicional'
     
@@ -51,7 +57,7 @@ Información adicional del usuario: {info_extra_texto}
 ⚠️ IMPORTANTE: Debes seguir EXACTAMENTE este formato, con los títulos en **negritas** y en el mismo orden:
 
 **INTRODUCCIÓN**
-[Escribe aquí la introducción, 2-3 párrafos]
+[Escribe aquí la introducción, 2-3 párrafos. INCLUYE DATOS NUMÉRICOS como porcentajes, fechas, cantidades]
 
 **OBJETIVOS**
 - Objetivo General: [escribe aquí]
@@ -63,20 +69,25 @@ Información adicional del usuario: {info_extra_texto}
   5. [escribe aquí]
 
 **MARCO TEÓRICO**
-[Escribe aquí el marco teórico, 3-4 párrafos]
+[Escribe aquí el marco teórico, 3-4 párrafos. INCLUYE CITAS DE AUTORES con fechas]
 
 **METODOLOGÍA**
-[Escribe aquí la metodología, 2-3 párrafos]
+[Escribe aquí la metodología. INCLUYE: tipo de investigación, población (ej: 250 participantes), técnicas usadas, fechas]
 
 **DESARROLLO**
-[Escribe aquí el desarrollo, 3-4 párrafos]
+[Escribe aquí el desarrollo. OBLIGATORIO: INCLUYE UNA TABLA CON DATOS NUMÉRICOS. Ejemplo de formato de tabla:
+| Variable | Valor 2023 | Valor 2024 | Cambio (%) |
+|----------|------------|------------|-------------|
+| Indicador 1 | 45% | 52% | +7% |
+| Indicador 2 | 120 | 145 | +20.8% |
+]
 
 **CONCLUSIONES**
-1. [conclusión 1]
-2. [conclusión 2]
-3. [conclusión 3]
-4. [conclusión 4]
-5. [conclusión 5]
+1. [conclusión 1 con dato numérico]
+2. [conclusión 2 con dato numérico]
+3. [conclusión 3 con dato numérico]
+4. [conclusión 4 con dato numérico]
+5. [conclusión 5 con dato numérico]
 
 **RECOMENDACIONES**
 1. [recomendación 1]
@@ -92,10 +103,11 @@ Información adicional del usuario: {info_extra_texto}
 - [Referencia 5 en formato {norma}]
 - [Referencia 6 en formato {norma}]
 
-REQUISITOS:
+REQUISITOS OBLIGATORIOS:
 - Escribe en español académico
-- Usa **negritas** para los títulos
-- Sé específico y detallado
+- Usa **negritas** solo para los títulos
+- INCLUYE DATOS NUMÉRICOS ESPECÍFICOS (porcentajes, fechas, cantidades)
+- INCLUYE UNA TABLA en la sección de Desarrollo
 - No omitas ninguna sección"""
     
     return prompt
@@ -118,7 +130,7 @@ def llamar_deepseek(prompt):
     data = {
         "model": "deepseek-chat",
         "messages": [
-            {"role": "system", "content": "Eres un asistente académico profesional. Generas contenido original y bien estructurado en español."},
+            {"role": "system", "content": "Eres un asistente académico profesional especializado en la creación de informes estructurados. Generas contenido original, incluyendo DATOS NUMÉRICOS ESPECÍFICOS (porcentajes, fechas, cantidades) y TABLAS cuando corresponde."},
             {"role": "user", "content": prompt}
         ],
         "max_tokens": 6000,
@@ -143,7 +155,7 @@ def llamar_deepseek(prompt):
         return None
 
 # ============================================================
-# EXTRACCIÓN DE SECCIONES - VERSIÓN CORREGIDA
+# EXTRACCIÓN DE SECCIONES
 # ============================================================
 def formatear_texto(texto):
     """Formatea el texto para ReportLab"""
@@ -153,51 +165,30 @@ def formatear_texto(texto):
     return texto.strip()
 
 def extraer_seccion(contenido, nombre):
-    """Extrae una sección del contenido - VERSIÓN CORREGIDA para RECOMENDACIONES"""
+    """Extrae una sección del contenido"""
     
     if not contenido:
         return ""
     
-    # Lista de patrones MUY amplia para capturar cualquier formato
     patrones = [
-        # Patrón 1: **INTRODUCCIÓN** texto (con o sin espacio después)
         rf'\*\*{nombre}\*\*:?\s*(.*?)(?=\*\*[A-ZÁÉÍÓÚÜÑ]|\Z)',
-        
-        # Patrón 2: **INTRODUCCIÓN** sin espacio ni nada
         rf'\*\*{nombre}\*\*(.*?)(?=\*\*[A-ZÁÉÍÓÚÜÑ]|\Z)',
-        
-        # Patrón 3: INTRODUCCIÓN (sin asteriscos) con línea de guiones
         rf'\n{nombre}\n[=\-]+\s*(.*?)(?=\n[A-ZÁÉÍÓÚÜÑ]|\Z)',
-        
-        # Patrón 4: 1. INTRODUCCIÓN texto hasta 2.
         rf'\d+\.\s*{nombre}\s*(.*?)(?=\d+\.\s*[A-ZÁÉÍÓÚÜÑ]|\Z)',
-        
-        # Patrón 5: ### INTRODUCCIÓN
         rf'###\s*{nombre}\s*(.*?)(?=###|\Z)',
-        
-        # Patrón 6: RECOMENDACIONES en mayúsculas o minúsculas (más flexible)
-        rf'(?i)\*\*RECOMENDACIONES?\*\*:?\s*(.*?)(?=\*\*[A-ZÁÉÍÓÚÜÑ]|\Z)',
-        
-        # Patrón 7: RECOMENDACIONES sin ** pero con guiones
-        rf'(?i)\nRECOMENDACIONES?\n[=\-]+\s*(.*?)(?=\n[A-ZÁÉÍÓÚÜÑ]|\Z)',
-        
-        # Patrón 8: RECOMENDACIONES (búsqueda directa hasta REFERENCIAS)
-        rf'(?i)\*\*RECOMENDACIONES?\*\*:?\s*(.*?)(?=\*\*REFERENCIAS|REFERENCIAS|\Z)',
     ]
     
-    for i, patron in enumerate(patrones):
+    for patron in patrones:
         try:
             match = re.search(patron, contenido, re.DOTALL | re.IGNORECASE)
             if match:
                 texto = match.group(1).strip()
-                if len(texto) > 30:  # Umbral más bajo para recomendaciones
-                    logger.info(f"✅ Sección '{nombre}' extraída con patrón {i+1} ({len(texto)} chars)")
+                if len(texto) > 30:
+                    logger.info(f"✅ Sección '{nombre}' extraída ({len(texto)} chars)")
                     return formatear_texto(texto)
         except Exception as e:
-            logger.warning(f"Error con patrón {i+1} para '{nombre}': {e}")
             continue
     
-    logger.warning(f"⚠️ No se pudo extraer '{nombre}'")
     return ""
 
 # ============================================================
@@ -212,7 +203,6 @@ def generar_informe_completo(tema, info_extra, tipo_informe, norma):
     if not contenido:
         return None
     
-    # Extraer cada sección
     secciones = {
         'introduccion': extraer_seccion(contenido, 'INTRODUCCIÓN'),
         'objetivos': extraer_seccion(contenido, 'OBJETIVOS'),
@@ -224,12 +214,7 @@ def generar_informe_completo(tema, info_extra, tipo_informe, norma):
         'referencias': extraer_seccion(contenido, 'REFERENCIAS')
     }
     
-    # Guardar el contenido original para depuración
-    logger.info(f"📊 Resumen de extracción:")
-    for key, value in secciones.items():
-        status = "✅" if value and len(value) > 30 else "❌"
-        logger.info(f"   {status} {key}: {len(value)} caracteres")
-    
+    logger.info(f"📊 Resumen: {sum(1 for v in secciones.values() if v)}/8 secciones extraídas")
     return secciones
 
 # ============================================================
@@ -330,11 +315,80 @@ def generar_pdf(datos_usuario, secciones):
         if contenido and len(contenido) > 30:
             story.append(Paragraph(contenido, styles['TextoJustificado']))
         else:
-            story.append(Paragraph("No se pudo generar esta sección. Por favor, intenta nuevamente.", styles['TextoJustificado']))
+            story.append(Paragraph("No se pudo generar esta sección.", styles['TextoJustificado']))
         story.append(PageBreak())
     
     doc.build(story)
     return filename, filepath
+
+# ============================================================
+# GENERAR WORD
+# ============================================================
+def generar_word(datos_usuario, secciones):
+    """Genera un archivo Word con el contenido"""
+    
+    nombre = datos_usuario.get('nombre', 'Estudiante')
+    tema = datos_usuario.get('tema', 'Tema de Investigación')
+    asignatura = datos_usuario.get('asignatura', '')
+    profesor = datos_usuario.get('profesor', '')
+    institucion = datos_usuario.get('institucion', '')
+    ciudad = datos_usuario.get('ciudad', '')
+    fecha = datos_usuario.get('fecha', datetime.now().strftime('%d/%m/%Y'))
+    norma = datos_usuario.get('norma', 'APA 7')
+    
+    doc = Document()
+    
+    # Título
+    title = doc.add_heading('INFORME ACADÉMICO', 0)
+    title.alignment = 1  # Centrado
+    
+    doc.add_heading(tema, level=1)
+    
+    # Datos del estudiante
+    doc.add_paragraph(f"Presentado por: {nombre}")
+    if asignatura:
+        doc.add_paragraph(f"Asignatura: {asignatura}")
+    if profesor:
+        doc.add_paragraph(f"Docente: {profesor}")
+    if institucion:
+        doc.add_paragraph(f"Institución: {institucion}")
+    if ciudad:
+        doc.add_paragraph(f"Ciudad: {ciudad}")
+    doc.add_paragraph(f"Fecha: {fecha}")
+    doc.add_paragraph(f"Norma: {norma}")
+    doc.add_page_break()
+    
+    # Secciones
+    secciones_orden = [
+        ("INTRODUCCIÓN", 'introduccion'),
+        ("OBJETIVOS", 'objetivos'),
+        ("MARCO TEÓRICO", 'marco_teorico'),
+        ("METODOLOGÍA", 'metodologia'),
+        ("DESARROLLO", 'desarrollo'),
+        ("CONCLUSIONES", 'conclusiones'),
+        ("RECOMENDACIONES", 'recomendaciones'),
+        ("REFERENCIAS", 'referencias')
+    ]
+    
+    for titulo, clave in secciones_orden:
+        doc.add_heading(titulo, level=2)
+        contenido = secciones.get(clave, '')
+        # Limpiar etiquetas HTML
+        contenido_limpio = re.sub(r'<br/?>', '\n', contenido)
+        contenido_limpio = re.sub(r'<b>(.*?)</b>', r'\1', contenido_limpio)
+        contenido_limpio = re.sub(r'<[^>]+>', '', contenido_limpio)
+        
+        if contenido_limpio and len(contenido_limpio) > 30:
+            doc.add_paragraph(contenido_limpio)
+        else:
+            doc.add_paragraph("No se pudo generar esta sección.")
+        doc.add_page_break()
+    
+    # Guardar en BytesIO
+    buffer = BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    return buffer
 
 # ============================================================
 # RUTAS DE LA API
@@ -345,7 +399,7 @@ def index():
 
 @app.route('/generar', methods=['POST'])
 def generar():
-    """Genera el informe completo y devuelve el PDF"""
+    """Genera el informe completo y devuelve las secciones para editar"""
     try:
         data = request.json
         
@@ -371,18 +425,10 @@ def generar():
         
         logger.info(f"📨 Generando informe - Tipo: {tipo_informe} - Tema: {tema[:50]}...")
         
-        # Generar con IA
         secciones = generar_informe_completo(tema, info_extra, tipo_informe, norma)
         
         if not secciones:
-            return jsonify({'success': False, 'error': 'No se pudo generar el informe. Verifica tu saldo de DeepSeek.'}), 500
-        
-        # Verificar si al menos algunas secciones se generaron
-        secciones_llenas = sum(1 for v in secciones.values() if v and len(v) > 30)
-        logger.info(f"📊 Secciones con contenido: {secciones_llenas}/8")
-        
-        if secciones_llenas < 3:
-            logger.warning("⚠️ Pocas secciones generadas, puede haber problemas con el formato")
+            return jsonify({'success': False, 'error': 'No se pudo generar el informe.'}), 500
         
         datos_usuario = {
             'nombre': nombre_principal,
@@ -395,6 +441,24 @@ def generar():
             'norma': norma
         }
         
+        return jsonify({
+            'success': True,
+            'secciones': secciones,
+            'datos_usuario': datos_usuario
+        })
+        
+    except Exception as e:
+        logger.error(f"Error en generar: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/exportar-pdf', methods=['POST'])
+def exportar_pdf():
+    """Exporta el informe editado a PDF"""
+    try:
+        data = request.json
+        secciones = data.get('secciones', {})
+        datos_usuario = data.get('datos_usuario', {})
+        
         filename, filepath = generar_pdf(datos_usuario, secciones)
         
         return send_file(
@@ -403,14 +467,32 @@ def generar():
             download_name=filename,
             mimetype='application/pdf'
         )
-        
     except Exception as e:
-        logger.error(f"Error en generar: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/exportar-word', methods=['POST'])
+def exportar_word():
+    """Exporta el informe editado a Word"""
+    try:
+        data = request.json
+        secciones = data.get('secciones', {})
+        datos_usuario = data.get('datos_usuario', {})
+        
+        buffer = generar_word(datos_usuario, secciones)
+        filename = f"informe_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx"
+        
+        return send_file(
+            buffer,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        )
+    except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/preview', methods=['POST'])
 def preview():
-    """Genera una vista previa del contenido sin crear el PDF"""
+    """Genera una vista previa del contenido"""
     try:
         data = request.json
         tema = data.get('tema', '')
@@ -430,7 +512,6 @@ def preview():
             return jsonify({'success': False, 'error': 'No se pudo generar el contenido'}), 500
             
     except Exception as e:
-        logger.error(f"Error en preview: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/health')
@@ -438,6 +519,7 @@ def health():
     return jsonify({
         'status': 'healthy',
         'api_configured': bool(DEEPSEEK_API_KEY),
+        'message': 'Academic Report Pro - Generador profesional de informes académicos',
         'timestamp': datetime.now().isoformat()
     })
 
