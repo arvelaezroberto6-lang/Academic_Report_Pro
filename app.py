@@ -37,71 +37,63 @@ logger.info(f"🔑 API Key configurada: {'SÍ ✅' if DEEPSEEK_API_KEY else 'NO 
 logger.info("=" * 60)
 
 # ============================================================
-# CONSTRUCCIÓN DE PROMPT SEGÚN TIPO DE INFORME
+# CONSTRUCCIÓN DE PROMPT
 # ============================================================
-def construir_prompt(tema, info_extra, tipo_informe, norma, modo):
-    """Construye el prompt según el tipo de informe y modo seleccionado"""
+def construir_prompt(tema, info_extra, tipo_informe, norma):
+    """Construye el prompt para DeepSeek"""
     
     info_extra_texto = info_extra if info_extra else 'No hay información adicional'
-    
-    # Estructuras según tipo de informe
-    estructuras = {
-        "academico": """
-**INTRODUCCIÓN** (contexto, problema, justificación, 2-3 párrafos)
-**OBJETIVOS** (1 general + 4-5 específicos)
-**MARCO TEÓRICO** (conceptos clave, antecedentes, definiciones)
-**METODOLOGÍA** (tipo de investigación, población, técnicas, procedimiento)
-**DESARROLLO** (resultados, análisis, discusión de hallazgos)
-**CONCLUSIONES** (5-6 puntos numerados)
-**RECOMENDACIONES** (3-4 sugerencias prácticas)
-**REFERENCIAS** (6-8 fuentes en formato {norma})""",
-        
-        "laboratorio": """
-**INTRODUCCIÓN** (objetivo del experimento, fundamento teórico, hipótesis)
-**MATERIALES Y MÉTODOS** (equipos, reactivos, procedimiento paso a paso)
-**RESULTADOS** (datos obtenidos, tablas, observaciones)
-**DISCUSIÓN** (análisis de resultados, comparación con teoría, errores)
-**CONCLUSIONES** (5 conclusiones específicas)
-**RECOMENDACIONES** (mejoras para futuros experimentos)
-**REFERENCIAS** (5-6 fuentes en formato {norma})""",
-        
-        "ejecutivo": """
-**RESUMEN EJECUTIVO** (hallazgos clave en 1 página)
-**INTRODUCCIÓN** (contexto empresarial, propósito, alcance)
-**ANÁLISIS DE SITUACIÓN** (FODA, mercado, competencia, KPIs)
-**HALLAZGOS CLAVE** (oportunidades, amenazas, tendencias)
-**RECOMENDACIONES** (estrategias corto, mediano y largo plazo)
-**CONCLUSIONES** (5 puntos principales)
-**REFERENCIAS** (fuentes consultadas en formato {norma})""",
-        
-        "tesis": """
-**RESUMEN** (abstract en español, 250 palabras, palabras clave)
-**INTRODUCCIÓN** (contexto, problema, justificación, antecedentes)
-**OBJETIVOS** (1 general + 5 específicos)
-**MARCO TEÓRICO** (bases teóricas, estado del arte, definiciones)
-**METODOLOGÍA** (diseño, población, instrumentos, procedimiento)
-**RESULTADOS ESPERADOS** (hallazgos anticipados, limitaciones)
-**CONCLUSIONES PRELIMINARES** (5-6 conclusiones)
-**REFERENCIAS** (mínimo 12 fuentes en formato {norma})"""
-    }
-    
-    estructura = estructuras.get(tipo_informe, estructuras["academico"])
     
     prompt = f"""Eres un asistente académico experto. Genera un informe de tipo {tipo_informe.upper()} sobre: "{tema}"
 
 Información adicional del usuario: {info_extra_texto}
 
-ESTRUCTURA OBLIGATORIA:
-{estructura}
+⚠️ IMPORTANTE: Debes seguir EXACTAMENTE este formato, con los títulos en **negritas** y en el mismo orden:
+
+**INTRODUCCIÓN**
+[Escribe aquí la introducción, 2-3 párrafos]
+
+**OBJETIVOS**
+- Objetivo General: [escribe aquí]
+- Objetivos Específicos:
+  1. [escribe aquí]
+  2. [escribe aquí]
+  3. [escribe aquí]
+  4. [escribe aquí]
+
+**MARCO TEÓRICO**
+[Escribe aquí el marco teórico, 3-4 párrafos]
+
+**METODOLOGÍA**
+[Escribe aquí la metodología, 2-3 párrafos]
+
+**DESARROLLO**
+[Escribe aquí el desarrollo, 3-4 párrafos]
+
+**CONCLUSIONES**
+1. [conclusión 1]
+2. [conclusión 2]
+3. [conclusión 3]
+4. [conclusión 4]
+5. [conclusión 5]
+
+**RECOMENDACIONES**
+1. [recomendación 1]
+2. [recomendación 2]
+3. [recomendación 3]
+
+**REFERENCIAS**
+- [Referencia 1 en formato {norma}]
+- [Referencia 2 en formato {norma}]
+- [Referencia 3 en formato {norma}]
+- [Referencia 4 en formato {norma}]
+- [Referencia 5 en formato {norma}]
 
 REQUISITOS:
-- Escribe en español académico profesional
-- Usa **negritas** SOLO para los títulos de sección
-- Sé específico, incluye datos concretos, fechas, nombres
-- Extensión: 5-10 páginas según el tipo de informe
-- Mantén coherencia entre todas las secciones
-
-¡Genera un informe completo y de alta calidad!"""
+- Escribe en español académico
+- Usa **negritas** para los títulos
+- Sé específico y detallado
+- No omitas ninguna sección"""
     
     return prompt
 
@@ -109,7 +101,7 @@ REQUISITOS:
 # FUNCIÓN PARA LLAMAR A DEEPSEEK
 # ============================================================
 def llamar_deepseek(prompt):
-    """Llama a la API de DeepSeek y devuelve el contenido generado"""
+    """Llama a la API de DeepSeek"""
     
     if not DEEPSEEK_API_KEY:
         logger.error("❌ No hay API key configurada")
@@ -123,7 +115,7 @@ def llamar_deepseek(prompt):
     data = {
         "model": "deepseek-chat",
         "messages": [
-            {"role": "system", "content": "Eres un asistente académico profesional. Generas contenido original, bien estructurado y de alta calidad en español."},
+            {"role": "system", "content": "Eres un asistente académico profesional. Generas contenido original y bien estructurado en español."},
             {"role": "user", "content": prompt}
         ],
         "max_tokens": 6000,
@@ -131,16 +123,16 @@ def llamar_deepseek(prompt):
     }
     
     try:
-        logger.info("📡 Enviando solicitud a DeepSeek API...")
+        logger.info("📡 Enviando solicitud a DeepSeek...")
         response = requests.post(DEEPSEEK_URL, headers=headers, json=data, timeout=120)
         
         if response.status_code == 200:
             resultado = response.json()
             contenido = resultado['choices'][0]['message']['content']
-            logger.info(f"✅ Contenido generado ({len(contenido)} caracteres)")
+            logger.info(f"✅ Contenido recibido ({len(contenido)} caracteres)")
             return contenido
         else:
-            logger.error(f"❌ Error HTTP {response.status_code}: {response.text}")
+            logger.error(f"❌ Error HTTP {response.status_code}")
             return None
             
     except Exception as e:
@@ -148,77 +140,85 @@ def llamar_deepseek(prompt):
         return None
 
 # ============================================================
+# EXTRACCIÓN DE SECCIONES - VERSIÓN MEJORADA
+# ============================================================
+def formatear_texto(texto):
+    """Formatea el texto para ReportLab"""
+    texto = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', texto)
+    texto = texto.replace('\n', '<br/>')
+    texto = re.sub(r'<br/>\s*<br/>', '<br/><br/>', texto)
+    return texto.strip()
+
+def extraer_seccion(contenido, nombre):
+    """Extrae una sección del contenido usando múltiples estrategias"""
+    
+    if not contenido:
+        return ""
+    
+    # Lista de patrones a probar
+    patrones = [
+        # Patrón: **INTRODUCCIÓN** texto hasta **siguiente sección**
+        rf'\*\*{nombre}\*\*:?\s*(.*?)(?=\*\*[A-ZÁÉÍÓÚÜÑ]|\Z)',
+        
+        # Patrón: INTRODUCCIÓN (sin asteriscos) texto hasta siguiente sección
+        rf'\n{nombre}\n[=\-]+\s*(.*?)(?=\n[A-ZÁÉÍÓÚÜÑ]|\Z)',
+        
+        # Patrón: 1. INTRODUCCIÓN texto hasta 2.
+        rf'\d+\.\s*{nombre}\s*(.*?)(?=\d+\.\s*[A-ZÁÉÍÓÚÜÑ]|\Z)',
+        
+        # Patrón: ### INTRODUCCIÓN
+        rf'###\s*{nombre}\s*(.*?)(?=###|\Z)',
+        
+        # Patrón: **INTRODUCCIÓN** sin espacio
+        rf'\*\*{nombre}\*\*(.*?)(?=\*\*[A-ZÁÉÍÓÚÜÑ]|\Z)',
+    ]
+    
+    for i, patron in enumerate(patrones):
+        try:
+            match = re.search(patron, contenido, re.DOTALL | re.IGNORECASE)
+            if match:
+                texto = match.group(1).strip()
+                if len(texto) > 50:
+                    logger.info(f"✅ Sección '{nombre}' extraída con patrón {i+1} ({len(texto)} chars)")
+                    return formatear_texto(texto)
+        except Exception as e:
+            logger.warning(f"Error con patrón {i+1} para '{nombre}': {e}")
+            continue
+    
+    logger.warning(f"⚠️ No se pudo extraer '{nombre}'")
+    return ""
+
+# ============================================================
 # GENERAR INFORME COMPLETO
 # ============================================================
-def generar_informe_con_ia(tema, info_extra, tipo_informe, norma, modo):
-    """Genera el informe completo usando DeepSeek"""
+def generar_informe_completo(tema, info_extra, tipo_informe, norma):
+    """Genera el informe y extrae todas las secciones"""
     
-    prompt = construir_prompt(tema, info_extra, tipo_informe, norma, modo)
+    prompt = construir_prompt(tema, info_extra, tipo_informe, norma)
     contenido = llamar_deepseek(prompt)
     
     if not contenido:
         return None
     
-    # Extraer secciones con la función mejorada
+    # Extraer cada sección
     secciones = {
         'introduccion': extraer_seccion(contenido, 'INTRODUCCIÓN'),
         'objetivos': extraer_seccion(contenido, 'OBJETIVOS'),
         'marco_teorico': extraer_seccion(contenido, 'MARCO TEÓRICO'),
         'metodologia': extraer_seccion(contenido, 'METODOLOGÍA'),
-        'desarrollo': extraer_seccion(contenido, 'DESARROLLO') or extraer_seccion(contenido, 'RESULTADOS'),
+        'desarrollo': extraer_seccion(contenido, 'DESARROLLO'),
         'conclusiones': extraer_seccion(contenido, 'CONCLUSIONES'),
         'recomendaciones': extraer_seccion(contenido, 'RECOMENDACIONES'),
         'referencias': extraer_seccion(contenido, 'REFERENCIAS')
     }
     
+    # Guardar el contenido original para depuración
+    logger.info(f"📊 Resumen de extracción:")
+    for key, value in secciones.items():
+        status = "✅" if value and len(value) > 50 else "❌"
+        logger.info(f"   {status} {key}: {len(value)} caracteres")
+    
     return secciones
-
-# ============================================================
-# FUNCIÓN DE EXTRACCIÓN CORREGIDA (¡AQUÍ ESTÁ EL ARREGLO!)
-# ============================================================
-def extraer_seccion(contenido, nombre):
-    """Extrae una sección del contenido generado - VERSIÓN CORREGIDA"""
-    
-    # Patrones más flexibles para encontrar las secciones
-    patrones = [
-        # Patrón 1: **INTRODUCCIÓN** texto
-        rf'\*\*{nombre}\*\*:?\s*(.*?)(?=\*\*[A-ZÁÉÍÓÚÜÑ]|\Z)',
-        
-        # Patrón 2: INTRODUCCIÓN (sin asteriscos) seguido de texto
-        rf'\n{nombre}\n[=-]+\s*(.*?)(?=\n[A-ZÁÉÍÓÚÜÑ]|\Z)',
-        
-        # Patrón 3: ### INTRODUCCIÓN
-        rf'###\s*{nombre}\s*(.*?)(?=###|\Z)',
-        
-        # Patrón 4: **INTRODUCCIÓN** sin espacio después
-        rf'\*\*{nombre}\*\*(.*?)(?=\*\*[A-ZÁÉÍÓÚÜÑ]|\Z)',
-        
-        # Patrón 5: Buscar después de un número (1. INTRODUCCIÓN)
-        rf'\d+\.\s*{nombre}\s*(.*?)(?=\d+\.\s*[A-ZÁÉÍÓÚÜÑ]|\Z)',
-    ]
-    
-    for patron in patrones:
-        try:
-            match = re.search(patron, contenido, re.DOTALL | re.IGNORECASE)
-            if match:
-                texto = match.group(1).strip()
-                # Limpiar el texto: eliminar marcadores markdown, etc.
-                texto = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', texto)
-                texto = texto.replace('\n', '<br/>')
-                texto = re.sub(r'<br/>\s*<br/>', '<br/><br/>', texto)
-                
-                # Verificar que tenga contenido útil
-                if len(texto) > 50:
-                    logger.info(f"✅ Sección '{nombre}' extraída: {len(texto)} caracteres")
-                    return texto
-                else:
-                    logger.warning(f"⚠️ Sección '{nombre}' muy corta ({len(texto)} chars)")
-        except Exception as e:
-            logger.warning(f"Error con patrón para {nombre}: {e}")
-            continue
-    
-    logger.warning(f"❌ No se pudo extraer sección '{nombre}'")
-    return ""
 
 # ============================================================
 # GENERAR PDF
@@ -234,7 +234,6 @@ def generar_pdf(datos_usuario, secciones):
     ciudad = datos_usuario.get('ciudad', '')
     fecha = datos_usuario.get('fecha', datetime.now().strftime('%d/%m/%Y'))
     norma = datos_usuario.get('norma', 'APA 7')
-    tipo_informe = datos_usuario.get('tipo_informe', 'academico')
     
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     unique_id = uuid.uuid4().hex[:8]
@@ -316,10 +315,10 @@ def generar_pdf(datos_usuario, secciones):
         story.append(Paragraph(titulo, styles['Titulo1']))
         story.append(Spacer(1, 0.2*inch))
         contenido = secciones.get(clave, '')
-        if contenido and len(contenido) > 20:
+        if contenido and len(contenido) > 50:
             story.append(Paragraph(contenido, styles['TextoJustificado']))
         else:
-            story.append(Paragraph("Esta sección será generada por IA al completar el informe.", styles['TextoJustificado']))
+            story.append(Paragraph("No se pudo generar esta sección. Por favor, intenta nuevamente.", styles['TextoJustificado']))
         story.append(PageBreak())
     
     doc.build(story)
@@ -332,50 +331,20 @@ def generar_pdf(datos_usuario, secciones):
 def index():
     return render_template('index.html')
 
-@app.route('/preview', methods=['POST'])
-def preview():
-    """Genera una vista previa del contenido sin crear el PDF"""
-    try:
-        data = request.json
-        tema = data.get('tema', '')
-        info_extra = data.get('texto_usuario', '')
-        tipo_informe = data.get('tipo_informe', 'academico')
-        norma = data.get('norma', 'APA 7')
-        modo = data.get('modo', 'rapido')
-        
-        if not tema:
-            return jsonify({'success': False, 'error': 'El tema es requerido'}), 400
-        
-        prompt = construir_prompt(tema, info_extra, tipo_informe, norma, modo)
-        contenido = llamar_deepseek(prompt)
-        
-        if contenido:
-            return jsonify({'success': True, 'contenido': contenido[:3000] + '...'})
-        else:
-            return jsonify({'success': False, 'error': 'No se pudo generar el contenido'}), 500
-            
-    except Exception as e:
-        logger.error(f"Error en preview: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
 @app.route('/generar', methods=['POST'])
 def generar():
     """Genera el informe completo y devuelve el PDF"""
     try:
         data = request.json
         
-        # Obtener datos del formulario
         tema = data.get('tema', '').strip()
         info_extra = data.get('texto_usuario', '')
         tipo_informe = data.get('tipo_informe', 'academico')
         norma = data.get('norma', 'APA 7')
-        modo = data.get('modo', 'rapido')
         
-        # Datos de autores
         autores = data.get('autores', [])
         nombre_principal = autores[0].get('nombre', 'Estudiante') if autores else 'Estudiante'
         
-        # Datos académicos
         asignatura = data.get('asignatura', '')
         profesor = data.get('profesor', '')
         institucion = data.get('institucion', '')
@@ -391,12 +360,18 @@ def generar():
         logger.info(f"📨 Generando informe - Tipo: {tipo_informe} - Tema: {tema[:50]}...")
         
         # Generar con IA
-        secciones = generar_informe_con_ia(tema, info_extra, tipo_informe, norma, modo)
+        secciones = generar_informe_completo(tema, info_extra, tipo_informe, norma)
         
         if not secciones:
-            return jsonify({'success': False, 'error': 'No se pudo generar el informe. Verifica tu conexión y saldo de DeepSeek.'}), 500
+            return jsonify({'success': False, 'error': 'No se pudo generar el informe. Verifica tu saldo de DeepSeek.'}), 500
         
-        # Preparar datos para el PDF
+        # Verificar si al menos algunas secciones se generaron
+        secciones_llenas = sum(1 for v in secciones.values() if v and len(v) > 50)
+        logger.info(f"📊 Secciones con contenido: {secciones_llenas}/8")
+        
+        if secciones_llenas < 3:
+            logger.warning("⚠️ Pocas secciones generadas, puede haber problemas con el formato")
+        
         datos_usuario = {
             'nombre': nombre_principal,
             'tema': tema,
@@ -405,8 +380,7 @@ def generar():
             'institucion': institucion,
             'ciudad': ciudad,
             'fecha': fecha,
-            'norma': norma,
-            'tipo_informe': tipo_informe
+            'norma': norma
         }
         
         filename, filepath = generar_pdf(datos_usuario, secciones)
