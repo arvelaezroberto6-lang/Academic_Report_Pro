@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, jsonify, send_file
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
 from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from docx import Document
@@ -23,11 +23,6 @@ os.makedirs('informes_generados', exist_ok=True)
 
 DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
 DEEPSEEK_URL = "https://api.deepseek.com/v1/chat/completions"
-
-logger.info("=" * 60)
-logger.info("🚀 INFORMALA - Generador profesional de informes")
-logger.info(f"🔑 API Key configurada: {'SÍ ✅' if DEEPSEEK_API_KEY else 'NO ❌'}")
-logger.info("=" * 60)
 
 def llamar_deepseek(prompt):
     headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type": "application/json"}
@@ -80,19 +75,15 @@ def generar_pdf(datos_usuario, secciones):
     doc = SimpleDocTemplate(filepath, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=72)
     story = []
     
-    # Portada
     story.append(Spacer(1, 2.0*inch))
     story.append(Paragraph("INFORME ACADÉMICO", styles['TituloPortada']))
     story.append(Spacer(1, 0.3*inch))
     story.append(Paragraph(tema.upper(), styles['TextoCentrado']))
     story.append(Spacer(1, 1.5*inch))
     story.append(Paragraph(f"Presentado por: {nombre}", styles['TextoCentrado']))
-    if asignatura:
-        story.append(Paragraph(f"Asignatura: {asignatura}", styles['TextoCentrado']))
-    if profesor:
-        story.append(Paragraph(f"Docente: {profesor}", styles['TextoCentrado']))
-    if institucion:
-        story.append(Paragraph(f"Institución: {institucion}", styles['TextoCentrado']))
+    if asignatura: story.append(Paragraph(f"Asignatura: {asignatura}", styles['TextoCentrado']))
+    if profesor: story.append(Paragraph(f"Docente: {profesor}", styles['TextoCentrado']))
+    if institucion: story.append(Paragraph(f"Institución: {institucion}", styles['TextoCentrado']))
     story.append(Paragraph(f"Fecha: {fecha}", styles['TextoCentrado']))
     story.append(Paragraph(f"Norma: {norma}", styles['TextoCentrado']))
     story.append(PageBreak())
@@ -123,12 +114,9 @@ def generar_word(datos_usuario, secciones):
     doc.add_heading('INFORME ACADÉMICO', 0)
     doc.add_heading(tema, level=1)
     doc.add_paragraph(f"Presentado por: {nombre}")
-    if asignatura:
-        doc.add_paragraph(f"Asignatura: {asignatura}")
-    if profesor:
-        doc.add_paragraph(f"Docente: {profesor}")
-    if institucion:
-        doc.add_paragraph(f"Institución: {institucion}")
+    if asignatura: doc.add_paragraph(f"Asignatura: {asignatura}")
+    if profesor: doc.add_paragraph(f"Docente: {profesor}")
+    if institucion: doc.add_paragraph(f"Institución: {institucion}")
     doc.add_paragraph(f"Fecha: {fecha}")
     doc.add_paragraph(f"Norma: {norma}")
     doc.add_page_break()
