@@ -60,6 +60,7 @@ Información adicional del usuario: {info_extra_texto}
   2. [escribe aquí]
   3. [escribe aquí]
   4. [escribe aquí]
+  5. [escribe aquí]
 
 **MARCO TEÓRICO**
 [Escribe aquí el marco teórico, 3-4 párrafos]
@@ -81,6 +82,7 @@ Información adicional del usuario: {info_extra_texto}
 1. [recomendación 1]
 2. [recomendación 2]
 3. [recomendación 3]
+4. [recomendación 4]
 
 **REFERENCIAS**
 - [Referencia 1 en formato {norma}]
@@ -88,6 +90,7 @@ Información adicional del usuario: {info_extra_texto}
 - [Referencia 3 en formato {norma}]
 - [Referencia 4 en formato {norma}]
 - [Referencia 5 en formato {norma}]
+- [Referencia 6 en formato {norma}]
 
 REQUISITOS:
 - Escribe en español académico
@@ -140,7 +143,7 @@ def llamar_deepseek(prompt):
         return None
 
 # ============================================================
-# EXTRACCIÓN DE SECCIONES - VERSIÓN MEJORADA
+# EXTRACCIÓN DE SECCIONES - VERSIÓN CORREGIDA
 # ============================================================
 def formatear_texto(texto):
     """Formatea el texto para ReportLab"""
@@ -150,27 +153,36 @@ def formatear_texto(texto):
     return texto.strip()
 
 def extraer_seccion(contenido, nombre):
-    """Extrae una sección del contenido usando múltiples estrategias"""
+    """Extrae una sección del contenido - VERSIÓN CORREGIDA para RECOMENDACIONES"""
     
     if not contenido:
         return ""
     
-    # Lista de patrones a probar
+    # Lista de patrones MUY amplia para capturar cualquier formato
     patrones = [
-        # Patrón: **INTRODUCCIÓN** texto hasta **siguiente sección**
+        # Patrón 1: **INTRODUCCIÓN** texto (con o sin espacio después)
         rf'\*\*{nombre}\*\*:?\s*(.*?)(?=\*\*[A-ZÁÉÍÓÚÜÑ]|\Z)',
         
-        # Patrón: INTRODUCCIÓN (sin asteriscos) texto hasta siguiente sección
+        # Patrón 2: **INTRODUCCIÓN** sin espacio ni nada
+        rf'\*\*{nombre}\*\*(.*?)(?=\*\*[A-ZÁÉÍÓÚÜÑ]|\Z)',
+        
+        # Patrón 3: INTRODUCCIÓN (sin asteriscos) con línea de guiones
         rf'\n{nombre}\n[=\-]+\s*(.*?)(?=\n[A-ZÁÉÍÓÚÜÑ]|\Z)',
         
-        # Patrón: 1. INTRODUCCIÓN texto hasta 2.
+        # Patrón 4: 1. INTRODUCCIÓN texto hasta 2.
         rf'\d+\.\s*{nombre}\s*(.*?)(?=\d+\.\s*[A-ZÁÉÍÓÚÜÑ]|\Z)',
         
-        # Patrón: ### INTRODUCCIÓN
+        # Patrón 5: ### INTRODUCCIÓN
         rf'###\s*{nombre}\s*(.*?)(?=###|\Z)',
         
-        # Patrón: **INTRODUCCIÓN** sin espacio
-        rf'\*\*{nombre}\*\*(.*?)(?=\*\*[A-ZÁÉÍÓÚÜÑ]|\Z)',
+        # Patrón 6: RECOMENDACIONES en mayúsculas o minúsculas (más flexible)
+        rf'(?i)\*\*RECOMENDACIONES?\*\*:?\s*(.*?)(?=\*\*[A-ZÁÉÍÓÚÜÑ]|\Z)',
+        
+        # Patrón 7: RECOMENDACIONES sin ** pero con guiones
+        rf'(?i)\nRECOMENDACIONES?\n[=\-]+\s*(.*?)(?=\n[A-ZÁÉÍÓÚÜÑ]|\Z)',
+        
+        # Patrón 8: RECOMENDACIONES (búsqueda directa hasta REFERENCIAS)
+        rf'(?i)\*\*RECOMENDACIONES?\*\*:?\s*(.*?)(?=\*\*REFERENCIAS|REFERENCIAS|\Z)',
     ]
     
     for i, patron in enumerate(patrones):
@@ -178,7 +190,7 @@ def extraer_seccion(contenido, nombre):
             match = re.search(patron, contenido, re.DOTALL | re.IGNORECASE)
             if match:
                 texto = match.group(1).strip()
-                if len(texto) > 50:
+                if len(texto) > 30:  # Umbral más bajo para recomendaciones
                     logger.info(f"✅ Sección '{nombre}' extraída con patrón {i+1} ({len(texto)} chars)")
                     return formatear_texto(texto)
         except Exception as e:
@@ -215,7 +227,7 @@ def generar_informe_completo(tema, info_extra, tipo_informe, norma):
     # Guardar el contenido original para depuración
     logger.info(f"📊 Resumen de extracción:")
     for key, value in secciones.items():
-        status = "✅" if value and len(value) > 50 else "❌"
+        status = "✅" if value and len(value) > 30 else "❌"
         logger.info(f"   {status} {key}: {len(value)} caracteres")
     
     return secciones
@@ -315,7 +327,7 @@ def generar_pdf(datos_usuario, secciones):
         story.append(Paragraph(titulo, styles['Titulo1']))
         story.append(Spacer(1, 0.2*inch))
         contenido = secciones.get(clave, '')
-        if contenido and len(contenido) > 50:
+        if contenido and len(contenido) > 30:
             story.append(Paragraph(contenido, styles['TextoJustificado']))
         else:
             story.append(Paragraph("No se pudo generar esta sección. Por favor, intenta nuevamente.", styles['TextoJustificado']))
@@ -366,7 +378,7 @@ def generar():
             return jsonify({'success': False, 'error': 'No se pudo generar el informe. Verifica tu saldo de DeepSeek.'}), 500
         
         # Verificar si al menos algunas secciones se generaron
-        secciones_llenas = sum(1 for v in secciones.values() if v and len(v) > 50)
+        secciones_llenas = sum(1 for v in secciones.values() if v and len(v) > 30)
         logger.info(f"📊 Secciones con contenido: {secciones_llenas}/8")
         
         if secciones_llenas < 3:
@@ -394,6 +406,31 @@ def generar():
         
     except Exception as e:
         logger.error(f"Error en generar: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/preview', methods=['POST'])
+def preview():
+    """Genera una vista previa del contenido sin crear el PDF"""
+    try:
+        data = request.json
+        tema = data.get('tema', '')
+        info_extra = data.get('texto_usuario', '')
+        tipo_informe = data.get('tipo_informe', 'academico')
+        norma = data.get('norma', 'APA 7')
+        
+        if not tema:
+            return jsonify({'success': False, 'error': 'El tema es requerido'}), 400
+        
+        prompt = construir_prompt(tema, info_extra, tipo_informe, norma)
+        contenido = llamar_deepseek(prompt)
+        
+        if contenido:
+            return jsonify({'success': True, 'contenido': contenido[:3000] + '...'})
+        else:
+            return jsonify({'success': False, 'error': 'No se pudo generar el contenido'}), 500
+            
+    except Exception as e:
+        logger.error(f"Error en preview: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/health')
