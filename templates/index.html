@@ -3,601 +3,343 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Academic Report Pro — Generador IA de Informes Académicos</title>
+<title>Academic Report Pro — Generador Profesional de Informes Académicos</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg:#080b12; --surface:#0d1117; --surface2:#111720;
   --border:rgba(255,255,255,.07); --border2:rgba(255,255,255,.12);
-  --gold:#c9a84c; --gold2:#e8c96a; --gold-dim:rgba(201,168,76,.15); --gold-glow:rgba(201,168,76,.25);
-  --blue:#4f7cf7; --blue-dim:rgba(79,124,247,.12);
+  --gold:#c9a84c; --gold2:#e8c96a; --gold-dim:rgba(201,168,76,.15);
+  --blue:#4f7cf7;
   --text:#e8e6df; --text2:#8a8880; --text3:#4a4845;
   --red:#e05c5c; --green:#56c489;
   --radius:12px; --radius-lg:20px;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html{scroll-behavior:smooth;}
-body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;cursor:none;}
-#cursor{position:fixed;z-index:9999;pointer-events:none;width:10px;height:10px;border-radius:50%;background:var(--gold);transform:translate(-50%,-50%);transition:width .2s,height .2s;mix-blend-mode:difference;}
-#cursor-ring{position:fixed;z-index:9998;pointer-events:none;width:36px;height:36px;border-radius:50%;border:1px solid rgba(201,168,76,.4);transform:translate(-50%,-50%);transition:width .2s,height .2s;}
-body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");opacity:.6;}
-body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse 80% 80% at 50% 0%,black 40%,transparent 100%);}
-main{position:relative;z-index:1;}
-
-/* NAV */
-nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:.9rem 2.5rem;background:rgba(8,11,18,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
+body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:.9rem 2.5rem;background:rgba(8,11,18,.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
 .nav-logo{display:flex;align-items:center;gap:.7rem;font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:700;color:var(--text);text-decoration:none;}
 .nav-logo-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--gold) 0%,#8b6914 100%);display:flex;align-items:center;justify-content:center;font-size:.9rem;}
-.nav-badge{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--gold);background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);padding:.2rem .7rem;border-radius:100px;letter-spacing:.08em;}
-.btn-gold{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.8rem;background:linear-gradient(135deg,var(--gold) 0%,#a8832a 100%);color:#000;font-family:'Syne',sans-serif;font-size:.88rem;font-weight:700;letter-spacing:.04em;border:none;border-radius:var(--radius);cursor:none;box-shadow:0 4px 24px rgba(201,168,76,.3);transition:all .2s;text-decoration:none;}
+.nav-badge{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--gold);background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);padding:.2rem .7rem;border-radius:100px;}
+.btn-gold{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.8rem;background:linear-gradient(135deg,var(--gold) 0%,#a8832a 100%);color:#000;font-family:'Syne',sans-serif;font-size:.88rem;font-weight:700;border:none;border-radius:var(--radius);cursor:pointer;transition:all .2s;}
 .btn-gold:hover{transform:translateY(-2px);box-shadow:0 8px 36px rgba(201,168,76,.45);}
-.btn-outline{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.8rem;background:transparent;color:var(--text);font-family:'Syne',sans-serif;font-size:.88rem;font-weight:600;border:1px solid var(--border2);border-radius:var(--radius);cursor:none;transition:all .2s;text-decoration:none;}
+.btn-outline{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.8rem;background:transparent;color:var(--text);font-family:'Syne',sans-serif;font-size:.88rem;font-weight:600;border:1px solid var(--border2);border-radius:var(--radius);cursor:pointer;}
 .btn-outline:hover{border-color:var(--gold);color:var(--gold);}
-
-/* HERO */
-.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7rem 2rem 4rem;text-align:center;position:relative;}
-.glow{position:absolute;border-radius:50%;pointer-events:none;}
-.g1{top:15%;left:50%;transform:translateX(-50%);width:600px;height:600px;background:radial-gradient(circle,rgba(201,168,76,.08) 0%,transparent 70%);}
-.g2{top:20%;left:15%;width:280px;height:280px;background:radial-gradient(circle,rgba(79,124,247,.06) 0%,transparent 70%);}
-.g3{top:25%;right:10%;width:220px;height:220px;background:radial-gradient(circle,rgba(201,168,76,.05) 0%,transparent 70%);}
-.hero-eyebrow{display:inline-flex;align-items:center;gap:.5rem;font-family:'JetBrains Mono',monospace;font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);background:var(--gold-dim);border:1px solid rgba(201,168,76,.25);padding:.4rem 1.1rem;border-radius:100px;margin-bottom:2rem;animation:fadeUp .6s ease both;}
-.hero-eyebrow::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--gold);animation:pulse 2s ease-in-out infinite;}
-@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
-.hero-title{font-family:'Cormorant Garamond',serif;font-size:clamp(3rem,8vw,6.5rem);font-weight:700;line-height:1.05;letter-spacing:-.03em;animation:fadeUp .6s .1s ease both;}
-.hero-title em{font-style:italic;background:linear-gradient(135deg,var(--gold) 0%,var(--gold2) 60%,var(--gold) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-.hero-sub{font-size:1.05rem;color:var(--text2);font-weight:400;max-width:520px;line-height:1.7;margin:1.5rem auto 2.5rem;animation:fadeUp .6s .2s ease both;}
-.hero-cta{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;animation:fadeUp .6s .3s ease both;}
-.hero-stats{display:flex;gap:3rem;justify-content:center;flex-wrap:wrap;margin-top:4rem;padding-top:3rem;border-top:1px solid var(--border);animation:fadeUp .6s .4s ease both;}
-.stat{text-align:center;}
-.stat-num{font-family:'Cormorant Garamond',serif;font-size:2.2rem;font-weight:700;color:var(--gold);display:block;line-height:1;}
-.stat-lbl{font-size:.72rem;color:var(--text2);letter-spacing:.08em;text-transform:uppercase;margin-top:.3rem;}
-
-/* SECTION */
-.form-wrap{max-width:980px;margin:0 auto;padding:0 1.5rem 6rem;}
-.sec-label{font-family:'JetBrains Mono',monospace;font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:.7rem;display:block;}
-.sec-head{font-family:'Cormorant Garamond',serif;font-size:2.4rem;font-weight:700;line-height:1.2;margin-bottom:3rem;}
-
-/* CARD */
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.8rem 2rem;transition:border-color .2s;position:relative;overflow:hidden;}
-.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);}
-.card:focus-within{border-color:var(--border2);}
-.card-hd{display:flex;align-items:center;gap:.7rem;margin-bottom:1.4rem;}
-.card-ico{width:34px;height:34px;border-radius:9px;background:var(--gold-dim);border:1px solid rgba(201,168,76,.2);display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;}
-.card-ttl{font-size:.93rem;font-weight:700;letter-spacing:.04em;}
-.card-sub{font-size:.73rem;color:var(--text2);margin-top:.1rem;}
-
-/* GRID */
+.btn-gen{width:100%;padding:1.1rem 2rem;background:linear-gradient(135deg,var(--gold) 0%,#9a6e1a 100%);color:#000;border:none;border-radius:var(--radius);font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;cursor:pointer;margin-top:1rem;}
+.hero{min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7rem 2rem 4rem;text-align:center;}
+.hero-title{font-family:'Cormorant Garamond',serif;font-size:clamp(3rem,8vw,6rem);font-weight:700;margin-bottom:1rem;}
+.hero-title em{font-style:italic;background:linear-gradient(135deg,var(--gold) 0%,var(--gold2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.hero-sub{font-size:1.05rem;color:var(--text2);max-width:600px;margin:0 auto;}
+.diff-badge{display:inline-flex;align-items:center;gap:.5rem;background:var(--blue);color:#000;padding:.3rem 1rem;border-radius:100px;font-size:.7rem;font-weight:700;margin-top:1rem;}
+.form-wrap{max-width:980px;margin:0 auto;padding:0 1.5rem 4rem;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1.2rem;}
+.card-hd{display:flex;align-items:center;gap:.7rem;margin-bottom:1rem;}
+.card-ico{width:34px;height:34px;border-radius:9px;background:var(--gold-dim);border:1px solid rgba(201,168,76,.2);display:flex;align-items:center;justify-content:center;}
 .g2c{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;}
 @media(max-width:640px){.g2c{grid-template-columns:1fr;}}
-
-/* FIELDS */
-.fld{display:flex;flex-direction:column;gap:.4rem;}
-.fld label{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text2);}
-input[type=text],input[type=date],select,textarea{width:100%;padding:.68rem 1rem;background:var(--bg);border:1px solid var(--border);border-radius:10px;font-family:'Syne',sans-serif;font-size:.88rem;color:var(--text);outline:none;transition:border-color .2s,box-shadow .2s;appearance:none;}
-input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.5);box-shadow:0 0 0 3px rgba(201,168,76,.08);}
-input::placeholder,textarea::placeholder{color:var(--text3);}
-select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238a8880' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 1rem center;padding-right:2.5rem;cursor:none;}
-textarea{resize:vertical;min-height:120px;line-height:1.6;}
-input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.4);cursor:none;}
-
-/* MODE TABS */
-.mode-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;}
-.mode-tab{padding:.85rem .5rem;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text2);font-family:'Syne',sans-serif;font-size:.8rem;font-weight:600;cursor:none;transition:all .2s;text-align:center;}
-.mode-tab .ti{font-size:1.3rem;display:block;margin-bottom:.3rem;}
-.mode-tab.active{background:var(--gold-dim);border-color:rgba(201,168,76,.35);color:var(--gold);box-shadow:0 0 20px rgba(201,168,76,.08);}
-.mode-tab:hover:not(.active){border-color:var(--border2);color:var(--text);}
-
-/* TIPO GRID */
+input,select,textarea{width:100%;padding:.68rem 1rem;background:var(--bg);border:1px solid var(--border);border-radius:10px;font-family:'Syne',sans-serif;font-size:.88rem;color:var(--text);outline:none;}
+input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.5);}
+.chips{display:flex;flex-wrap:wrap;gap:.5rem;}
+.chip{padding:.35rem 1rem;background:transparent;border:1px solid var(--border);border-radius:100px;font-size:.75rem;cursor:pointer;}
+.chip.active{background:var(--gold-dim);border-color:rgba(201,168,76,.4);color:var(--gold);}
 .tipo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.7rem;}
-@media(max-width:640px){.tipo-grid{grid-template-columns:repeat(2,1fr);}}
-.tipo-card{padding:1.1rem .8rem;background:transparent;border:1px solid var(--border);border-radius:12px;cursor:none;transition:all .2s;text-align:center;}
-.tipo-card .ti{font-size:1.5rem;margin-bottom:.4rem;display:block;}
-.tipo-card .tn{font-size:.8rem;font-weight:700;color:var(--text);}
-.tipo-card .td{font-size:.68rem;color:var(--text2);margin-top:.15rem;}
+.tipo-card{padding:1rem;background:transparent;border:1px solid var(--border);border-radius:12px;cursor:pointer;text-align:center;}
 .tipo-card.active{background:var(--gold-dim);border-color:rgba(201,168,76,.35);}
 .tipo-card.active .tn{color:var(--gold);}
-.tipo-card:hover:not(.active){border-color:var(--border2);}
-
-/* CHIPS */
-.chips{display:flex;flex-wrap:wrap;gap:.5rem;}
-.chip{padding:.35rem 1rem;background:transparent;border:1px solid var(--border);border-radius:100px;font-size:.75rem;font-weight:700;letter-spacing:.06em;color:var(--text2);cursor:none;transition:all .2s;font-family:'JetBrains Mono',monospace;}
-.chip.active{background:var(--gold-dim);border-color:rgba(201,168,76,.4);color:var(--gold);}
-.chip:hover:not(.active){border-color:var(--border2);color:var(--text);}
-
-/* AUTORES */
-.autor-row{display:grid;grid-template-columns:1fr 1fr auto;gap:.8rem;align-items:end;padding:1rem 1.2rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:.7rem;}
-.btn-rm{width:36px;height:36px;border-radius:9px;background:rgba(224,92,92,.1);border:1px solid rgba(224,92,92,.2);color:var(--red);font-size:1rem;cursor:none;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;}
-.btn-rm:hover{background:rgba(224,92,92,.2);}
-.btn-add{display:inline-flex;align-items:center;gap:.5rem;padding:.5rem 1.1rem;background:transparent;border:1px dashed var(--border2);border-radius:9px;color:var(--text2);font-family:'Syne',sans-serif;font-size:.82rem;font-weight:600;cursor:none;transition:all .2s;}
-.btn-add:hover{border-color:var(--gold);color:var(--gold);}
-
-/* REFS */
-.refs-tabs{display:flex;gap:.5rem;margin-bottom:1.2rem;}
-.ref-tab{flex:1;padding:.6rem;background:transparent;border:1px solid var(--border);border-radius:9px;font-family:'Syne',sans-serif;font-size:.78rem;font-weight:600;color:var(--text2);cursor:none;transition:all .2s;text-align:center;}
-.ref-tab.active{background:var(--blue-dim);border-color:rgba(79,124,247,.3);color:var(--blue);}
-.ref-tab:hover:not(.active){border-color:var(--border2);color:var(--text);}
-.ref-hint{font-size:.78rem;color:var(--text2);line-height:1.6;padding:.7rem 1rem;background:var(--surface2);border:1px solid var(--border);border-radius:9px;}
-
-/* BUTTONS */
-.btn-gen{width:100%;padding:1.1rem 2rem;background:linear-gradient(135deg,var(--gold) 0%,#9a6e1a 100%);color:#000;border:none;border-radius:var(--radius);font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;letter-spacing:.06em;cursor:none;display:flex;align-items:center;justify-content:center;gap:.7rem;box-shadow:0 4px 28px rgba(201,168,76,.3);transition:all .2s;position:relative;overflow:hidden;}
-.btn-gen::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent);transform:translateX(-100%);transition:transform .5s;}
-.btn-gen:hover::after{transform:translateX(100%);}
-.btn-gen:hover{transform:translateY(-2px);box-shadow:0 8px 40px rgba(201,168,76,.45);}
-.btn-gen:disabled{opacity:.5;cursor:not-allowed;transform:none;}
-.btn-prev{width:100%;padding:.85rem 2rem;background:transparent;border:1px solid var(--border2);color:var(--text);border-radius:var(--radius);font-family:'Syne',sans-serif;font-size:.9rem;font-weight:600;cursor:none;display:flex;align-items:center;justify-content:center;gap:.6rem;transition:all .2s;}
-.btn-prev:hover{border-color:var(--gold);color:var(--gold);}
-.stack{display:flex;flex-direction:column;gap:1rem;}
-.gap-col{display:flex;flex-direction:column;gap:1.2rem;}
-
-/* FEATURES */
-.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:3rem;}
-@media(max-width:640px){.feat-grid{grid-template-columns:1fr;}}
-.feat-card{padding:1.4rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);position:relative;overflow:hidden;transition:border-color .2s;}
-.feat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:0;transition:opacity .3s;}
-.feat-card:hover::before{opacity:1;}
-.feat-card:hover{border-color:var(--border2);}
-.feat-ico{font-size:1.5rem;margin-bottom:.8rem;}
-.feat-name{font-size:.9rem;font-weight:700;margin-bottom:.3rem;}
-.feat-desc{font-size:.78rem;color:var(--text2);line-height:1.6;}
-
-/* PROGRESS OVERLAY */
-#progressOverlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(8,11,18,.97);backdrop-filter:blur(20px);align-items:center;justify-content:center;flex-direction:column;}
-.prog-inner{width:100%;max-width:460px;padding:2.5rem;text-align:center;}
-.prog-logo{width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,var(--gold) 0%,#6b4f12 100%);display:flex;align-items:center;justify-content:center;font-size:1.8rem;margin:0 auto 1.5rem;animation:breathe 2s ease-in-out infinite;}
-@keyframes breathe{0%,100%{box-shadow:0 0 30px rgba(201,168,76,.2);}50%{box-shadow:0 0 60px rgba(201,168,76,.5);}}
-.prog-title{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:700;margin-bottom:.4rem;}
-.prog-sub{font-size:.85rem;color:var(--text2);margin-bottom:2rem;}
-.prog-track{height:3px;background:var(--border);border-radius:100px;overflow:hidden;margin-bottom:2rem;}
-.prog-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--gold),var(--gold2));width:0%;transition:width .6s ease;box-shadow:0 0 10px rgba(201,168,76,.5);}
-.prog-steps{list-style:none;text-align:left;}
-.prog-steps li{display:flex;align-items:center;gap:.8rem;padding:.45rem 0;font-size:.85rem;color:var(--text3);border-bottom:1px solid var(--border);transition:color .3s;}
-.prog-steps li:last-child{border:none;}
-.prog-steps li.done{color:var(--text2);}
-.prog-steps li.active{color:var(--text);font-weight:600;}
-.sdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:var(--text3);transition:background .3s;}
-.prog-steps li.done .sdot{background:var(--green);}
-.prog-steps li.active .sdot{background:var(--gold);box-shadow:0 0 8px var(--gold);animation:sp .7s ease-in-out infinite alternate;}
-@keyframes sp{to{transform:scale(1.5);}}
-
-/* PREVIEW MODAL */
-#previewModal{display:none;position:fixed;inset:0;z-index:300;background:rgba(8,11,18,.92);backdrop-filter:blur(16px);align-items:flex-start;justify-content:center;padding:3rem 1.5rem;overflow-y:auto;}
-.prev-panel{width:100%;max-width:720px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);overflow:hidden;box-shadow:0 40px 80px rgba(0,0,0,.5);}
-.prev-head{display:flex;align-items:center;justify-content:space-between;padding:1.2rem 1.6rem;border-bottom:1px solid var(--border);background:var(--surface2);}
-.prev-head h3{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:700;}
-.prev-close{width:32px;height:32px;border-radius:8px;background:var(--bg);border:1px solid var(--border);color:var(--text2);font-size:1rem;cursor:none;display:flex;align-items:center;justify-content:center;transition:all .2s;}
-.prev-close:hover{border-color:var(--red);color:var(--red);}
-.prev-body{padding:1.6rem;max-height:65vh;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:.78rem;line-height:1.9;color:var(--text2);white-space:pre-wrap;}
-.prev-body::-webkit-scrollbar{width:4px;}
-.prev-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
-.prev-foot{display:flex;gap:.7rem;justify-content:flex-end;padding:1rem 1.6rem;border-top:1px solid var(--border);background:var(--surface2);}
-
-/* TOAST */
-#toast{position:fixed;bottom:2rem;right:2rem;z-index:9999;display:none;align-items:center;gap:.7rem;padding:.9rem 1.4rem;background:var(--surface);border:1px solid var(--border2);border-radius:12px;box-shadow:0 16px 48px rgba(0,0,0,.4);font-size:.85rem;font-weight:600;max-width:360px;}
-#toast.success{border-color:rgba(86,196,137,.3);color:var(--green);}
-#toast.error{border-color:rgba(224,92,92,.3);color:var(--red);}
-
-/* FOOTER */
-footer{text-align:center;padding:2.5rem 1rem;border-top:1px solid var(--border);font-size:.78rem;color:var(--text3);}
-footer strong{color:var(--gold);}
-
-/* REVEAL */
-@keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
-.reveal{opacity:0;transform:translateY(20px);transition:opacity .5s ease,transform .5s ease;}
-.reveal.visible{opacity:1;transform:none;}
-.hidden{display:none!important;}
+#editorPanel{display:none;margin-top:2rem;}
+.editor-tabs{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem;}
+.editor-tab{padding:.5rem 1rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:.75rem;}
+.editor-tab.active{background:var(--gold-dim);border-color:var(--gold);color:var(--gold);}
+#editorTexto{width:100%;padding:1rem;background:var(--bg);border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:monospace;font-size:.85rem;min-height:400px;resize:vertical;}
+footer{text-align:center;padding:2rem;border-top:1px solid var(--border);font-size:.78rem;color:var(--text3);}
+.hidden{display:none;}
 </style>
 </head>
 <body>
 
-<div id="cursor"></div>
-<div id="cursor-ring"></div>
-
-<!-- NAV -->
 <nav>
   <a href="#" class="nav-logo">
     <div class="nav-logo-icon">📄</div>
     Academic Report Pro
   </a>
   <div style="display:flex;align-items:center;gap:1rem;">
-    <span class="nav-badge">DeepSeek V3</span>
-    <a href="#generar" class="btn-gold" style="padding:.5rem 1.2rem;font-size:.8rem;">Generar informe ↓</a>
+    <span class="nav-badge">Especializado en Informes</span>
   </div>
 </nav>
 
-<main>
-
-<!-- HERO -->
-<section class="hero" id="inicio">
-  <div class="glow g1"></div>
-  <div class="glow g2"></div>
-  <div class="glow g3"></div>
-
-  <div class="hero-eyebrow">Generador Académico con Inteligencia Artificial</div>
-  <h1 class="hero-title">Informes académicos<br><em>de nivel profesional</em></h1>
-  <p class="hero-sub">Escribe un tema y la IA genera un informe completo con portada, índice, marco teórico, conclusiones y referencias — listo para descargar en PDF.</p>
-
-  <div class="hero-cta">
-    <a href="#generar" class="btn-gold">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      Crear mi informe ahora
-    </a>
-    <a href="#como-funciona" class="btn-outline">Cómo funciona</a>
-  </div>
-
-  <div class="hero-stats">
-    <div class="stat"><span class="stat-num">8</span><span class="stat-lbl">Normas de citación</span></div>
-    <div class="stat"><span class="stat-num">4</span><span class="stat-lbl">Tipos de informe</span></div>
-    <div class="stat"><span class="stat-num">3</span><span class="stat-lbl">Modos de generación</span></div>
-    <div class="stat"><span class="stat-num">PDF</span><span class="stat-lbl">Descarga instantánea</span></div>
-  </div>
+<section class="hero">
+  <h1 class="hero-title">Informes académicos <em>estructurados y profesionales</em></h1>
+  <p class="hero-sub">No es ChatGPT. Es una herramienta especializada que genera informes completos con portada, índice, marco teórico, conclusiones y referencias — listo para editar y descargar.</p>
+  <div class="diff-badge">🎯 DIFERENTE: Estructura forzada + Editor + Word/PDF</div>
 </section>
 
-<!-- FEATURES -->
-<section id="como-funciona" style="max-width:980px;margin:0 auto;padding:0 1.5rem 4rem;">
-  <div style="text-align:center;margin-bottom:2.5rem;" class="reveal">
-    <span class="sec-label">Flujo de trabajo</span>
-    <h2 style="font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700;">Simple, rápido y preciso</h2>
-  </div>
-  <div class="feat-grid reveal">
-    <div class="feat-card">
-      <div class="feat-ico">⚡</div>
-      <div class="feat-name">Modo Rápido</div>
-      <div class="feat-desc">Solo escribe el tema. La IA construye el informe completo con todas las secciones académicas.</div>
-    </div>
-    <div class="feat-card">
-      <div class="feat-ico">🔄</div>
-      <div class="feat-name">Modo Automático</div>
-      <div class="feat-desc">Pega tus apuntes o notas. La IA los reorganiza y amplía en un informe profesional.</div>
-    </div>
-    <div class="feat-card">
-      <div class="feat-ico">✏️</div>
-      <div class="feat-name">Modo Manual</div>
-      <div class="feat-desc">Escribe sección por sección. La IA formatea, corrige y mejora tu redacción académica.</div>
-    </div>
-  </div>
-</section>
-
-<!-- FORMULARIO -->
-<section class="form-wrap" id="generar">
-  <div style="text-align:center;margin-bottom:3rem;" class="reveal">
-    <span class="sec-label">Generador de informes</span>
-    <h2 class="sec-head">Configura tu informe</h2>
-  </div>
-
+<div class="form-wrap">
   <form id="reportForm" onsubmit="return false;">
-
-    <!-- Modo + Tipo -->
-    <div class="g2c" style="margin-bottom:1.2rem;">
-      <div class="card reveal">
-        <div class="card-hd">
-          <div class="card-ico">⚙️</div>
-          <div><div class="card-ttl">Modo de generación</div><div class="card-sub">¿Cómo quieres crear el informe?</div></div>
+    <div class="g2c">
+      <div class="card">
+        <div class="card-hd"><div class="card-ico">⚙️</div><div>Modo de generación</div></div>
+        <div class="chips" id="modoTabs">
+          <div class="chip active" data-modo="rapido">⚡ Rápido</div>
+          <div class="chip" data-modo="automatico">🔄 Automático</div>
+          <div class="chip" data-modo="manual">✏️ Manual</div>
         </div>
-        <div class="mode-tabs" id="modoTabs">
-          <button type="button" class="mode-tab active" data-modo="rapido" onclick="setModo('rapido')">
-            <span class="ti">⚡</span>Rápido
-          </button>
-          <button type="button" class="mode-tab" data-modo="automatico" onclick="setModo('automatico')">
-            <span class="ti">🔄</span>Automático
-          </button>
-          <button type="button" class="mode-tab" data-modo="manual" onclick="setModo('manual')">
-            <span class="ti">✏️</span>Manual
-          </button>
-        </div>
-        <p id="modoDesc" style="font-size:.78rem;color:var(--text2);margin-top:.9rem;line-height:1.6;padding:.7rem .9rem;background:var(--surface2);border-radius:8px;border:1px solid var(--border);">
-          Solo escribe el tema y la IA genera todo el informe automáticamente.
-        </p>
       </div>
-
-      <div class="card reveal">
-        <div class="card-hd">
-          <div class="card-ico">📋</div>
-          <div><div class="card-ttl">Tipo de informe</div><div class="card-sub">Selecciona la estructura</div></div>
-        </div>
+      <div class="card">
+        <div class="card-hd"><div class="card-ico">📋</div><div>Tipo de informe</div></div>
         <div class="tipo-grid" id="tipoGrid">
-          <div class="tipo-card active" data-tipo="academico" onclick="setTipo('academico')">
-            <span class="ti">📄</span><div class="tn">Académico</div><div class="td">Universitario</div>
-          </div>
-          <div class="tipo-card" data-tipo="laboratorio" onclick="setTipo('laboratorio')">
-            <span class="ti">🔬</span><div class="tn">Laboratorio</div><div class="td">Con resultados</div>
-          </div>
-          <div class="tipo-card" data-tipo="ejecutivo" onclick="setTipo('ejecutivo')">
-            <span class="ti">💼</span><div class="tn">Ejecutivo</div><div class="td">Empresarial</div>
-          </div>
-          <div class="tipo-card" data-tipo="tesis" onclick="setTipo('tesis')">
-            <span class="ti">🎓</span><div class="tn">Tesis</div><div class="td">Trabajo de grado</div>
-          </div>
+          <div class="tipo-card active" data-tipo="academico">📄 Académico</div>
+          <div class="tipo-card" data-tipo="laboratorio">🔬 Laboratorio</div>
+          <div class="tipo-card" data-tipo="ejecutivo">💼 Ejecutivo</div>
+          <div class="tipo-card" data-tipo="tesis">🎓 Tesis</div>
         </div>
       </div>
     </div>
 
-    <!-- Tema -->
-    <div class="card reveal" style="margin-bottom:1.2rem;">
-      <div class="card-hd">
-        <div class="card-ico">💡</div>
-        <div><div class="card-ttl">Tema del informe</div><div class="card-sub">Escribe el tema o título principal</div></div>
-      </div>
-      <div class="fld">
-        <label>Tema / Título *</label>
-        <input type="text" id="tema" placeholder="Ej: Impacto de la inteligencia artificial en la educación superior" required/>
-      </div>
+    <div class="card">
+      <div class="card-hd"><div class="card-ico">💡</div><div>Tema del informe</div></div>
+      <input type="text" id="tema" placeholder="Ej: Impacto de la inteligencia artificial en la educación superior" required/>
       <div id="textoUsuarioWrap" class="hidden" style="margin-top:1rem;">
-        <div class="fld">
-          <label id="textoLabel">Tu contenido o texto</label>
-          <textarea id="textoUsuario" placeholder="Pega aquí tus apuntes, notas o el texto que quieres organizar..."></textarea>
-        </div>
+        <textarea id="textoUsuario" rows="4" placeholder="Pega aquí tus apuntes o información adicional..."></textarea>
       </div>
     </div>
 
-    <!-- Datos académicos -->
-    <div class="card reveal" style="margin-bottom:1.2rem;">
-      <div class="card-hd">
-        <div class="card-ico">🏫</div>
-        <div><div class="card-ttl">Datos académicos</div><div class="card-sub">Aparecerán en la portada del PDF</div></div>
-      </div>
-      <div class="g2c gap-col">
-        <div class="fld"><label>Asignatura / Materia</label><input type="text" id="asignatura" placeholder="Ej: Biología Molecular"/></div>
-        <div class="fld"><label>Nombre del docente</label><input type="text" id="profesor" placeholder="Ej: Dr. Carlos Ramírez"/></div>
-        <div class="fld"><label>Institución educativa</label><input type="text" id="institucion" placeholder="Ej: Universidad Nacional de Colombia"/></div>
-        <div class="fld"><label>Ciudad</label><input type="text" id="ciudad" placeholder="Ej: Bogotá, Colombia"/></div>
-        <div class="fld"><label>Fecha del informe</label><input type="date" id="fecha"/></div>
+    <div class="card">
+      <div class="card-hd"><div class="card-ico">🏫</div><div>Datos académicos</div></div>
+      <div class="g2c">
+        <input type="text" id="asignatura" placeholder="Asignatura"/>
+        <input type="text" id="profesor" placeholder="Docente"/>
+        <input type="text" id="institucion" placeholder="Institución"/>
+        <input type="text" id="ciudad" placeholder="Ciudad"/>
+        <input type="date" id="fecha"/>
       </div>
     </div>
 
-    <!-- Norma -->
-    <div class="card reveal" style="margin-bottom:1.2rem;">
-      <div class="card-hd">
-        <div class="card-ico">📐</div>
-        <div><div class="card-ttl">Norma de citación</div><div class="card-sub">Formato para las referencias bibliográficas</div></div>
-      </div>
+    <div class="card">
+      <div class="card-hd"><div class="card-ico">📐</div><div>Norma de citación</div></div>
       <div class="chips" id="normaChips">
-        <div class="chip active" onclick="setNorma('APA 7',this)">APA 7</div>
-        <div class="chip" onclick="setNorma('APA 6',this)">APA 6</div>
-        <div class="chip" onclick="setNorma('ICONTEC',this)">ICONTEC</div>
-        <div class="chip" onclick="setNorma('Vancouver',this)">Vancouver</div>
-        <div class="chip" onclick="setNorma('Chicago',this)">Chicago</div>
-        <div class="chip" onclick="setNorma('Harvard',this)">Harvard</div>
-        <div class="chip" onclick="setNorma('MLA',this)">MLA</div>
-        <div class="chip" onclick="setNorma('IEEE',this)">IEEE</div>
+        <div class="chip active" data-norma="APA 7">APA 7</div>
+        <div class="chip" data-norma="APA 6">APA 6</div>
+        <div class="chip" data-norma="ICONTEC">ICONTEC</div>
+        <div class="chip" data-norma="Vancouver">Vancouver</div>
+        <div class="chip" data-norma="Chicago">Chicago</div>
+        <div class="chip" data-norma="Harvard">Harvard</div>
+        <div class="chip" data-norma="MLA">MLA</div>
+        <div class="chip" data-norma="IEEE">IEEE</div>
       </div>
     </div>
 
-    <!-- Autores -->
-    <div class="card reveal" style="margin-bottom:1.2rem;">
-      <div class="card-hd">
-        <div class="card-ico">👤</div>
-        <div><div class="card-ttl">Autores del informe</div><div class="card-sub">Aparecerán en la portada del PDF</div></div>
-      </div>
+    <div class="card">
+      <div class="card-hd"><div class="card-ico">👤</div><div>Autores</div></div>
       <div id="autoresContainer">
-        <div class="autor-row" id="autor_0">
-          <div class="fld"><label>Nombre completo *</label><input type="text" class="autor-nombre" placeholder="Nombre y apellidos" required/></div>
-          <div class="fld"><label>Código / Cargo</label><input type="text" class="autor-cargo" placeholder="Código estudiantil"/></div>
-          <div></div>
+        <div class="g2c" style="margin-bottom:.5rem;">
+          <input type="text" class="autor-nombre" placeholder="Nombre completo" required/>
+          <input type="text" class="autor-cargo" placeholder="Código/Cargo"/>
         </div>
       </div>
-      <button type="button" class="btn-add" onclick="agregarAutor()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
-        Agregar autor
-      </button>
+      <button type="button" class="btn-outline" onclick="agregarAutor()" style="font-size:.8rem;">+ Agregar autor</button>
     </div>
 
-    <!-- Referencias -->
-    <div class="card reveal" style="margin-bottom:2rem;">
-      <div class="card-hd">
-        <div class="card-ico">📚</div>
-        <div><div class="card-ttl">Referencias bibliográficas</div><div class="card-sub">Gestiona tus fuentes de información</div></div>
-      </div>
-      <div class="refs-tabs" id="refsTabs">
-        <div class="ref-tab active" onclick="setRefs('automatico',this)">🤖 Automático (IA)</div>
-        <div class="ref-tab" onclick="setRefs('manual',this)">✍️ Manual</div>
-        <div class="ref-tab" onclick="setRefs('mixto',this)">⚡ Mixto</div>
-      </div>
-      <div id="refsAutoHint" class="ref-hint">La IA generará referencias académicas relevantes en el formato de norma seleccionado.</div>
-      <div id="refsManualWrap" class="hidden">
-        <div class="fld"><label>Tus referencias (una por línea)</label><textarea id="referenciasManual" placeholder="Pérez, J. (2021). Título. Editorial."></textarea></div>
-      </div>
-      <div id="refsMixtoWrap" class="hidden">
-        <div class="fld"><label>Referencias adicionales propias</label><textarea id="referenciasMixto" placeholder="Agrega tus propias referencias; la IA complementará..."></textarea></div>
-      </div>
-    </div>
-
-    <!-- Botones -->
-    <div class="stack reveal">
-      <button type="button" class="btn-prev" onclick="previsualizarContenido()">
-        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>
-        Previsualizar contenido IA antes de generar
-      </button>
-      <button type="button" class="btn-gen" id="btnGenerar" onclick="generarInforme()">
-        <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        GENERAR Y DESCARGAR PDF
-      </button>
-    </div>
+    <button type="button" class="btn-gen" id="generarBtn">🚀 GENERAR INFORME</button>
   </form>
-</section>
-</main>
 
-<!-- PROGRESS OVERLAY -->
-<div id="progressOverlay">
-  <div class="prog-inner">
-    <div class="prog-logo">📄</div>
-    <h2 class="prog-title" id="progTitle">Generando informe…</h2>
-    <p class="prog-sub">Esto puede tardar 30–60 segundos</p>
-    <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
-    <ul class="prog-steps" id="progSteps">
-      <li><span class="sdot"></span> Procesando solicitud</li>
-      <li><span class="sdot"></span> Conectando con DeepSeek V3</li>
-      <li><span class="sdot"></span> Generando contenido académico</li>
-      <li><span class="sdot"></span> Estructurando secciones del informe</li>
-      <li><span class="sdot"></span> Construyendo PDF profesional</li>
-      <li><span class="sdot"></span> Preparando descarga</li>
-    </ul>
-  </div>
-</div>
-
-<!-- PREVIEW MODAL -->
-<div id="previewModal" onclick="closeModalOutside(event)">
-  <div class="prev-panel">
-    <div class="prev-head">
-      <h3>👁 Previsualización del contenido IA</h3>
-      <button class="prev-close" onclick="document.getElementById('previewModal').style.display='none'">✕</button>
-    </div>
-    <div class="prev-body" id="previewBody">Generando…</div>
-    <div class="prev-foot">
-      <button class="btn-outline" style="font-size:.82rem;padding:.5rem 1.2rem;" onclick="document.getElementById('previewModal').style.display='none'">Cerrar</button>
-      <button class="btn-gold" style="font-size:.82rem;padding:.5rem 1.4rem;" onclick="generarDesdePreview()">Generar PDF →</button>
+  <div id="editorPanel" class="card">
+    <div class="card-hd"><div class="card-ico">✏️</div><div>Editor de informes</div><div style="font-size:.7rem; color:var(--text2); margin-left:auto;">Personaliza antes de descargar</div></div>
+    <div class="editor-tabs" id="editorTabs"></div>
+    <textarea id="editorTexto" rows="12"></textarea>
+    <div style="display:flex; gap:1rem; margin-top:1rem;">
+      <button class="btn-gold" id="exportarPDFBtn">📄 Descargar PDF</button>
+      <button class="btn-outline" id="exportarWordBtn">📝 Descargar Word</button>
     </div>
   </div>
 </div>
 
-<!-- TOAST -->
-<div id="toast"></div>
-
-<!-- FOOTER -->
 <footer>
-  <strong>Academic Report Pro</strong> · IA Académica · DeepSeek V3 · 8 normas · 4 tipos · Descarga PDF instantánea
+  <strong>Academic Report Pro</strong> · Herramienta especializada en informes académicos · No es ChatGPT · Editor inteligente · Exporta PDF/Word
 </footer>
 
 <script>
-// CURSOR
-const cur=document.getElementById('cursor'),curR=document.getElementById('cursor-ring');
-let mx=0,my=0,rx=0,ry=0;
-document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px';});
-(function anim(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;curR.style.left=rx+'px';curR.style.top=ry+'px';requestAnimationFrame(anim);})();
-document.querySelectorAll('a,button,.chip,.tipo-card,.mode-tab,.ref-tab').forEach(el=>{
-  el.addEventListener('mouseenter',()=>{cur.style.width='16px';cur.style.height='16px';curR.style.width='52px';curR.style.height='52px';});
-  el.addEventListener('mouseleave',()=>{cur.style.width='10px';cur.style.height='10px';curR.style.width='36px';curR.style.height='36px';});
+let modoActual = 'rapido';
+let tipoActual = 'academico';
+let normaActual = 'APA 7';
+let seccionesGeneradas = {};
+let datosUsuario = {};
+let autorCount = 1;
+
+// Inicializar fecha
+document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
+
+// Modo
+document.querySelectorAll('#modoTabs .chip').forEach(c => {
+  c.onclick = () => {
+    document.querySelectorAll('#modoTabs .chip').forEach(x => x.classList.remove('active'));
+    c.classList.add('active');
+    modoActual = c.dataset.modo;
+    const wrap = document.getElementById('textoUsuarioWrap');
+    if (modoActual !== 'rapido') wrap.classList.remove('hidden');
+    else wrap.classList.add('hidden');
+  };
 });
 
-// SCROLL REVEAL
-const obs=new IntersectionObserver(entries=>entries.forEach((e,i)=>{if(e.isIntersecting)setTimeout(()=>e.target.classList.add('visible'),i*80);}),{threshold:.1});
-document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+// Tipo
+document.querySelectorAll('#tipoGrid .tipo-card').forEach(c => {
+  c.onclick = () => {
+    document.querySelectorAll('#tipoGrid .tipo-card').forEach(x => x.classList.remove('active'));
+    c.classList.add('active');
+    tipoActual = c.dataset.tipo;
+  };
+});
 
-// STATE
-let modo='rapido',tipo='academico',norma='APA 7',refsMode='automatico',autorCount=1;
-const MODO_DESC={
-  rapido:'Solo escribe el tema y la IA genera todo el informe académico automáticamente con todas las secciones.',
-  automatico:'Pega tus apuntes o notas y la IA los organiza y amplía en un informe profesional completo.',
-  manual:'Escribe el contenido de cada sección; la IA lo formatea, corrige y mejora la redacción.'
+// Norma
+document.querySelectorAll('#normaChips .chip').forEach(c => {
+  c.onclick = () => {
+    document.querySelectorAll('#normaChips .chip').forEach(x => x.classList.remove('active'));
+    c.classList.add('active');
+    normaActual = c.dataset.norma;
+  };
+});
+
+function agregarAutor() {
+  autorCount++;
+  const div = document.createElement('div');
+  div.className = 'g2c';
+  div.style.marginBottom = '.5rem';
+  div.innerHTML = `<input type="text" class="autor-nombre" placeholder="Nombre completo" required/><input type="text" class="autor-cargo" placeholder="Código/Cargo"/><button type="button" class="btn-outline" onclick="this.parentElement.remove()" style="font-size:.7rem; padding:.3rem;">✕</button>`;
+  document.getElementById('autoresContainer').appendChild(div);
+}
+
+function getAutores() {
+  const autores = [];
+  document.querySelectorAll('.autor-nombre').forEach((input, i) => {
+    if (input.value.trim()) {
+      autores.push({ nombre: input.value.trim(), cargo: document.querySelectorAll('.autor-cargo')[i]?.value.trim() || '' });
+    }
+  });
+  return autores;
+}
+
+document.getElementById('generarBtn').onclick = async () => {
+  const tema = document.getElementById('tema').value.trim();
+  if (!tema) { alert('Escribe el tema del informe'); return; }
+  const autores = getAutores();
+  if (autores.length === 0) { alert('Agrega al menos un autor'); return; }
+
+  document.getElementById('generarBtn').disabled = true;
+  document.getElementById('generarBtn').textContent = '⏳ Generando... (30-60 segundos)';
+
+  try {
+    const res = await fetch('/generar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tema: tema,
+        texto_usuario: document.getElementById('textoUsuario').value,
+        tipo_informe: tipoActual,
+        norma: normaActual,
+        modo: modoActual,
+        autores: autores,
+        asignatura: document.getElementById('asignatura').value,
+        profesor: document.getElementById('profesor').value,
+        institucion: document.getElementById('institucion').value,
+        ciudad: document.getElementById('ciudad').value,
+        fecha: document.getElementById('fecha').value
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      seccionesGeneradas = data.secciones;
+      datosUsuario = data.datos_usuario;
+      mostrarEditor();
+    } else {
+      alert('Error: ' + data.error);
+    }
+  } catch (err) {
+    alert('Error de conexión: ' + err.message);
+  } finally {
+    document.getElementById('generarBtn').disabled = false;
+    document.getElementById('generarBtn').textContent = '🚀 GENERAR INFORME';
+  }
 };
 
-// INIT
-(function(){
-  const h=new Date();
-  document.getElementById('fecha').value=`${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}-${String(h.getDate()).padStart(2,'0')}`;
-})();
-
-// CONTROLES
-function setModo(m){
-  modo=m;
-  document.querySelectorAll('#modoTabs .mode-tab').forEach(b=>b.classList.toggle('active',b.dataset.modo===m));
-  document.getElementById('modoDesc').textContent=MODO_DESC[m];
-  const w=document.getElementById('textoUsuarioWrap');
-  if(m!=='rapido'){
-    w.classList.remove('hidden');
-    document.getElementById('textoLabel').textContent=m==='automatico'?'Tu texto o contenido a organizar':'Escribe el contenido del informe';
-  } else { w.classList.add('hidden'); }
-}
-function setTipo(t){tipo=t;document.querySelectorAll('#tipoGrid .tipo-card').forEach(c=>c.classList.toggle('active',c.dataset.tipo===t));}
-function setNorma(n,el){norma=n;document.querySelectorAll('#normaChips .chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');}
-function setRefs(r,el){
-  refsMode=r;
-  document.querySelectorAll('#refsTabs .ref-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');
-  document.getElementById('refsAutoHint').classList.toggle('hidden',r!=='automatico');
-  document.getElementById('refsManualWrap').classList.toggle('hidden',r!=='manual');
-  document.getElementById('refsMixtoWrap').classList.toggle('hidden',r!=='mixto');
-}
-function agregarAutor(){
-  const idx=autorCount++;
-  const d=document.createElement('div');d.className='autor-row';d.id='autor_'+idx;
-  d.innerHTML=`<div class="fld"><label>Nombre completo</label><input type="text" class="autor-nombre" placeholder="Nombre y apellidos"/></div><div class="fld"><label>Código / Cargo</label><input type="text" class="autor-cargo" placeholder="Código estudiantil"/></div><button type="button" class="btn-rm" onclick="eliminarAutor('autor_${idx}')">✕</button>`;
-  document.getElementById('autoresContainer').appendChild(d);
-}
-function eliminarAutor(id){const el=document.getElementById(id);if(el)el.remove();}
-function getAutores(){
-  return[...document.querySelectorAll('#autoresContainer .autor-row')].map(r=>({nombre:r.querySelector('.autor-nombre')?.value.trim()||'',cargo:r.querySelector('.autor-cargo')?.value.trim()||''})).filter(a=>a.nombre);
-}
-function getDatos(){
-  const tema=document.getElementById('tema').value.trim();
-  if(!tema){showToast('El tema es requerido','error');return null;}
-  const autores=getAutores();
-  if(!autores.length){showToast('Agrega al menos un autor','error');return null;}
-  const fv=document.getElementById('fecha').value;
-  let fm=new Date().toLocaleDateString('es-CO',{year:'numeric',month:'long',day:'numeric'});
-  if(fv){const[y,m,d]=fv.split('-');fm=new Date(+y,+m-1,+d).toLocaleDateString('es-CO',{year:'numeric',month:'long',day:'numeric'});}
-  const rm=refsMode==='manual'?document.getElementById('referenciasManual').value.trim():refsMode==='mixto'?document.getElementById('referenciasMixto').value.trim():'';
-  return{tema,modo,tipo_informe:tipo,norma,autores,
-    asignatura:document.getElementById('asignatura').value.trim(),
-    profesor:document.getElementById('profesor').value.trim(),
-    institucion:document.getElementById('institucion').value.trim(),
-    ciudad:document.getElementById('ciudad').value.trim(),
-    fecha:fm,
-    texto_usuario:document.getElementById('textoUsuario')?.value.trim()||'',
-    referencias_modo:refsMode,referencias_manuales:rm};
-}
-
-// PROGRESS
-const STEPS=[600,1800,9000,5000,4000,1000];
-let timers=[];
-function startProgress(){
-  document.getElementById('progFill').style.width='0%';
-  const steps=document.querySelectorAll('#progSteps li');
-  steps.forEach(s=>s.classList.remove('done','active'));
-  steps[0].classList.add('active');
-  document.getElementById('progressOverlay').style.display='flex';
-  const total=STEPS.reduce((a,b)=>a+b,0);
-  let e=0;timers=[];
-  STEPS.forEach((t,i)=>{
-    e+=t;const e2=e;
-    timers.push(setTimeout(()=>{
-      steps.forEach((s,j)=>{s.classList.remove('active','done');if(j<i+1)s.classList.add('done');else if(j===i+1)s.classList.add('active');});
-      document.getElementById('progFill').style.width=Math.min(95,Math.round(e2/total*100))+'%';
-    },e));
+function mostrarEditor() {
+  const editorPanel = document.getElementById('editorPanel');
+  const tabsContainer = document.getElementById('editorTabs');
+  const editorTexto = document.getElementById('editorTexto');
+  
+  const seccionesLista = [
+    { id: 'introduccion', nombre: 'Introducción' },
+    { id: 'objetivos', nombre: 'Objetivos' },
+    { id: 'marco_teorico', nombre: 'Marco Teórico' },
+    { id: 'metodologia', nombre: 'Metodología' },
+    { id: 'desarrollo', nombre: 'Desarrollo' },
+    { id: 'conclusiones', nombre: 'Conclusiones' },
+    { id: 'recomendaciones', nombre: 'Recomendaciones' },
+    { id: 'referencias', nombre: 'Referencias' }
+  ];
+  
+  tabsContainer.innerHTML = '';
+  seccionesLista.forEach((sec, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'editor-tab' + (idx === 0 ? ' active' : '');
+    btn.textContent = sec.nombre;
+    btn.onclick = () => {
+      document.querySelectorAll('.editor-tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+      editorTexto.value = seccionesGeneradas[sec.id] || '';
+    };
+    tabsContainer.appendChild(btn);
   });
-}
-function stopProgress(){
-  timers.forEach(clearTimeout);
-  document.getElementById('progFill').style.width='100%';
-  document.querySelectorAll('#progSteps li').forEach(s=>{s.classList.remove('active');s.classList.add('done');});
-  setTimeout(()=>{document.getElementById('progressOverlay').style.display='none';},700);
+  
+  editorTexto.value = seccionesGeneradas.introduccion || '';
+  editorPanel.style.display = 'block';
+  editorPanel.scrollIntoView({ behavior: 'smooth' });
 }
 
-// PREVIEW
-async function previsualizarContenido(){
-  const datos=getDatos();if(!datos)return;
-  document.getElementById('previewBody').textContent='Generando contenido con DeepSeek V3…';
-  document.getElementById('previewModal').style.display='flex';
-  try{
-    const res=await fetch('/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(datos)});
-    const json=await res.json();
-    document.getElementById('previewBody').textContent=json.error?'Error: '+json.error:json.contenido;
-  }catch(err){document.getElementById('previewBody').textContent='Error: '+err.message;}
-}
-function closeModalOutside(e){if(e.target===document.getElementById('previewModal'))document.getElementById('previewModal').style.display='none';}
-function generarDesdePreview(){document.getElementById('previewModal').style.display='none';generarInforme();}
+document.getElementById('exportarPDFBtn').onclick = async () => {
+  const seccionesEditadas = {};
+  const seccionesIds = ['introduccion', 'objetivos', 'marco_teorico', 'metodologia', 'desarrollo', 'conclusiones', 'recomendaciones', 'referencias'];
+  seccionesIds.forEach((id, i) => {
+    seccionesEditadas[id] = document.querySelectorAll('.editor-tab')[i]?.classList.contains('active') 
+      ? document.getElementById('editorTexto').value 
+      : seccionesGeneradas[id] || '';
+  });
+  
+  const res = await fetch('/exportar-pdf', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ secciones: seccionesEditadas, datos_usuario: datosUsuario })
+  });
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `informe_${datosUsuario.tema?.slice(0,30).replace(/\s/g, '_') || 'informe'}.pdf`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
 
-// GENERAR
-async function generarInforme(){
-  const datos=getDatos();if(!datos)return;
-  startProgress();
-  try{
-    const res=await fetch('/generar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(datos)});
-    if(!res.ok){let msg='Error al generar';try{const j=await res.json();msg=j.error||msg;}catch{}stopProgress();showToast(msg,'error');return;}
-    const blob=await res.blob();
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');a.href=url;
-    a.download='informe_'+datos.tema.slice(0,35).replace(/\s+/g,'_').replace(/[^\w_-]/g,'')+'_'+Date.now()+'.pdf';
-    document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
-    stopProgress();showToast('Informe descargado correctamente!','success');
-  }catch(err){stopProgress();showToast('Error de conexion: '+err.message,'error');}
-}
-
-// TOAST
-let tt;
-function showToast(msg,type='success'){
-  const t=document.getElementById('toast');t.textContent=msg;t.className=type;t.style.display='flex';
-  clearTimeout(tt);tt=setTimeout(()=>{t.style.display='none';},5000);
-}
+document.getElementById('exportarWordBtn').onclick = async () => {
+  const seccionesEditadas = {};
+  const seccionesIds = ['introduccion', 'objetivos', 'marco_teorico', 'metodologia', 'desarrollo', 'conclusiones', 'recomendaciones', 'referencias'];
+  seccionesIds.forEach((id, i) => {
+    seccionesEditadas[id] = document.querySelectorAll('.editor-tab')[i]?.classList.contains('active')
+      ? document.getElementById('editorTexto').value
+      : seccionesGeneradas[id] || '';
+  });
+  
+  const res = await fetch('/exportar-word', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ secciones: seccionesEditadas, datos_usuario: datosUsuario })
+  });
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `informe_${datosUsuario.tema?.slice(0,30).replace(/\s/g, '_') || 'informe'}.docx`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
 </script>
 </body>
 </html>
