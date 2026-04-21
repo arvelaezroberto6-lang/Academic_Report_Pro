@@ -10,27 +10,39 @@ import uuid
 from datetime import datetime
 import requests
 import logging
+import re
 
-# Configuración
+# ============================================================
+# CONFIGURACIÓN INICIAL
+# ============================================================
 app = Flask(__name__)
-logging.basicConfig(level=logging.INFO)
+
+# Configurar logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
-# Crear directorios
+# Crear directorio para informes
 os.makedirs('informes_generados', exist_ok=True)
 
-# ========== CONFIGURACIÓN DE DEEPSEEK ==========
+# ============================================================
+# CONFIGURACIÓN DE DEEPSEEK
+# ============================================================
 DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
 DEEPSEEK_URL = "https://api.deepseek.com/v1/chat/completions"
 
 logger.info("=" * 60)
 logger.info("🚀 ACADEMIC REPORT PRO - VERSIÓN CON DEEPSEEK")
-logger.info(f"🔑 DeepSeek API Key configurada: {'SÍ ✅' if DEEPSEEK_API_KEY else 'NO ❌'}")
+logger.info(f"🔑 API Key configurada: {'SÍ ✅' if DEEPSEEK_API_KEY else 'NO ❌'}")
 logger.info("=" * 60)
 
-# ========== GENERAR INFORME CON DEEPSEEK ==========
+# ============================================================
+# FUNCIÓN PARA GENERAR INFORME CON DEEPSEEK
+# ============================================================
 def generar_informe_con_ia(tema, info_extra=""):
-    """Genera informe usando DeepSeek API"""
+    """Genera un informe académico profesional usando DeepSeek API"""
     
     if not DEEPSEEK_API_KEY:
         logger.error("❌ No hay API key de DeepSeek")
@@ -38,35 +50,73 @@ def generar_informe_con_ia(tema, info_extra=""):
     
     logger.info(f"🤖 Generando informe con DeepSeek sobre: {tema[:50]}...")
     
-    prompt = f"""Genera un informe académico profesional sobre: "{tema}"
+    # Prompt profesional y detallado
+    prompt = f"""Eres un asistente académico experto. Genera un INFORME ACADÉMICO PROFESIONAL sobre: "{tema}"
 
-Información adicional: {info_extra if info_extra else 'Sin información adicional'}
+Información adicional proporcionada: {info_extra if info_extra else 'No hay información adicional'}
 
-ESTRUCTURA OBLIGATORIA:
+⚠️ ESTRUCTURA OBLIGATORIA (debes seguir este formato exactamente):
 
-**INTRODUCCIÓN** (2-3 párrafos: contexto, problema, justificación)
+**INTRODUCCIÓN**
+Escribe 2-3 párrafos que incluyan:
+- Contexto general del tema
+- Planteamiento del problema
+- Justificación de la investigación
+- Objetivos generales del informe
 
 **OBJETIVOS**
-- Objetivo general (1)
-- Objetivos específicos (4-5)
+- Objetivo General: (1 objetivo claro y medible)
+- Objetivos Específicos: (4-5 objetivos detallados)
 
-**MARCO TEÓRICO** (conceptos clave, antecedentes)
+**MARCO TEÓRICO**
+Desarrolla 3-4 párrafos con:
+- Conceptos fundamentales relacionados al tema
+- Teorías o enfoques principales
+- Antecedentes de investigaciones previas
+- Definición de términos clave
 
-**METODOLOGÍA** (tipo de investigación, población, técnicas)
+**METODOLOGÍA**
+Describe detalladamente:
+- Tipo de investigación (ej: descriptiva, exploratoria)
+- Enfoque (cualitativo, cuantitativo o mixto)
+- Población y muestra (con datos específicos)
+- Técnicas e instrumentos de recolección
+- Procedimiento paso a paso
 
-**DESARROLLO** (resultados, análisis, hallazgos)
+**DESARROLLO Y RESULTADOS**
+Presenta:
+- Hallazgos principales (mínimo 4 puntos)
+- Análisis de datos (incluye porcentajes o cifras)
+- Tablas o gráficos descritos en texto
+- Discusión de resultados
+- Comparación con otros estudios
 
-**CONCLUSIONES** (5 puntos numerados)
+**CONCLUSIONES**
+Escribe mínimo 5 conclusiones numeradas que:
+- Respondan a los objetivos planteados
+- Sean específicas y basadas en evidencia
+- Muestren el cumplimiento de la investigación
 
-**RECOMENDACIONES** (3-4 sugerencias)
+**RECOMENDACIONES**
+Formula 4 recomendaciones prácticas:
+- Para futuras investigaciones
+- Para la comunidad académica
+- Para aplicación profesional
+- Para políticas o decisiones
 
-**REFERENCIAS** (5-6 fuentes en formato APA)
+**REFERENCIAS**
+Lista 6-8 fuentes bibliográficas relevantes en formato APA 7ª edición (libros, artículos, tesis)
 
-REQUISITOS:
-- Escribe en español, tono académico pero natural
-- Usa **negritas** solo para los títulos de sección
-- Sé específico y evita texto genérico
-- Extensión: 1500-2000 palabras"""
+REQUISITOS IMPORTANTES:
+- Escribe en español neutro y académico
+- Usa **negritas** SOLO para los títulos de sección
+- Proporciona contenido sustancial (no solo títulos vacíos)
+- Incluye datos específicos, fechas, nombres, cifras
+- Extensión total: mínimo 2000 palabras
+- Sé original y evita texto genérico
+- Mantén coherencia entre todas las secciones
+
+¡Genera un informe completo, riguroso y de alta calidad!"""
 
     headers = {
         "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
@@ -76,33 +126,44 @@ REQUISITOS:
     data = {
         "model": "deepseek-chat",
         "messages": [
-            {"role": "system", "content": "Eres un asistente académico profesional. Generas informes en español con estructura clara y contenido de alta calidad."},
-            {"role": "user", "content": prompt}
+            {
+                "role": "system",
+                "content": "Eres un asistente académico profesional con amplia experiencia en investigación. Generas informes detallados, rigurosos y bien estructurados en español. Siempre incluyes datos específicos, ejemplos concretos y análisis profundos."
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
         ],
-        "max_tokens": 4000,
+        "max_tokens": 6000,
         "temperature": 0.7
     }
     
     try:
+        logger.info("📡 Enviando solicitud a DeepSeek API...")
         response = requests.post(DEEPSEEK_URL, headers=headers, json=data, timeout=120)
         
         if response.status_code == 200:
             resultado = response.json()
             contenido = resultado['choices'][0]['message']['content']
-            logger.info(f"✅ Informe generado ({len(contenido)} caracteres)")
+            logger.info(f"✅ Informe generado exitosamente ({len(contenido)} caracteres)")
             return contenido
         else:
             logger.error(f"❌ Error HTTP {response.status_code}: {response.text}")
             return None
             
+    except requests.exceptions.Timeout:
+        logger.error("⏱️ Timeout: DeepSeek tardó más de 120 segundos")
+        return None
     except Exception as e:
         logger.error(f"❌ Error: {e}")
         return None
 
-# ========== EXTRAER SECCIONES ==========
+# ============================================================
+# FUNCIÓN PARA EXTRAER SECCIONES
+# ============================================================
 def extraer_secciones(contenido):
-    """Extrae las secciones del contenido generado por IA"""
-    import re
+    """Extrae cada sección del contenido generado por IA"""
     
     secciones = {
         'introduccion': '',
@@ -115,12 +176,13 @@ def extraer_secciones(contenido):
         'referencias': ''
     }
     
+    # Patrones de búsqueda
     patrones = {
         'introduccion': r'\*\*INTRODUCCIÓN\*\*:?(.*?)(?=\*\*OBJETIVOS|\*\*MARCO|\*\*METODOLOGÍA|\*\*DESARROLLO|\*\*CONCLUSIONES|$)',
         'objetivos': r'\*\*OBJETIVOS\*\*:?(.*?)(?=\*\*MARCO|\*\*METODOLOGÍA|\*\*DESARROLLO|\*\*CONCLUSIONES|$)',
         'marco_teorico': r'\*\*MARCO TEÓRICO\*\*:?(.*?)(?=\*\*METODOLOGÍA|\*\*DESARROLLO|\*\*CONCLUSIONES|$)',
-        'metodologia': r'\*\*METODOLOGÍA\*\*:?(.*?)(?=\*\*DESARROLLO|\*\*CONCLUSIONES|$)',
-        'desarrollo': r'\*\*DESARROLLO\*\*:?(.*?)(?=\*\*CONCLUSIONES|$)',
+        'metodologia': r'\*\*METODOLOGÍA\*\*:?(.*?)(?=\*\*DESARROLLO|\*\*RESULTADOS|\*\*CONCLUSIONES|$)',
+        'desarrollo': r'\*\*DESARROLLO Y RESULTADOS\*\*:?(.*?)(?=\*\*CONCLUSIONES|$)',
         'conclusiones': r'\*\*CONCLUSIONES\*\*:?(.*?)(?=\*\*RECOMENDACIONES|$)',
         'recomendaciones': r'\*\*RECOMENDACIONES\*\*:?(.*?)(?=\*\*REFERENCIAS|$)',
         'referencias': r'\*\*REFERENCIAS\*\*:?(.*?)$'
@@ -130,33 +192,50 @@ def extraer_secciones(contenido):
         match = re.search(patron, contenido, re.DOTALL | re.IGNORECASE)
         if match:
             texto = match.group(1).strip()
+            # Convertir markdown a HTML para ReportLab
             texto = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', texto)
+            texto = re.sub(r'\*(.*?)\*', r'<i>\1</i>', texto)
+            texto = texto.replace('\n', '<br/>')
             secciones[key] = texto
+            logger.info(f"✅ Sección '{key}' extraída: {len(texto)} caracteres")
     
     return secciones
 
-# ========== CONTENIDO DE RESPALDO (si la IA falla) ==========
+# ============================================================
+# CONTENIDO DE RESPALDO (si la IA falla)
+# ============================================================
 def contenido_respaldo(tema):
     """Contenido genérico de respaldo (solo si la IA falla)"""
     return {
-        'introduccion': f"Este es un informe sobre {tema}. La IA no está disponible en este momento.",
-        'objetivos': "1. Objetivo no disponible\n2. Objetivo no disponible",
-        'marco_teorico': "Contenido no disponible. Por favor, verifica la conexión con la IA.",
-        'metodologia': "Contenido no disponible.",
-        'desarrollo': "Contenido no disponible.",
-        'conclusiones': "Contenido no disponible.",
-        'recomendaciones': "Contenido no disponible.",
-        'referencias': "No hay referencias disponibles."
+        'introduccion': f"<b>Contexto</b><br/>Este informe aborda el tema: {tema}. La IA no está disponible en este momento, por favor verifica la conexión.",
+        'objetivos': "<b>Objetivo General</b><br/>Analizar el tema propuesto.<br/><br/><b>Objetivos Específicos</b><br/>1. Comprender los conceptos clave<br/>2. Identificar aplicaciones prácticas",
+        'marco_teorico': "Contenido no disponible temporalmente. Por favor, intenta nuevamente más tarde.",
+        'metodologia': "Contenido no disponible temporalmente.",
+        'desarrollo': "Contenido no disponible temporalmente.",
+        'conclusiones': "Contenido no disponible temporalmente.",
+        'recomendaciones': "Contenido no disponible temporalmente.",
+        'referencias': "No hay referencias disponibles en este momento."
     }
 
-# ========== GENERAR PDF ==========
+# ============================================================
+# GENERADOR DE PDF
+# ============================================================
 def generar_pdf(datos_usuario, secciones):
-    """Genera el PDF con el contenido"""
+    """Genera el PDF profesional con el contenido"""
     
-    filename = f"informe_{uuid.uuid4().hex[:8]}.pdf"
+    # Validar datos
+    nombre = datos_usuario.get('nombre', 'Estudiante')
+    tema = datos_usuario.get('tema', 'Tema de Investigación')
+    
+    # Generar nombre único
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    unique_id = uuid.uuid4().hex[:8]
+    filename = f"informe_{timestamp}_{unique_id}.pdf"
     filepath = os.path.join('informes_generados', filename)
     
+    # Configurar estilos
     styles = getSampleStyleSheet()
+    
     styles.add(ParagraphStyle(
         name='TextoJustificado',
         parent=styles['Normal'],
@@ -166,6 +245,7 @@ def generar_pdf(datos_usuario, secciones):
         spaceAfter=12,
         leading=16
     ))
+    
     styles.add(ParagraphStyle(
         name='Titulo1',
         parent=styles['Heading1'],
@@ -175,34 +255,53 @@ def generar_pdf(datos_usuario, secciones):
         spaceBefore=24,
         spaceAfter=12
     ))
+    
     styles.add(ParagraphStyle(
         name='TituloPortada',
         parent=styles['Title'],
-        fontSize=28,
+        fontSize=24,
         alignment=TA_CENTER,
+        spaceAfter=20,
         textColor=colors.HexColor('#1a365d')
     ))
     
-    doc = SimpleDocTemplate(filepath, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=72)
+    styles.add(ParagraphStyle(
+        name='TextoCentrado',
+        parent=styles['Normal'],
+        alignment=TA_CENTER,
+        fontSize=12,
+        spaceAfter=10
+    ))
+    
+    # Crear documento
+    doc = SimpleDocTemplate(
+        filepath,
+        pagesize=letter,
+        rightMargin=72,
+        leftMargin=72,
+        topMargin=72,
+        bottomMargin=72
+    )
+    
     story = []
     
-    # Portada
+    # PORTADA
     story.append(Spacer(1, 2.5*inch))
     story.append(Paragraph("INFORME ACADÉMICO", styles['TituloPortada']))
-    story.append(Spacer(1, 0.5*inch))
-    story.append(Paragraph(datos_usuario.get('tema', 'Tema').upper(), styles['TextoJustificado']))
+    story.append(Spacer(1, 0.3*inch))
+    story.append(Paragraph(tema.upper(), styles['TextoCentrado']))
     story.append(Spacer(1, 1.5*inch))
-    story.append(Paragraph(f"<b>Presentado por:</b> {datos_usuario.get('nombre', 'Estudiante')}", styles['TextoJustificado']))
-    story.append(Paragraph(f"<b>Fecha:</b> {datetime.now().strftime('%d/%m/%Y')}", styles['TextoJustificado']))
+    story.append(Paragraph(f"<b>Presentado por:</b> {nombre}", styles['TextoCentrado']))
+    story.append(Paragraph(f"<b>Fecha:</b> {datetime.now().strftime('%d/%m/%Y')}", styles['TextoCentrado']))
     story.append(PageBreak())
     
-    # Secciones
+    # SECCIONES
     secciones_orden = [
         ("1. INTRODUCCIÓN", 'introduccion'),
         ("2. OBJETIVOS", 'objetivos'),
         ("3. MARCO TEÓRICO", 'marco_teorico'),
         ("4. METODOLOGÍA", 'metodologia'),
-        ("5. DESARROLLO", 'desarrollo'),
+        ("5. DESARROLLO Y RESULTADOS", 'desarrollo'),
         ("6. CONCLUSIONES", 'conclusiones'),
         ("7. RECOMENDACIONES", 'recomendaciones'),
         ("8. REFERENCIAS", 'referencias')
@@ -210,17 +309,31 @@ def generar_pdf(datos_usuario, secciones):
     
     for titulo, clave in secciones_orden:
         story.append(Paragraph(titulo, styles['Titulo1']))
+        story.append(Spacer(1, 0.2*inch))
+        
         contenido = secciones.get(clave, '')
-        if contenido:
-            story.append(Paragraph(contenido, styles['TextoJustificado']))
+        if contenido and len(contenido) > 20:
+            # Dividir en párrafos
+            parrafos = contenido.split('<br/>')
+            for parrafo in parrafos:
+                if parrafo.strip():
+                    story.append(Paragraph(parrafo.strip(), styles['TextoJustificado']))
+                    story.append(Spacer(1, 0.1*inch))
         else:
             story.append(Paragraph("Contenido no disponible", styles['TextoJustificado']))
+        
         story.append(PageBreak())
     
+    # Construir PDF
     doc.build(story)
+    file_size = os.path.getsize(filepath)
+    logger.info(f"✅ PDF generado: {filename} ({file_size} bytes)")
+    
     return filename, filepath
 
-# ========== RUTAS ==========
+# ============================================================
+# RUTAS DE LA API
+# ============================================================
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -229,18 +342,21 @@ def index():
 def generar():
     try:
         data = request.json
-        tema = data.get('tema', 'Tema general')
+        tema = data.get('tema', '').strip()
         info_extra = data.get('texto_completo', '')
         nombre = data.get('nombre', 'Estudiante')
         
-        logger.info(f"📨 Generando informe para: {nombre} - Tema: {tema[:50]}")
+        if not tema:
+            return jsonify({'success': False, 'error': 'El tema es requerido'}), 400
         
-        # Intentar generar con IA
+        logger.info(f"📨 Generando informe para: {nombre} - Tema: {tema[:50]}...")
+        
+        # Generar con IA
         contenido_ia = generar_informe_con_ia(tema, info_extra)
         
         if contenido_ia:
             secciones = extraer_secciones(contenido_ia)
-            logger.info("✅ Informe generado con IA")
+            logger.info("✅ Informe generado con IA correctamente")
         else:
             secciones = contenido_respaldo(tema)
             logger.warning("⚠️ Usando contenido de respaldo (IA falló)")
@@ -254,21 +370,40 @@ def generar():
         
         return jsonify({
             'success': True,
+            'message': 'Informe generado exitosamente',
             'download_url': f'/descargar/{filename}'
         })
         
     except Exception as e:
-        logger.error(f"Error: {e}")
+        logger.error(f"❌ Error en /generar: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/descargar/<filename>')
 def descargar(filename):
+    filepath = os.path.join('informes_generados', filename)
+    
+    if not os.path.exists(filepath):
+        return jsonify({'success': False, 'error': 'Archivo no encontrado'}), 404
+    
     return send_file(
-        os.path.join('informes_generados', filename),
+        filepath,
         as_attachment=True,
-        download_name=filename
+        download_name=filename,
+        mimetype='application/pdf'
     )
 
+@app.route('/health')
+def health():
+    return jsonify({
+        'status': 'healthy',
+        'deepseek_configured': bool(DEEPSEEK_API_KEY),
+        'timestamp': datetime.now().isoformat()
+    })
+
+# ============================================================
+# INICIO DE LA APLICACIÓN
+# ============================================================
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
+    logger.info(f"🚀 Iniciando servidor en puerto {port}")
     app.run(host='0.0.0.0', port=port, debug=False)
