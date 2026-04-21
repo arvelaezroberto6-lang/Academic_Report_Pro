@@ -10,54 +10,53 @@
     <style>
         * { font-family: 'Inter', sans-serif; }
         body { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); min-height: 100vh; }
-        .glass-card { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
-        .btn-primary { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
+        .glass-card { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); transition: all 0.3s ease; }
+        .glass-card:hover { border-color: rgba(139,92,246,0.5); }
+        .btn-primary { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); transition: all 0.3s ease; }
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 20px 25px -5px rgba(99,102,241,0.4); }
         .section-active { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; }
+        .progress-bar { transition: width 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeIn 0.5s ease-out; }
     </style>
 </head>
 <body class="min-h-screen p-6">
     <div class="container mx-auto max-w-7xl">
         
-        <!-- Header -->
-        <div class="text-center mb-8">
-            <h1 class="text-5xl font-bold text-white mb-2">Informala</h1>
-            <p class="text-purple-200">Crea informes profesionales en minutos con IA</p>
+        <!-- Header con mensaje de diferenciación -->
+        <div class="text-center mb-8 fade-in">
+            <div class="inline-block px-4 py-1 rounded-full bg-purple-500/20 text-purple-300 text-sm mb-4 border border-purple-500/30">
+                ⚡ Más que IA - Informes estructurados listos para entregar
+            </div>
+            <h1 class="text-6xl font-bold text-white mb-2">Informala</h1>
+            <p class="text-purple-200 text-lg">Crea informes profesionales en minutos con IA</p>
+            <div class="flex justify-center gap-4 mt-4">
+                <div class="flex items-center gap-2 text-sm text-purple-300"><span class="w-2 h-2 rounded-full bg-green-400"></span>Estructura automática</div>
+                <div class="flex items-center gap-2 text-sm text-purple-300"><span class="w-2 h-2 rounded-full bg-green-400"></span>Múltiples normas</div>
+                <div class="flex items-center gap-2 text-sm text-purple-300"><span class="w-2 h-2 rounded-full bg-green-400"></span>Word + PDF</div>
+            </div>
         </div>
 
         <div class="grid md:grid-cols-3 gap-6">
             
             <!-- Panel Lateral -->
-            <div class="glass-card rounded-2xl p-6">
+            <div class="glass-card rounded-2xl p-6 fade-in">
                 <div class="flex items-center gap-3 mb-6 pb-4 border-b border-white/10">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center">📄</div>
-                    <div>
-                        <h3 class="font-bold text-white">Informala</h3>
-                        <p class="text-xs text-purple-300">Generador profesional</p>
-                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-lg">📄</div>
+                    <div><h3 class="font-bold text-white">Informala</h3><p class="text-xs text-purple-300">Generador profesional</p></div>
                 </div>
-                
                 <nav class="space-y-1">
-                    <div class="flex items-center gap-3 p-3 rounded-xl bg-white/10 text-white">
-                        <span>✨</span><span class="text-sm font-medium">Crear informe</span>
-                    </div>
-                    <div class="flex items-center gap-3 p-3 rounded-xl text-purple-300 hover:bg-white/5 transition">
-                        <span>📄</span><span class="text-sm">Mis informes</span>
-                    </div>
-                    <div class="flex items-center gap-3 p-3 rounded-xl text-purple-300 hover:bg-white/5 transition">
-                        <span>📋</span><span class="text-sm">Plantillas</span>
-                    </div>
-                    <div class="flex items-center gap-3 p-3 rounded-xl text-purple-300 hover:bg-white/5 transition">
-                        <span>📜</span><span class="text-sm">Historial</span>
-                    </div>
+                    <div class="flex items-center gap-3 p-3 rounded-xl bg-white/10 text-white"><span>✨</span><span class="text-sm font-medium">Crear informe</span></div>
+                    <div class="flex items-center gap-3 p-3 rounded-xl text-purple-300 hover:bg-white/5 transition"><span>📄</span><span class="text-sm">Mis informes</span></div>
+                    <div class="flex items-center gap-3 p-3 rounded-xl text-purple-300 hover:bg-white/5 transition"><span>📋</span><span class="text-sm">Plantillas</span></div>
+                    <div class="flex items-center gap-3 p-3 rounded-xl text-purple-300 hover:bg-white/5 transition"><span>📜</span><span class="text-sm">Historial</span></div>
                 </nav>
-                
                 <div class="mt-8 pt-4 border-t border-white/10">
                     <div class="bg-white/5 rounded-xl p-4">
                         <p class="text-xs text-purple-300">Plan Actual</p>
                         <p class="text-white font-bold">Gratuito</p>
-                        <p class="text-xs text-purple-300 mt-1">Informes restantes: <span class="text-white font-bold">3/3</span></p>
-                        <button class="w-full mt-3 bg-white/10 text-white text-sm py-2 rounded-lg hover:bg-white/20 transition">Mejorar plan</button>
+                        <p class="text-xs text-purple-300 mt-1">Informes restantes: <span class="text-white font-bold" id="informesRestantes">3</span>/3</p>
+                        <button class="w-full mt-3 bg-white/10 text-white text-sm py-2 rounded-lg hover:bg-white/20 transition">⭐ Mejorar plan</button>
                     </div>
                 </div>
             </div>
@@ -65,73 +64,70 @@
             <!-- Área Principal -->
             <div class="md:col-span-2 space-y-6">
                 
-                <!-- Paso 1: Tema -->
-                <div class="glass-card rounded-2xl p-6">
-                    <div class="flex items-center gap-2 mb-4">
-                        <span class="w-6 h-6 rounded-full bg-indigo-500 text-white text-xs flex items-center justify-center">1</span>
-                        <h3 class="text-white font-semibold">Tema del informe</h3>
-                    </div>
+                <!-- Barra de progreso -->
+                <div id="progressContainer" class="glass-card rounded-2xl p-4" style="display: none;">
+                    <div class="flex justify-between text-sm text-purple-300 mb-2"><span id="progressStep">Paso 1 de 3</span><span id="progressPercent">0%</span></div>
+                    <div class="h-2 bg-white/10 rounded-full overflow-hidden"><div id="progressFill" class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full progress-bar" style="width: 0%"></div></div>
+                    <p id="progressMessage" class="text-xs text-purple-300 mt-2">Conectando con IA...</p>
+                </div>
+                
+                <!-- Paso 1 -->
+                <div class="glass-card rounded-2xl p-6 fade-in" id="step1">
+                    <div class="flex items-center gap-2 mb-4"><span class="w-6 h-6 rounded-full bg-indigo-500 text-white text-xs flex items-center justify-center">1</span><h3 class="text-white font-semibold">Tema del informe</h3></div>
                     <input type="text" id="tema" class="w-full p-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-purple-300" placeholder="Ej: El impacto de las inteligencias artificiales en Colombia">
                 </div>
                 
-                <!-- Paso 2: Configuración -->
-                <div class="glass-card rounded-2xl p-6">
-                    <div class="flex items-center gap-2 mb-4">
-                        <span class="w-6 h-6 rounded-full bg-indigo-500 text-white text-xs flex items-center justify-center">2</span>
-                        <h3 class="text-white font-semibold">Configura tu informe</h3>
-                    </div>
-                    
+                <!-- Paso 2 -->
+                <div class="glass-card rounded-2xl p-6 fade-in" id="step2">
+                    <div class="flex items-center gap-2 mb-4"><span class="w-6 h-6 rounded-full bg-indigo-500 text-white text-xs flex items-center justify-center">2</span><h3 class="text-white font-semibold">Configura tu informe</h3></div>
                     <div class="grid md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="text-sm text-purple-300 block mb-1">Nivel académico</label>
+                        <div><label class="text-sm text-purple-300 block mb-1">🎓 Nivel académico</label>
                             <select id="nivel" class="w-full p-2 rounded-lg bg-white/10 border border-white/20 text-white">
                                 <option value="colegio">🏫 Colegio / Secundaria</option>
                                 <option value="tecnico">📚 Técnico / Pregrado</option>
                                 <option value="universitario" selected>🎓 Universitario / Avanzado</option>
                             </select>
                         </div>
-                        <div>
-                            <label class="text-sm text-purple-300 block mb-1">Objetivo del informe</label>
+                        <div><label class="text-sm text-purple-300 block mb-1">🎯 Objetivo del informe</label>
                             <select id="objetivo" class="w-full p-2 rounded-lg bg-white/10 border border-white/20 text-white">
-                                <option value="analizar">Analizar</option>
-                                <option value="investigar">Investigar</option>
-                                <option value="describir">Describir</option>
-                                <option value="evaluar">Evaluar</option>
+                                <option value="analizar">Analizar</option><option value="investigar">Investigar</option><option value="describir">Describir</option><option value="evaluar">Evaluar</option>
                             </select>
                         </div>
-                        <div>
-                            <label class="text-sm text-purple-300 block mb-1">Tipo de informe</label>
+                        <div><label class="text-sm text-purple-300 block mb-1">📋 Tipo de informe</label>
                             <select id="tipoInforme" class="w-full p-2 rounded-lg bg-white/10 border border-white/20 text-white">
-                                <option value="academico">📄 Académico</option>
-                                <option value="laboratorio">🔬 Laboratorio</option>
-                                <option value="ejecutivo">💼 Ejecutivo</option>
-                                <option value="tesis">🎓 Tesis</option>
+                                <option value="academico">📄 Académico</option><option value="laboratorio">🔬 Laboratorio</option><option value="ejecutivo">💼 Ejecutivo</option><option value="tesis">🎓 Tesis</option>
                             </select>
                         </div>
-                        <div>
-                            <label class="text-sm text-purple-300 block mb-1">Norma de citación</label>
+                        <div><label class="text-sm text-purple-300 block mb-1">📐 Norma de citación</label>
                             <select id="norma" class="w-full p-2 rounded-lg bg-white/10 border border-white/20 text-white">
-                                <option value="APA 7">APA 7</option>
-                                <option value="APA 6">APA 6</option>
-                                <option value="ICONTEC">ICONTEC</option>
-                                <option value="IEEE">IEEE</option>
+                                <option value="APA 7">APA 7</option><option value="APA 6">APA 6</option><option value="ICONTEC">ICONTEC</option><option value="IEEE">IEEE</option>
                             </select>
                         </div>
                     </div>
-                    
                     <div class="grid md:grid-cols-2 gap-4 mt-4">
-                        <div><label class="text-sm text-purple-300 block mb-1">Tu nombre</label><input type="text" id="nombre" class="w-full p-2 rounded-lg bg-white/10 border border-white/20 text-white" placeholder="Nombre completo"></div>
-                        <div><label class="text-sm text-purple-300 block mb-1">Asignatura</label><input type="text" id="asignatura" class="w-full p-2 rounded-lg bg-white/10 border border-white/20 text-white" placeholder="Asignatura"></div>
-                        <div><label class="text-sm text-purple-300 block mb-1">Docente</label><input type="text" id="profesor" class="w-full p-2 rounded-lg bg-white/10 border border-white/20 text-white" placeholder="Docente"></div>
-                        <div><label class="text-sm text-purple-300 block mb-1">Institución</label><input type="text" id="institucion" class="w-full p-2 rounded-lg bg-white/10 border border-white/20 text-white" placeholder="Institución"></div>
+                        <div><label class="text-sm text-purple-300 block mb-1">👤 Tu nombre</label><input type="text" id="nombre" class="w-full p-2 rounded-lg bg-white/10 border border-white/20 text-white" placeholder="Nombre completo"></div>
+                        <div><label class="text-sm text-purple-300 block mb-1">📚 Asignatura</label><input type="text" id="asignatura" class="w-full p-2 rounded-lg bg-white/10 border border-white/20 text-white" placeholder="Asignatura"></div>
+                        <div><label class="text-sm text-purple-300 block mb-1">👨‍🏫 Docente</label><input type="text" id="profesor" class="w-full p-2 rounded-lg bg-white/10 border border-white/20 text-white" placeholder="Docente"></div>
+                        <div><label class="text-sm text-purple-300 block mb-1">🏛️ Institución</label><input type="text" id="institucion" class="w-full p-2 rounded-lg bg-white/10 border border-white/20 text-white" placeholder="Institución"></div>
                     </div>
                 </div>
                 
-                <button id="generarBtn" class="btn-primary w-full py-4 rounded-xl text-white font-bold text-lg transition-all">🚀 Generar informe</button>
+                <button id="generarBtn" class="btn-primary w-full py-4 rounded-xl text-white font-bold text-lg transition-all">🚀 Generar informe profesional</button>
                 
-                <!-- Editor (aparece después de generar) -->
+                <!-- Ejemplo visible (WOW) -->
+                <div class="glass-card rounded-2xl p-6 text-center">
+                    <p class="text-purple-300 text-sm mb-2">✨ Mira este ejemplo real</p>
+                    <p class="text-white text-sm">"El impacto de las inteligencias artificiales en Colombia - Un análisis completo con datos 2023-2024"</p>
+                    <div class="flex justify-center gap-2 mt-3">
+                        <span class="text-xs text-purple-300">📄 8 secciones</span>
+                        <span class="text-xs text-purple-300">📊 Con tablas</span>
+                        <span class="text-xs text-purple-300">📚 6 referencias</span>
+                    </div>
+                </div>
+                
+                <!-- Editor -->
                 <div id="editorPanel" class="glass-card rounded-2xl p-6" style="display: none;">
-                    <h3 class="text-white font-bold text-xl mb-4">✏️ Mi informe</h3>
+                    <h3 class="text-white font-bold text-xl mb-4">✏️ Edita tu informe</h3>
                     <div class="flex gap-2 flex-wrap mb-4" id="seccionesTabs"></div>
                     <textarea id="editorTexto" class="w-full p-4 rounded-xl bg-white/10 border border-white/20 text-white" rows="12"></textarea>
                     <div class="flex gap-3 mt-4">
@@ -145,39 +141,61 @@
     </div>
 
     <script>
-        let seccionesActuales = {};
-        let datosUsuarioActual = {};
+        let seccionesActuales = {}, datosUsuarioActual = {};
+        let informesUsados = parseInt(localStorage.getItem('informesUsados') || '0');
+        document.getElementById('informesRestantes').innerText = Math.max(0, 3 - informesUsados);
+        
+        function actualizarProgreso(paso, mensaje, porcentaje) {
+            document.getElementById('progressStep').innerText = paso;
+            document.getElementById('progressMessage').innerText = mensaje;
+            document.getElementById('progressFill').style.width = porcentaje + '%';
+            document.getElementById('progressPercent').innerText = porcentaje + '%';
+        }
         
         document.getElementById('generarBtn').onclick = async () => {
             const tema = document.getElementById('tema').value.trim();
             if (!tema) { Swal.fire('Error', 'Escribe el tema del informe', 'error'); return; }
+            if (informesUsados >= 3) { Swal.fire('Límite alcanzado', 'Has usado tus 3 informes gratis. Mejora tu plan para continuar.', 'warning'); return; }
             
-            Swal.fire({ title: 'Generando informe...', text: 'Esto puede tomar 30-60 segundos', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            document.getElementById('generarBtn').disabled = true;
+            document.getElementById('generarBtn').innerHTML = '⏳ Generando informe...';
+            document.getElementById('progressContainer').style.display = 'block';
+            
+            actualizarProgreso('Paso 1 de 3', 'Conectando con IA...', 10);
+            await new Promise(r => setTimeout(r, 500));
+            actualizarProgreso('Paso 1 de 3', 'Analizando tu tema...', 25);
+            await new Promise(r => setTimeout(r, 800));
+            actualizarProgreso('Paso 2 de 3', 'Generando contenido académico...', 50);
             
             try {
                 const res = await fetch('/generar', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        tema: tema,
-                        nivel: document.getElementById('nivel').value,
-                        objetivo: document.getElementById('objetivo').value,
-                        tipo_informe: document.getElementById('tipoInforme').value,
+                        tema: tema, nivel: document.getElementById('nivel').value,
+                        objetivo: document.getElementById('objetivo').value, tipo_informe: document.getElementById('tipoInforme').value,
                         nombre: document.getElementById('nombre').value || 'Estudiante',
-                        asignatura: document.getElementById('asignatura').value,
-                        profesor: document.getElementById('profesor').value,
-                        institucion: document.getElementById('institucion').value,
-                        norma: document.getElementById('norma').value
+                        asignatura: document.getElementById('asignatura').value, profesor: document.getElementById('profesor').value,
+                        institucion: document.getElementById('institucion').value, norma: document.getElementById('norma').value
                     })
                 });
+                actualizarProgreso('Paso 3 de 3', 'Estructurando el informe...', 75);
+                await new Promise(r => setTimeout(r, 500));
                 const data = await res.json();
                 if (data.success) {
-                    seccionesActuales = data.secciones;
-                    datosUsuarioActual = data.datos_usuario;
-                    mostrarEditor();
+                    seccionesActuales = data.secciones; datosUsuarioActual = data.datos_usuario;
+                    informesUsados++; localStorage.setItem('informesUsados', informesUsados);
+                    document.getElementById('informesRestantes').innerText = Math.max(0, 3 - informesUsados);
+                    actualizarProgreso('¡Completado!', 'Informe listo para editar', 100);
+                    setTimeout(() => { document.getElementById('progressContainer').style.display = 'none'; mostrarEditor(); }, 800);
                     Swal.fire('¡Éxito!', 'Informe generado correctamente', 'success');
-                } else { Swal.fire('Error', data.error, 'error'); }
-            } catch (error) { Swal.fire('Error', 'Error de conexión', 'error'); }
+                } else { throw new Error(data.error); }
+            } catch (error) { 
+                document.getElementById('progressContainer').style.display = 'none';
+                Swal.fire('Error', error.message, 'error'); 
+            } finally {
+                document.getElementById('generarBtn').disabled = false;
+                document.getElementById('generarBtn').innerHTML = '🚀 Generar informe profesional';
+            }
         };
         
         function mostrarEditor() {
@@ -202,23 +220,12 @@
         }
         
         document.getElementById('exportarPDFBtn').onclick = async () => {
-            const res = await fetch('/exportar-pdf', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ secciones: seccionesActuales, datos_usuario: datosUsuarioActual })
-            });
-            const blob = await res.blob();
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = `informe_${Date.now()}.pdf`; a.click(); URL.revokeObjectURL(url);
+            const res = await fetch('/exportar-pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ secciones: seccionesActuales, datos_usuario: datosUsuarioActual }) });
+            const blob = await res.blob(); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `informe_${Date.now()}.pdf`; a.click(); URL.revokeObjectURL(url);
         };
-        
         document.getElementById('exportarWordBtn').onclick = async () => {
-            const res = await fetch('/exportar-word', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ secciones: seccionesActuales, datos_usuario: datosUsuarioActual })
-            });
-            const blob = await res.blob();
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = `informe_${Date.now()}.docx`; a.click(); URL.revokeObjectURL(url);
+            const res = await fetch('/exportar-word', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ secciones: seccionesActuales, datos_usuario: datosUsuarioActual }) });
+            const blob = await res.blob(); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `informe_${Date.now()}.docx`; a.click(); URL.revokeObjectURL(url);
         };
     </script>
 </body>
