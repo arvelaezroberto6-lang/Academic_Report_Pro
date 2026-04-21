@@ -72,7 +72,7 @@ Información adicional del usuario: {info_extra_texto}
 [Escribe aquí el marco teórico, 3-4 párrafos. INCLUYE CITAS DE AUTORES con fechas]
 
 **METODOLOGÍA**
-[Escribe aquí la metodología. INCLUYE: tipo de investigación, población (ej: 250 participantes), técnicas usadas, fechas]
+[Escribe aquí la metodología COMPLETA. INCLUYE: tipo de investigación, población (ej: 250 participantes), técnicas usadas, fechas, procedimiento detallado. Mínimo 3 párrafos.]
 
 **DESARROLLO**
 [Escribe aquí el desarrollo. OBLIGATORIO: INCLUYE UNA TABLA CON DATOS NUMÉRICOS. Ejemplo de formato de tabla:
@@ -108,6 +108,7 @@ REQUISITOS OBLIGATORIOS:
 - Usa **negritas** solo para los títulos
 - INCLUYE DATOS NUMÉRICOS ESPECÍFICOS (porcentajes, fechas, cantidades)
 - INCLUYE UNA TABLA en la sección de Desarrollo
+- DESARROLLA LA METODOLOGÍA COMPLETAMENTE (mínimo 3 párrafos)
 - No omitas ninguna sección"""
     
     return prompt
@@ -130,16 +131,16 @@ def llamar_deepseek(prompt):
     data = {
         "model": "deepseek-chat",
         "messages": [
-            {"role": "system", "content": "Eres un asistente académico profesional especializado en la creación de informes estructurados. Generas contenido original, incluyendo DATOS NUMÉRICOS ESPECÍFICOS (porcentajes, fechas, cantidades) y TABLAS cuando corresponde."},
+            {"role": "system", "content": "Eres un asistente académico profesional especializado en la creación de informes estructurados. Generas contenido original, incluyendo DATOS NUMÉRICOS ESPECÍFICOS (porcentajes, fechas, cantidades) y TABLAS cuando corresponde. SIEMPRE desarrollas la metodología completa."},
             {"role": "user", "content": prompt}
         ],
-        "max_tokens": 6000,
+        "max_tokens": 10000,  # <--- AUMENTADO PARA METODOLOGÍA COMPLETA
         "temperature": 0.7
     }
     
     try:
         logger.info("📡 Enviando solicitud a DeepSeek...")
-        response = requests.post(DEEPSEEK_URL, headers=headers, json=data, timeout=120)
+        response = requests.post(DEEPSEEK_URL, headers=headers, json=data, timeout=150)
         
         if response.status_code == 200:
             resultado = response.json()
@@ -340,11 +341,10 @@ def generar_word(datos_usuario, secciones):
     
     # Título
     title = doc.add_heading('INFORME ACADÉMICO', 0)
-    title.alignment = 1  # Centrado
+    title.alignment = 1
     
     doc.add_heading(tema, level=1)
     
-    # Datos del estudiante
     doc.add_paragraph(f"Presentado por: {nombre}")
     if asignatura:
         doc.add_paragraph(f"Asignatura: {asignatura}")
@@ -358,7 +358,6 @@ def generar_word(datos_usuario, secciones):
     doc.add_paragraph(f"Norma: {norma}")
     doc.add_page_break()
     
-    # Secciones
     secciones_orden = [
         ("INTRODUCCIÓN", 'introduccion'),
         ("OBJETIVOS", 'objetivos'),
@@ -373,7 +372,6 @@ def generar_word(datos_usuario, secciones):
     for titulo, clave in secciones_orden:
         doc.add_heading(titulo, level=2)
         contenido = secciones.get(clave, '')
-        # Limpiar etiquetas HTML
         contenido_limpio = re.sub(r'<br/?>', '\n', contenido)
         contenido_limpio = re.sub(r'<b>(.*?)</b>', r'\1', contenido_limpio)
         contenido_limpio = re.sub(r'<[^>]+>', '', contenido_limpio)
@@ -384,7 +382,6 @@ def generar_word(datos_usuario, secciones):
             doc.add_paragraph("No se pudo generar esta sección.")
         doc.add_page_break()
     
-    # Guardar en BytesIO
     buffer = BytesIO()
     doc.save(buffer)
     buffer.seek(0)
@@ -399,7 +396,6 @@ def index():
 
 @app.route('/generar', methods=['POST'])
 def generar():
-    """Genera el informe completo y devuelve las secciones para editar"""
     try:
         data = request.json
         
@@ -415,7 +411,7 @@ def generar():
         profesor = data.get('profesor', '')
         institucion = data.get('institucion', '')
         ciudad = data.get('ciudad', '')
-        fecha = data.get('fecha', datetime.now().strftime('%d/%m/%Y'))
+        fecha = data.get('fecha', datetime.now().strftime('%Y-%m-%d'))
         
         if not tema:
             return jsonify({'success': False, 'error': 'El tema es requerido'}), 400
@@ -453,7 +449,6 @@ def generar():
 
 @app.route('/exportar-pdf', methods=['POST'])
 def exportar_pdf():
-    """Exporta el informe editado a PDF"""
     try:
         data = request.json
         secciones = data.get('secciones', {})
@@ -472,7 +467,6 @@ def exportar_pdf():
 
 @app.route('/exportar-word', methods=['POST'])
 def exportar_word():
-    """Exporta el informe editado a Word"""
     try:
         data = request.json
         secciones = data.get('secciones', {})
@@ -492,7 +486,6 @@ def exportar_word():
 
 @app.route('/preview', methods=['POST'])
 def preview():
-    """Genera una vista previa del contenido"""
     try:
         data = request.json
         tema = data.get('tema', '')
