@@ -38,7 +38,7 @@ def llamar_deepseek(prompt):
             {"role": "system", "content": "Eres un asistente académico profesional. Generas contenido original y bien estructurado en español."},
             {"role": "user", "content": prompt}
         ],
-        "max_tokens": 6000,
+        "max_tokens": 8000,
         "temperature": 0.7
     }
     try:
@@ -87,7 +87,18 @@ def generar_pdf(tema, nombre, secciones):
     story.append(PageBreak())
     
     # Secciones
-    for titulo, clave in [("1. INTRODUCCIÓN", 'introduccion'), ("2. OBJETIVOS", 'objetivos'), ("3. MARCO TEÓRICO", 'marco_teorico'), ("4. METODOLOGÍA", 'metodologia'), ("5. DESARROLLO", 'desarrollo'), ("6. CONCLUSIONES", 'conclusiones'), ("7. RECOMENDACIONES", 'recomendaciones'), ("8. REFERENCIAS", 'referencias')]:
+    secciones_lista = [
+        ("1. INTRODUCCIÓN", 'introduccion'),
+        ("2. OBJETIVOS", 'objetivos'),
+        ("3. MARCO TEÓRICO", 'marco_teorico'),
+        ("4. METODOLOGÍA", 'metodologia'),
+        ("5. DESARROLLO", 'desarrollo'),
+        ("6. CONCLUSIONES", 'conclusiones'),
+        ("7. RECOMENDACIONES", 'recomendaciones'),
+        ("8. REFERENCIAS", 'referencias')
+    ]
+    
+    for titulo, clave in secciones_lista:
         story.append(Paragraph(titulo, styles['Titulo1']))
         story.append(Spacer(1, 0.2*inch))
         contenido = secciones.get(clave, '')
