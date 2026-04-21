@@ -3,166 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Academic Report Pro - Generador de Informes con IA</title>
+    <title>Academic Report Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-        .card { background: white; border-radius: 1rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); transition: transform 0.2s; }
-        .card:hover { transform: translateY(-2px); }
-        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: 600; padding: 0.75rem 1.5rem; border-radius: 0.5rem; transition: all 0.2s; }
-        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-        .editor-tab { padding: 0.5rem 1rem; background: #f3f4f6; border-radius: 0.5rem; cursor: pointer; transition: all 0.2s; font-size: 0.875rem; }
-        .editor-tab.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
-        #editorTexto { width: 100%; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; font-family: monospace; font-size: 0.875rem; min-height: 400px; resize: vertical; }
-        .chip { padding: 0.25rem 0.75rem; background: #f3f4f6; border-radius: 9999px; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; }
-        .chip.active { background: #667eea; color: white; }
-        .tipo-card { padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; cursor: pointer; text-align: center; transition: all 0.2s; }
-        .tipo-card.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-color: transparent; }
-    </style>
 </head>
-<body class="min-h-screen p-4">
-    <div class="container mx-auto max-w-6xl">
-        
-        <!-- Header -->
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-4">
+    <div class="container mx-auto max-w-2xl">
         <div class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-white mb-2">📚 Academic Report Pro</h1>
-            <p class="text-white/80">Genera informes académicos profesionales con IA - No es ChatGPT, es una herramienta especializada</p>
+            <h1 class="text-3xl font-bold text-gray-800">📚 Academic Report Pro</h1>
+            <p class="text-gray-600">Genera informes académicos profesionales con IA</p>
         </div>
-
-        <!-- Formulario -->
-        <div class="card p-6 mb-6">
-            <h2 class="text-xl font-bold mb-4">Configura tu informe</h2>
-            
-            <div class="grid md:grid-cols-2 gap-4 mb-4">
-                <div>
-                    <label class="block text-sm font-medium mb-1">Tipo de informe</label>
-                    <div class="grid grid-cols-4 gap-2">
-                        <div class="tipo-card active" data-tipo="academico">📄 Académico</div>
-                        <div class="tipo-card" data-tipo="laboratorio">🔬 Laboratorio</div>
-                        <div class="tipo-card" data-tipo="ejecutivo">💼 Ejecutivo</div>
-                        <div class="tipo-card" data-tipo="tesis">🎓 Tesis</div>
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1">Norma de citación</label>
-                    <div class="flex flex-wrap gap-1">
-                        <div class="chip active" data-norma="APA 7">APA 7</div>
-                        <div class="chip" data-norma="APA 6">APA 6</div>
-                        <div class="chip" data-norma="ICONTEC">ICONTEC</div>
-                        <div class="chip" data-norma="Vancouver">Vancouver</div>
-                        <div class="chip" data-norma="IEEE">IEEE</div>
-                    </div>
-                </div>
-            </div>
-
+        
+        <div class="bg-white rounded-xl shadow-lg p-6">
             <div class="mb-4">
-                <label class="block text-sm font-medium mb-1">Tema del informe *</label>
-                <input type="text" id="tema" class="w-full p-2 border rounded-lg" placeholder="Ej: Impacto de la inteligencia artificial en la educación">
+                <label class="block font-bold mb-1">Tema del informe *</label>
+                <input type="text" id="tema" class="w-full p-2 border rounded-lg" placeholder="Ej: Impacto de la inteligencia artificial">
             </div>
-
             <div class="mb-4">
-                <label class="block text-sm font-medium mb-1">Información adicional (opcional)</label>
-                <textarea id="infoExtra" rows="3" class="w-full p-2 border rounded-lg" placeholder="Escribe aquí información específica que quieras incluir..."></textarea>
+                <label class="block font-bold mb-1">Tu nombre *</label>
+                <input type="text" id="nombre" class="w-full p-2 border rounded-lg" placeholder="Tu nombre completo">
             </div>
-
-            <div class="grid md:grid-cols-2 gap-4 mb-4">
-                <div>
-                    <label class="block text-sm font-medium mb-1">Tu nombre</label>
-                    <input type="text" id="nombre" class="w-full p-2 border rounded-lg" placeholder="Nombre completo">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1">Asignatura</label>
-                    <input type="text" id="asignatura" class="w-full p-2 border rounded-lg" placeholder="Ej: Metodología de la investigación">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1">Docente</label>
-                    <input type="text" id="profesor" class="w-full p-2 border rounded-lg" placeholder="Nombre del profesor">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1">Institución</label>
-                    <input type="text" id="institucion" class="w-full p-2 border rounded-lg" placeholder="Ej: Universidad Nacional">
-                </div>
+            <div class="mb-4">
+                <label class="block font-bold mb-1">Información adicional (opcional)</label>
+                <textarea id="infoExtra" rows="3" class="w-full p-2 border rounded-lg" placeholder="Escribe aquí información específica..."></textarea>
             </div>
-
-            <button id="generarBtn" class="btn-primary w-full text-lg py-3">
-                🚀 Generar Informe
-            </button>
+            <button id="generarBtn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition">🚀 Generar Informe PDF</button>
         </div>
-
-        <!-- Editor (oculto inicialmente) -->
-        <div id="editorPanel" class="card p-6" style="display: none;">
-            <h2 class="text-xl font-bold mb-4">✏️ Edita tu informe</h2>
-            
-            <div class="flex flex-wrap gap-2 mb-4" id="editorTabs">
-                <button class="editor-tab active" data-seccion="introduccion">Introducción</button>
-                <button class="editor-tab" data-seccion="objetivos">Objetivos</button>
-                <button class="editor-tab" data-seccion="marco_teorico">Marco Teórico</button>
-                <button class="editor-tab" data-seccion="metodologia">Metodología</button>
-                <button class="editor-tab" data-seccion="desarrollo">Desarrollo</button>
-                <button class="editor-tab" data-seccion="conclusiones">Conclusiones</button>
-                <button class="editor-tab" data-seccion="recomendaciones">Recomendaciones</button>
-                <button class="editor-tab" data-seccion="referencias">Referencias</button>
-            </div>
-            
-            <textarea id="editorTexto" class="w-full p-3 border rounded-lg font-mono text-sm" rows="12"></textarea>
-            
-            <div class="flex gap-3 mt-4">
-                <button id="exportarPDFBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition">📄 Descargar PDF</button>
-                <button id="exportarWordBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition">📝 Descargar Word</button>
-            </div>
-        </div>
-
     </div>
 
     <script>
-        let tipoActual = 'academico';
-        let normaActual = 'APA 7';
-        let seccionesGeneradas = {};
-        let datosUsuario = {};
-
-        // Tipo de informe
-        document.querySelectorAll('.tipo-card').forEach(card => {
-            card.onclick = () => {
-                document.querySelectorAll('.tipo-card').forEach(c => c.classList.remove('active'));
-                card.classList.add('active');
-                tipoActual = card.dataset.tipo;
-            };
-        });
-
-        // Norma
-        document.querySelectorAll('.chip').forEach(chip => {
-            chip.onclick = () => {
-                document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-                chip.classList.add('active');
-                normaActual = chip.dataset.norma;
-            };
-        });
-
-        // Generar informe
         document.getElementById('generarBtn').onclick = async () => {
             const tema = document.getElementById('tema').value.trim();
-            if (!tema) {
-                Swal.fire('Error', 'Escribe el tema del informe', 'error');
-                return;
-            }
-
             const nombre = document.getElementById('nombre').value.trim();
-            if (!nombre) {
-                Swal.fire('Error', 'Ingresa tu nombre', 'error');
-                return;
-            }
-
-            const autores = [{ nombre: nombre, cargo: '' }];
-
-            Swal.fire({
-                title: 'Generando informe...',
-                text: 'Esto puede tomar 30-60 segundos',
-                allowOutsideClick: false,
-                didOpen: () => Swal.showLoading()
-            });
-
+            
+            if (!tema) { Swal.fire('Error', 'Escribe el tema del informe', 'error'); return; }
+            if (!nombre) { Swal.fire('Error', 'Ingresa tu nombre', 'error'); return; }
+            
+            Swal.fire({ title: 'Generando informe...', text: 'Esto puede tomar 30-60 segundos', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            
             try {
                 const response = await fetch('/generar', {
                     method: 'POST',
@@ -170,94 +48,26 @@
                     body: JSON.stringify({
                         tema: tema,
                         texto_usuario: document.getElementById('infoExtra').value,
-                        tipo_informe: tipoActual,
-                        norma: normaActual,
-                        autores: autores,
-                        asignatura: document.getElementById('asignatura').value,
-                        profesor: document.getElementById('profesor').value,
-                        institucion: document.getElementById('institucion').value,
-                        ciudad: '',
-                        fecha: new Date().toISOString().split('T')[0]
+                        nombre: nombre
                     })
                 });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    seccionesGeneradas = data.secciones;
-                    datosUsuario = data.datos_usuario;
-                    mostrarEditor();
-                    Swal.fire('¡Éxito!', 'Informe generado correctamente', 'success');
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `informe_${Date.now()}.pdf`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    Swal.fire('¡Completado!', 'Informe descargado', 'success');
                 } else {
-                    Swal.fire('Error', data.error || 'No se pudo generar el informe', 'error');
+                    const error = await response.json();
+                    Swal.fire('Error', error.error || 'No se pudo generar', 'error');
                 }
             } catch (error) {
-                Swal.fire('Error', 'Error de conexión: ' + error.message, 'error');
+                Swal.fire('Error', 'Error de conexión', 'error');
             }
-        };
-
-        function mostrarEditor() {
-            document.getElementById('editorPanel').style.display = 'block';
-            const secciones = ['introduccion', 'objetivos', 'marco_teorico', 'metodologia', 'desarrollo', 'conclusiones', 'recomendaciones', 'referencias'];
-            const nombres = ['Introducción', 'Objetivos', 'Marco Teórico', 'Metodología', 'Desarrollo', 'Conclusiones', 'Recomendaciones', 'Referencias'];
-            
-            document.querySelectorAll('.editor-tab').forEach((tab, i) => {
-                tab.onclick = () => {
-                    document.querySelectorAll('.editor-tab').forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    document.getElementById('editorTexto').value = seccionesGeneradas[secciones[i]] || '';
-                };
-            });
-            
-            document.getElementById('editorTexto').value = seccionesGeneradas.introduccion || '';
-            document.getElementById('editorPanel').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        document.getElementById('exportarPDFBtn').onclick = async () => {
-            const seccionActiva = document.querySelector('.editor-tab.active').dataset.seccion;
-            const seccionesActualizadas = { ...seccionesGeneradas };
-            
-            // Actualizar la sección activa con el texto editado
-            const indice = document.querySelectorAll('.editor-tab').indexOf(document.querySelector('.editor-tab.active'));
-            const claves = ['introduccion', 'objetivos', 'marco_teorico', 'metodologia', 'desarrollo', 'conclusiones', 'recomendaciones', 'referencias'];
-            seccionesActualizadas[claves[indice]] = document.getElementById('editorTexto').value;
-            
-            const response = await fetch('/exportar-pdf', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ secciones: seccionesActualizadas, datos_usuario: datosUsuario })
-            });
-            
-            const blob = await response.blob();
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `informe_${Date.now()}.pdf`;
-            a.click();
-            URL.revokeObjectURL(url);
-        };
-
-        document.getElementById('exportarWordBtn').onclick = async () => {
-            const seccionActiva = document.querySelector('.editor-tab.active').dataset.seccion;
-            const seccionesActualizadas = { ...seccionesGeneradas };
-            
-            const indice = document.querySelectorAll('.editor-tab').indexOf(document.querySelector('.editor-tab.active'));
-            const claves = ['introduccion', 'objetivos', 'marco_teorico', 'metodologia', 'desarrollo', 'conclusiones', 'recomendaciones', 'referencias'];
-            seccionesActualizadas[claves[indice]] = document.getElementById('editorTexto').value;
-            
-            const response = await fetch('/exportar-word', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ secciones: seccionesActualizadas, datos_usuario: datosUsuario })
-            });
-            
-            const blob = await response.blob();
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `informe_${Date.now()}.docx`;
-            a.click();
-            URL.revokeObjectURL(url);
         };
     </script>
 </body>
