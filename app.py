@@ -159,7 +159,7 @@ def generar_informe_con_ia(tema, info_extra, tipo_informe, norma, modo):
     if not contenido:
         return None
     
-    # Extraer secciones básicas
+    # Extraer secciones con la función mejorada
     secciones = {
         'introduccion': extraer_seccion(contenido, 'INTRODUCCIÓN'),
         'objetivos': extraer_seccion(contenido, 'OBJETIVOS'),
@@ -173,15 +173,51 @@ def generar_informe_con_ia(tema, info_extra, tipo_informe, norma, modo):
     
     return secciones
 
+# ============================================================
+# FUNCIÓN DE EXTRACCIÓN CORREGIDA (¡AQUÍ ESTÁ EL ARREGLO!)
+# ============================================================
 def extraer_seccion(contenido, nombre):
-    """Extrae una sección del contenido generado"""
-    patron = rf'\*\*{nombre}\*\*:?(.*?)(?=\*\*[A-Z]|REFERENCIAS|CONCLUSIONES|RECOMENDACIONES|$)'
-    match = re.search(patron, contenido, re.DOTALL | re.IGNORECASE)
-    if match:
-        texto = match.group(1).strip()
-        texto = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', texto)
-        texto = texto.replace('\n', '<br/>')
-        return texto
+    """Extrae una sección del contenido generado - VERSIÓN CORREGIDA"""
+    
+    # Patrones más flexibles para encontrar las secciones
+    patrones = [
+        # Patrón 1: **INTRODUCCIÓN** texto
+        rf'\*\*{nombre}\*\*:?\s*(.*?)(?=\*\*[A-ZÁÉÍÓÚÜÑ]|\Z)',
+        
+        # Patrón 2: INTRODUCCIÓN (sin asteriscos) seguido de texto
+        rf'\n{nombre}\n[=-]+\s*(.*?)(?=\n[A-ZÁÉÍÓÚÜÑ]|\Z)',
+        
+        # Patrón 3: ### INTRODUCCIÓN
+        rf'###\s*{nombre}\s*(.*?)(?=###|\Z)',
+        
+        # Patrón 4: **INTRODUCCIÓN** sin espacio después
+        rf'\*\*{nombre}\*\*(.*?)(?=\*\*[A-ZÁÉÍÓÚÜÑ]|\Z)',
+        
+        # Patrón 5: Buscar después de un número (1. INTRODUCCIÓN)
+        rf'\d+\.\s*{nombre}\s*(.*?)(?=\d+\.\s*[A-ZÁÉÍÓÚÜÑ]|\Z)',
+    ]
+    
+    for patron in patrones:
+        try:
+            match = re.search(patron, contenido, re.DOTALL | re.IGNORECASE)
+            if match:
+                texto = match.group(1).strip()
+                # Limpiar el texto: eliminar marcadores markdown, etc.
+                texto = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', texto)
+                texto = texto.replace('\n', '<br/>')
+                texto = re.sub(r'<br/>\s*<br/>', '<br/><br/>', texto)
+                
+                # Verificar que tenga contenido útil
+                if len(texto) > 50:
+                    logger.info(f"✅ Sección '{nombre}' extraída: {len(texto)} caracteres")
+                    return texto
+                else:
+                    logger.warning(f"⚠️ Sección '{nombre}' muy corta ({len(texto)} chars)")
+        except Exception as e:
+            logger.warning(f"Error con patrón para {nombre}: {e}")
+            continue
+    
+    logger.warning(f"❌ No se pudo extraer sección '{nombre}'")
     return ""
 
 # ============================================================
@@ -280,7 +316,7 @@ def generar_pdf(datos_usuario, secciones):
         story.append(Paragraph(titulo, styles['Titulo1']))
         story.append(Spacer(1, 0.2*inch))
         contenido = secciones.get(clave, '')
-        if contenido:
+        if contenido and len(contenido) > 20:
             story.append(Paragraph(contenido, styles['TextoJustificado']))
         else:
             story.append(Paragraph("Esta sección será generada por IA al completar el informe.", styles['TextoJustificado']))
