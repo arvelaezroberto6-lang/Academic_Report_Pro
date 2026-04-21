@@ -5,6 +5,8 @@ from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
+from docx import Document
+from io import BytesIO
 import os
 import uuid
 from datetime import datetime
@@ -23,21 +25,16 @@ DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
 DEEPSEEK_URL = "https://api.deepseek.com/v1/chat/completions"
 
 logger.info("=" * 60)
-logger.info("🚀 ACADEMIC REPORT PRO - VERSIÓN FUNCIONANDO")
+logger.info("🚀 INFORMALA - Generador profesional de informes")
 logger.info(f"🔑 API Key configurada: {'SÍ ✅' if DEEPSEEK_API_KEY else 'NO ❌'}")
 logger.info("=" * 60)
 
 def llamar_deepseek(prompt):
-    headers = {
-        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-        "Content-Type": "application/json"
-    }
+    headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type": "application/json"}
     data = {
         "model": "deepseek-chat",
-        "messages": [
-            {"role": "system", "content": "Eres un asistente académico profesional. Generas contenido original y bien estructurado en español."},
-            {"role": "user", "content": prompt}
-        ],
+        "messages": [{"role": "system", "content": "Eres un asistente académico profesional. Generas informes estructurados en español."},
+                     {"role": "user", "content": prompt}],
         "max_tokens": 8000,
         "temperature": 0.7
     }
@@ -62,15 +59,22 @@ def extraer_seccion(contenido, nombre):
         return texto
     return ""
 
-def generar_pdf(tema, nombre, secciones):
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    filename = f"informe_{timestamp}_{uuid.uuid4().hex[:8]}.pdf"
+def generar_pdf(datos_usuario, secciones):
+    nombre = datos_usuario.get('nombre', 'Estudiante')
+    tema = datos_usuario.get('tema', 'Tema')
+    asignatura = datos_usuario.get('asignatura', '')
+    profesor = datos_usuario.get('profesor', '')
+    institucion = datos_usuario.get('institucion', '')
+    fecha = datos_usuario.get('fecha', datetime.now().strftime('%d/%m/%Y'))
+    norma = datos_usuario.get('norma', 'APA 7')
+    
+    filename = f"informe_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}.pdf"
     filepath = os.path.join('informes_generados', filename)
     
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(name='TextoJustificado', parent=styles['Normal'], alignment=TA_JUSTIFY, fontSize=11, fontName='Times-Roman', spaceAfter=12, leading=16))
     styles.add(ParagraphStyle(name='Titulo1', parent=styles['Heading1'], fontSize=16, fontName='Helvetica-Bold', textColor=colors.HexColor('#1a365d'), spaceBefore=24, spaceAfter=12))
-    styles.add(ParagraphStyle(name='TituloPortada', parent=styles['Title'], fontSize=24, alignment=TA_CENTER, textColor=colors.HexColor('#1a365d')))
+    styles.add(ParagraphStyle(name='TituloPortada', parent=styles['Title'], fontSize=24, alignment=TA_CENTER))
     styles.add(ParagraphStyle(name='TextoCentrado', parent=styles['Normal'], alignment=TA_CENTER, fontSize=12))
     
     doc = SimpleDocTemplate(filepath, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=72)
@@ -82,23 +86,18 @@ def generar_pdf(tema, nombre, secciones):
     story.append(Spacer(1, 0.3*inch))
     story.append(Paragraph(tema.upper(), styles['TextoCentrado']))
     story.append(Spacer(1, 1.5*inch))
-    story.append(Paragraph(f"<b>Presentado por:</b> {nombre}", styles['TextoCentrado']))
-    story.append(Paragraph(f"<b>Fecha:</b> {datetime.now().strftime('%d/%m/%Y')}", styles['TextoCentrado']))
+    story.append(Paragraph(f"Presentado por: {nombre}", styles['TextoCentrado']))
+    if asignatura:
+        story.append(Paragraph(f"Asignatura: {asignatura}", styles['TextoCentrado']))
+    if profesor:
+        story.append(Paragraph(f"Docente: {profesor}", styles['TextoCentrado']))
+    if institucion:
+        story.append(Paragraph(f"Institución: {institucion}", styles['TextoCentrado']))
+    story.append(Paragraph(f"Fecha: {fecha}", styles['TextoCentrado']))
+    story.append(Paragraph(f"Norma: {norma}", styles['TextoCentrado']))
     story.append(PageBreak())
     
-    # Secciones
-    secciones_lista = [
-        ("1. INTRODUCCIÓN", 'introduccion'),
-        ("2. OBJETIVOS", 'objetivos'),
-        ("3. MARCO TEÓRICO", 'marco_teorico'),
-        ("4. METODOLOGÍA", 'metodologia'),
-        ("5. DESARROLLO", 'desarrollo'),
-        ("6. CONCLUSIONES", 'conclusiones'),
-        ("7. RECOMENDACIONES", 'recomendaciones'),
-        ("8. REFERENCIAS", 'referencias')
-    ]
-    
-    for titulo, clave in secciones_lista:
+    for titulo, clave in [("1. INTRODUCCIÓN", 'introduccion'), ("2. OBJETIVOS", 'objetivos'), ("3. MARCO TEÓRICO", 'marco_teorico'), ("4. METODOLOGÍA", 'metodologia'), ("5. DESARROLLO", 'desarrollo'), ("6. CONCLUSIONES", 'conclusiones'), ("7. RECOMENDACIONES", 'recomendaciones'), ("8. REFERENCIAS", 'referencias')]:
         story.append(Paragraph(titulo, styles['Titulo1']))
         story.append(Spacer(1, 0.2*inch))
         contenido = secciones.get(clave, '')
@@ -111,6 +110,43 @@ def generar_pdf(tema, nombre, secciones):
     doc.build(story)
     return filename, filepath
 
+def generar_word(datos_usuario, secciones):
+    nombre = datos_usuario.get('nombre', 'Estudiante')
+    tema = datos_usuario.get('tema', 'Tema')
+    asignatura = datos_usuario.get('asignatura', '')
+    profesor = datos_usuario.get('profesor', '')
+    institucion = datos_usuario.get('institucion', '')
+    fecha = datos_usuario.get('fecha', datetime.now().strftime('%d/%m/%Y'))
+    norma = datos_usuario.get('norma', 'APA 7')
+    
+    doc = Document()
+    doc.add_heading('INFORME ACADÉMICO', 0)
+    doc.add_heading(tema, level=1)
+    doc.add_paragraph(f"Presentado por: {nombre}")
+    if asignatura:
+        doc.add_paragraph(f"Asignatura: {asignatura}")
+    if profesor:
+        doc.add_paragraph(f"Docente: {profesor}")
+    if institucion:
+        doc.add_paragraph(f"Institución: {institucion}")
+    doc.add_paragraph(f"Fecha: {fecha}")
+    doc.add_paragraph(f"Norma: {norma}")
+    doc.add_page_break()
+    
+    for titulo, clave in [("INTRODUCCIÓN", 'introduccion'), ("OBJETIVOS", 'objetivos'), ("MARCO TEÓRICO", 'marco_teorico'), ("METODOLOGÍA", 'metodologia'), ("DESARROLLO", 'desarrollo'), ("CONCLUSIONES", 'conclusiones'), ("RECOMENDACIONES", 'recomendaciones'), ("REFERENCIAS", 'referencias')]:
+        doc.add_heading(titulo, level=2)
+        contenido = secciones.get(clave, '')
+        if contenido:
+            doc.add_paragraph(contenido.replace('<br/>', '\n').replace('<b>', '').replace('</b>', ''))
+        else:
+            doc.add_paragraph("No se pudo generar esta sección.")
+        doc.add_page_break()
+    
+    buffer = BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    return buffer
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -120,37 +156,39 @@ def generar():
     try:
         data = request.json
         tema = data.get('tema', '').strip()
-        info_extra = data.get('texto_usuario', '')
+        nivel = data.get('nivel', 'universitario')
+        objetivo = data.get('objetivo', 'analizar')
+        tipo_informe = data.get('tipo_informe', 'academico')
         nombre = data.get('nombre', 'Estudiante')
+        asignatura = data.get('asignatura', '')
+        profesor = data.get('profesor', '')
+        institucion = data.get('institucion', '')
+        norma = data.get('norma', 'APA 7')
         
         if not tema:
             return jsonify({'success': False, 'error': 'El tema es requerido'}), 400
         
-        logger.info(f"📨 Generando informe - Tema: {tema[:50]}...")
-        
-        prompt = f"""Genera un informe académico profesional sobre: "{tema}"
-
-Información adicional: {info_extra if info_extra else 'No hay información adicional'}
+        prompt = f"""Genera un informe académico profesional de tipo {tipo_informe} sobre: "{tema}"
+Nivel: {nivel}
+Objetivo: {objetivo}
 
 ESTRUCTURA OBLIGATORIA:
-
-**INTRODUCCIÓN** (contexto, problema, justificación)
+**INTRODUCCIÓN**
 **OBJETIVOS** (1 general + 4 específicos)
-**MARCO TEÓRICO** (conceptos clave, antecedentes)
-**METODOLOGÍA** (tipo de investigación, población, técnicas)
-**DESARROLLO** (resultados, análisis, hallazgos)
-**CONCLUSIONES** (5 puntos numerados)
-**RECOMENDACIONES** (3-4 sugerencias)
-**REFERENCIAS** (5-6 fuentes en formato APA)
+**MARCO TEÓRICO**
+**METODOLOGÍA**
+**DESARROLLO**
+**CONCLUSIONES** (5 puntos)
+**RECOMENDACIONES** (4 sugerencias)
+**REFERENCIAS** (6 fuentes en formato {norma})
 
 Escribe en español académico profesional.
 Usa **negritas** solo para los títulos.
 """
         
         contenido = llamar_deepseek(prompt)
-        
         if not contenido:
-            return jsonify({'success': False, 'error': 'No se pudo generar el contenido'}), 500
+            return jsonify({'success': False, 'error': 'No se pudo generar'}), 500
         
         secciones = {
             'introduccion': extraer_seccion(contenido, 'INTRODUCCIÓN'),
@@ -163,17 +201,23 @@ Usa **negritas** solo para los títulos.
             'referencias': extraer_seccion(contenido, 'REFERENCIAS')
         }
         
-        filename, filepath = generar_pdf(tema, nombre, secciones)
+        datos_usuario = {'nombre': nombre, 'tema': tema, 'asignatura': asignatura, 'profesor': profesor, 'institucion': institucion, 'fecha': datetime.now().strftime('%Y-%m-%d'), 'norma': norma}
         
-        return send_file(filepath, as_attachment=True, download_name=filename, mimetype='application/pdf')
-        
+        return jsonify({'success': True, 'secciones': secciones, 'datos_usuario': datos_usuario})
     except Exception as e:
-        logger.error(f"Error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/health')
-def health():
-    return jsonify({'status': 'healthy', 'api_configured': bool(DEEPSEEK_API_KEY)})
+@app.route('/exportar-pdf', methods=['POST'])
+def exportar_pdf():
+    data = request.json
+    filename, filepath = generar_pdf(data['datos_usuario'], data['secciones'])
+    return send_file(filepath, as_attachment=True, download_name=filename)
+
+@app.route('/exportar-word', methods=['POST'])
+def exportar_word():
+    data = request.json
+    buffer = generar_word(data['datos_usuario'], data['secciones'])
+    return send_file(buffer, as_attachment=True, download_name=f"informe_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx")
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
