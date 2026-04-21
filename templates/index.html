@@ -1,345 +1,264 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Academic Report Pro — Generador Profesional de Informes Académicos</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-:root {
-  --bg:#080b12; --surface:#0d1117; --surface2:#111720;
-  --border:rgba(255,255,255,.07); --border2:rgba(255,255,255,.12);
-  --gold:#c9a84c; --gold2:#e8c96a; --gold-dim:rgba(201,168,76,.15);
-  --blue:#4f7cf7;
-  --text:#e8e6df; --text2:#8a8880; --text3:#4a4845;
-  --red:#e05c5c; --green:#56c489;
-  --radius:12px; --radius-lg:20px;
-}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
-nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:.9rem 2.5rem;background:rgba(8,11,18,.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
-.nav-logo{display:flex;align-items:center;gap:.7rem;font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:700;color:var(--text);text-decoration:none;}
-.nav-logo-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--gold) 0%,#8b6914 100%);display:flex;align-items:center;justify-content:center;font-size:.9rem;}
-.nav-badge{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--gold);background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);padding:.2rem .7rem;border-radius:100px;}
-.btn-gold{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.8rem;background:linear-gradient(135deg,var(--gold) 0%,#a8832a 100%);color:#000;font-family:'Syne',sans-serif;font-size:.88rem;font-weight:700;border:none;border-radius:var(--radius);cursor:pointer;transition:all .2s;}
-.btn-gold:hover{transform:translateY(-2px);box-shadow:0 8px 36px rgba(201,168,76,.45);}
-.btn-outline{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.8rem;background:transparent;color:var(--text);font-family:'Syne',sans-serif;font-size:.88rem;font-weight:600;border:1px solid var(--border2);border-radius:var(--radius);cursor:pointer;}
-.btn-outline:hover{border-color:var(--gold);color:var(--gold);}
-.btn-gen{width:100%;padding:1.1rem 2rem;background:linear-gradient(135deg,var(--gold) 0%,#9a6e1a 100%);color:#000;border:none;border-radius:var(--radius);font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;cursor:pointer;margin-top:1rem;}
-.hero{min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7rem 2rem 4rem;text-align:center;}
-.hero-title{font-family:'Cormorant Garamond',serif;font-size:clamp(3rem,8vw,6rem);font-weight:700;margin-bottom:1rem;}
-.hero-title em{font-style:italic;background:linear-gradient(135deg,var(--gold) 0%,var(--gold2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-.hero-sub{font-size:1.05rem;color:var(--text2);max-width:600px;margin:0 auto;}
-.diff-badge{display:inline-flex;align-items:center;gap:.5rem;background:var(--blue);color:#000;padding:.3rem 1rem;border-radius:100px;font-size:.7rem;font-weight:700;margin-top:1rem;}
-.form-wrap{max-width:980px;margin:0 auto;padding:0 1.5rem 4rem;}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1.2rem;}
-.card-hd{display:flex;align-items:center;gap:.7rem;margin-bottom:1rem;}
-.card-ico{width:34px;height:34px;border-radius:9px;background:var(--gold-dim);border:1px solid rgba(201,168,76,.2);display:flex;align-items:center;justify-content:center;}
-.g2c{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;}
-@media(max-width:640px){.g2c{grid-template-columns:1fr;}}
-input,select,textarea{width:100%;padding:.68rem 1rem;background:var(--bg);border:1px solid var(--border);border-radius:10px;font-family:'Syne',sans-serif;font-size:.88rem;color:var(--text);outline:none;}
-input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.5);}
-.chips{display:flex;flex-wrap:wrap;gap:.5rem;}
-.chip{padding:.35rem 1rem;background:transparent;border:1px solid var(--border);border-radius:100px;font-size:.75rem;cursor:pointer;}
-.chip.active{background:var(--gold-dim);border-color:rgba(201,168,76,.4);color:var(--gold);}
-.tipo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.7rem;}
-.tipo-card{padding:1rem;background:transparent;border:1px solid var(--border);border-radius:12px;cursor:pointer;text-align:center;}
-.tipo-card.active{background:var(--gold-dim);border-color:rgba(201,168,76,.35);}
-.tipo-card.active .tn{color:var(--gold);}
-#editorPanel{display:none;margin-top:2rem;}
-.editor-tabs{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem;}
-.editor-tab{padding:.5rem 1rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:.75rem;}
-.editor-tab.active{background:var(--gold-dim);border-color:var(--gold);color:var(--gold);}
-#editorTexto{width:100%;padding:1rem;background:var(--bg);border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:monospace;font-size:.85rem;min-height:400px;resize:vertical;}
-footer{text-align:center;padding:2rem;border-top:1px solid var(--border);font-size:.78rem;color:var(--text3);}
-.hidden{display:none;}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic Report Pro - Generador de Informes con IA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .card { background: white; border-radius: 1rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); transition: transform 0.2s; }
+        .card:hover { transform: translateY(-2px); }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: 600; padding: 0.75rem 1.5rem; border-radius: 0.5rem; transition: all 0.2s; }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .editor-tab { padding: 0.5rem 1rem; background: #f3f4f6; border-radius: 0.5rem; cursor: pointer; transition: all 0.2s; font-size: 0.875rem; }
+        .editor-tab.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        #editorTexto { width: 100%; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; font-family: monospace; font-size: 0.875rem; min-height: 400px; resize: vertical; }
+        .chip { padding: 0.25rem 0.75rem; background: #f3f4f6; border-radius: 9999px; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; }
+        .chip.active { background: #667eea; color: white; }
+        .tipo-card { padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; cursor: pointer; text-align: center; transition: all 0.2s; }
+        .tipo-card.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-color: transparent; }
+    </style>
 </head>
-<body>
-
-<nav>
-  <a href="#" class="nav-logo">
-    <div class="nav-logo-icon">📄</div>
-    Academic Report Pro
-  </a>
-  <div style="display:flex;align-items:center;gap:1rem;">
-    <span class="nav-badge">Especializado en Informes</span>
-  </div>
-</nav>
-
-<section class="hero">
-  <h1 class="hero-title">Informes académicos <em>estructurados y profesionales</em></h1>
-  <p class="hero-sub">No es ChatGPT. Es una herramienta especializada que genera informes completos con portada, índice, marco teórico, conclusiones y referencias — listo para editar y descargar.</p>
-  <div class="diff-badge">🎯 DIFERENTE: Estructura forzada + Editor + Word/PDF</div>
-</section>
-
-<div class="form-wrap">
-  <form id="reportForm" onsubmit="return false;">
-    <div class="g2c">
-      <div class="card">
-        <div class="card-hd"><div class="card-ico">⚙️</div><div>Modo de generación</div></div>
-        <div class="chips" id="modoTabs">
-          <div class="chip active" data-modo="rapido">⚡ Rápido</div>
-          <div class="chip" data-modo="automatico">🔄 Automático</div>
-          <div class="chip" data-modo="manual">✏️ Manual</div>
+<body class="min-h-screen p-4">
+    <div class="container mx-auto max-w-6xl">
+        
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-white mb-2">📚 Academic Report Pro</h1>
+            <p class="text-white/80">Genera informes académicos profesionales con IA - No es ChatGPT, es una herramienta especializada</p>
         </div>
-      </div>
-      <div class="card">
-        <div class="card-hd"><div class="card-ico">📋</div><div>Tipo de informe</div></div>
-        <div class="tipo-grid" id="tipoGrid">
-          <div class="tipo-card active" data-tipo="academico">📄 Académico</div>
-          <div class="tipo-card" data-tipo="laboratorio">🔬 Laboratorio</div>
-          <div class="tipo-card" data-tipo="ejecutivo">💼 Ejecutivo</div>
-          <div class="tipo-card" data-tipo="tesis">🎓 Tesis</div>
+
+        <!-- Formulario -->
+        <div class="card p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4">Configura tu informe</h2>
+            
+            <div class="grid md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Tipo de informe</label>
+                    <div class="grid grid-cols-4 gap-2">
+                        <div class="tipo-card active" data-tipo="academico">📄 Académico</div>
+                        <div class="tipo-card" data-tipo="laboratorio">🔬 Laboratorio</div>
+                        <div class="tipo-card" data-tipo="ejecutivo">💼 Ejecutivo</div>
+                        <div class="tipo-card" data-tipo="tesis">🎓 Tesis</div>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Norma de citación</label>
+                    <div class="flex flex-wrap gap-1">
+                        <div class="chip active" data-norma="APA 7">APA 7</div>
+                        <div class="chip" data-norma="APA 6">APA 6</div>
+                        <div class="chip" data-norma="ICONTEC">ICONTEC</div>
+                        <div class="chip" data-norma="Vancouver">Vancouver</div>
+                        <div class="chip" data-norma="IEEE">IEEE</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-1">Tema del informe *</label>
+                <input type="text" id="tema" class="w-full p-2 border rounded-lg" placeholder="Ej: Impacto de la inteligencia artificial en la educación">
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-1">Información adicional (opcional)</label>
+                <textarea id="infoExtra" rows="3" class="w-full p-2 border rounded-lg" placeholder="Escribe aquí información específica que quieras incluir..."></textarea>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Tu nombre</label>
+                    <input type="text" id="nombre" class="w-full p-2 border rounded-lg" placeholder="Nombre completo">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Asignatura</label>
+                    <input type="text" id="asignatura" class="w-full p-2 border rounded-lg" placeholder="Ej: Metodología de la investigación">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Docente</label>
+                    <input type="text" id="profesor" class="w-full p-2 border rounded-lg" placeholder="Nombre del profesor">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Institución</label>
+                    <input type="text" id="institucion" class="w-full p-2 border rounded-lg" placeholder="Ej: Universidad Nacional">
+                </div>
+            </div>
+
+            <button id="generarBtn" class="btn-primary w-full text-lg py-3">
+                🚀 Generar Informe
+            </button>
         </div>
-      </div>
-    </div>
 
-    <div class="card">
-      <div class="card-hd"><div class="card-ico">💡</div><div>Tema del informe</div></div>
-      <input type="text" id="tema" placeholder="Ej: Impacto de la inteligencia artificial en la educación superior" required/>
-      <div id="textoUsuarioWrap" class="hidden" style="margin-top:1rem;">
-        <textarea id="textoUsuario" rows="4" placeholder="Pega aquí tus apuntes o información adicional..."></textarea>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-hd"><div class="card-ico">🏫</div><div>Datos académicos</div></div>
-      <div class="g2c">
-        <input type="text" id="asignatura" placeholder="Asignatura"/>
-        <input type="text" id="profesor" placeholder="Docente"/>
-        <input type="text" id="institucion" placeholder="Institución"/>
-        <input type="text" id="ciudad" placeholder="Ciudad"/>
-        <input type="date" id="fecha"/>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-hd"><div class="card-ico">📐</div><div>Norma de citación</div></div>
-      <div class="chips" id="normaChips">
-        <div class="chip active" data-norma="APA 7">APA 7</div>
-        <div class="chip" data-norma="APA 6">APA 6</div>
-        <div class="chip" data-norma="ICONTEC">ICONTEC</div>
-        <div class="chip" data-norma="Vancouver">Vancouver</div>
-        <div class="chip" data-norma="Chicago">Chicago</div>
-        <div class="chip" data-norma="Harvard">Harvard</div>
-        <div class="chip" data-norma="MLA">MLA</div>
-        <div class="chip" data-norma="IEEE">IEEE</div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-hd"><div class="card-ico">👤</div><div>Autores</div></div>
-      <div id="autoresContainer">
-        <div class="g2c" style="margin-bottom:.5rem;">
-          <input type="text" class="autor-nombre" placeholder="Nombre completo" required/>
-          <input type="text" class="autor-cargo" placeholder="Código/Cargo"/>
+        <!-- Editor (oculto inicialmente) -->
+        <div id="editorPanel" class="card p-6" style="display: none;">
+            <h2 class="text-xl font-bold mb-4">✏️ Edita tu informe</h2>
+            
+            <div class="flex flex-wrap gap-2 mb-4" id="editorTabs">
+                <button class="editor-tab active" data-seccion="introduccion">Introducción</button>
+                <button class="editor-tab" data-seccion="objetivos">Objetivos</button>
+                <button class="editor-tab" data-seccion="marco_teorico">Marco Teórico</button>
+                <button class="editor-tab" data-seccion="metodologia">Metodología</button>
+                <button class="editor-tab" data-seccion="desarrollo">Desarrollo</button>
+                <button class="editor-tab" data-seccion="conclusiones">Conclusiones</button>
+                <button class="editor-tab" data-seccion="recomendaciones">Recomendaciones</button>
+                <button class="editor-tab" data-seccion="referencias">Referencias</button>
+            </div>
+            
+            <textarea id="editorTexto" class="w-full p-3 border rounded-lg font-mono text-sm" rows="12"></textarea>
+            
+            <div class="flex gap-3 mt-4">
+                <button id="exportarPDFBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition">📄 Descargar PDF</button>
+                <button id="exportarWordBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition">📝 Descargar Word</button>
+            </div>
         </div>
-      </div>
-      <button type="button" class="btn-outline" onclick="agregarAutor()" style="font-size:.8rem;">+ Agregar autor</button>
+
     </div>
 
-    <button type="button" class="btn-gen" id="generarBtn">🚀 GENERAR INFORME</button>
-  </form>
+    <script>
+        let tipoActual = 'academico';
+        let normaActual = 'APA 7';
+        let seccionesGeneradas = {};
+        let datosUsuario = {};
 
-  <div id="editorPanel" class="card">
-    <div class="card-hd"><div class="card-ico">✏️</div><div>Editor de informes</div><div style="font-size:.7rem; color:var(--text2); margin-left:auto;">Personaliza antes de descargar</div></div>
-    <div class="editor-tabs" id="editorTabs"></div>
-    <textarea id="editorTexto" rows="12"></textarea>
-    <div style="display:flex; gap:1rem; margin-top:1rem;">
-      <button class="btn-gold" id="exportarPDFBtn">📄 Descargar PDF</button>
-      <button class="btn-outline" id="exportarWordBtn">📝 Descargar Word</button>
-    </div>
-  </div>
-</div>
+        // Tipo de informe
+        document.querySelectorAll('.tipo-card').forEach(card => {
+            card.onclick = () => {
+                document.querySelectorAll('.tipo-card').forEach(c => c.classList.remove('active'));
+                card.classList.add('active');
+                tipoActual = card.dataset.tipo;
+            };
+        });
 
-<footer>
-  <strong>Academic Report Pro</strong> · Herramienta especializada en informes académicos · No es ChatGPT · Editor inteligente · Exporta PDF/Word
-</footer>
+        // Norma
+        document.querySelectorAll('.chip').forEach(chip => {
+            chip.onclick = () => {
+                document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                normaActual = chip.dataset.norma;
+            };
+        });
 
-<script>
-let modoActual = 'rapido';
-let tipoActual = 'academico';
-let normaActual = 'APA 7';
-let seccionesGeneradas = {};
-let datosUsuario = {};
-let autorCount = 1;
+        // Generar informe
+        document.getElementById('generarBtn').onclick = async () => {
+            const tema = document.getElementById('tema').value.trim();
+            if (!tema) {
+                Swal.fire('Error', 'Escribe el tema del informe', 'error');
+                return;
+            }
 
-// Inicializar fecha
-document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
+            const nombre = document.getElementById('nombre').value.trim();
+            if (!nombre) {
+                Swal.fire('Error', 'Ingresa tu nombre', 'error');
+                return;
+            }
 
-// Modo
-document.querySelectorAll('#modoTabs .chip').forEach(c => {
-  c.onclick = () => {
-    document.querySelectorAll('#modoTabs .chip').forEach(x => x.classList.remove('active'));
-    c.classList.add('active');
-    modoActual = c.dataset.modo;
-    const wrap = document.getElementById('textoUsuarioWrap');
-    if (modoActual !== 'rapido') wrap.classList.remove('hidden');
-    else wrap.classList.add('hidden');
-  };
-});
+            const autores = [{ nombre: nombre, cargo: '' }];
 
-// Tipo
-document.querySelectorAll('#tipoGrid .tipo-card').forEach(c => {
-  c.onclick = () => {
-    document.querySelectorAll('#tipoGrid .tipo-card').forEach(x => x.classList.remove('active'));
-    c.classList.add('active');
-    tipoActual = c.dataset.tipo;
-  };
-});
+            Swal.fire({
+                title: 'Generando informe...',
+                text: 'Esto puede tomar 30-60 segundos',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
 
-// Norma
-document.querySelectorAll('#normaChips .chip').forEach(c => {
-  c.onclick = () => {
-    document.querySelectorAll('#normaChips .chip').forEach(x => x.classList.remove('active'));
-    c.classList.add('active');
-    normaActual = c.dataset.norma;
-  };
-});
+            try {
+                const response = await fetch('/generar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tema: tema,
+                        texto_usuario: document.getElementById('infoExtra').value,
+                        tipo_informe: tipoActual,
+                        norma: normaActual,
+                        autores: autores,
+                        asignatura: document.getElementById('asignatura').value,
+                        profesor: document.getElementById('profesor').value,
+                        institucion: document.getElementById('institucion').value,
+                        ciudad: '',
+                        fecha: new Date().toISOString().split('T')[0]
+                    })
+                });
 
-function agregarAutor() {
-  autorCount++;
-  const div = document.createElement('div');
-  div.className = 'g2c';
-  div.style.marginBottom = '.5rem';
-  div.innerHTML = `<input type="text" class="autor-nombre" placeholder="Nombre completo" required/><input type="text" class="autor-cargo" placeholder="Código/Cargo"/><button type="button" class="btn-outline" onclick="this.parentElement.remove()" style="font-size:.7rem; padding:.3rem;">✕</button>`;
-  document.getElementById('autoresContainer').appendChild(div);
-}
+                const data = await response.json();
 
-function getAutores() {
-  const autores = [];
-  document.querySelectorAll('.autor-nombre').forEach((input, i) => {
-    if (input.value.trim()) {
-      autores.push({ nombre: input.value.trim(), cargo: document.querySelectorAll('.autor-cargo')[i]?.value.trim() || '' });
-    }
-  });
-  return autores;
-}
+                if (data.success) {
+                    seccionesGeneradas = data.secciones;
+                    datosUsuario = data.datos_usuario;
+                    mostrarEditor();
+                    Swal.fire('¡Éxito!', 'Informe generado correctamente', 'success');
+                } else {
+                    Swal.fire('Error', data.error || 'No se pudo generar el informe', 'error');
+                }
+            } catch (error) {
+                Swal.fire('Error', 'Error de conexión: ' + error.message, 'error');
+            }
+        };
 
-document.getElementById('generarBtn').onclick = async () => {
-  const tema = document.getElementById('tema').value.trim();
-  if (!tema) { alert('Escribe el tema del informe'); return; }
-  const autores = getAutores();
-  if (autores.length === 0) { alert('Agrega al menos un autor'); return; }
+        function mostrarEditor() {
+            document.getElementById('editorPanel').style.display = 'block';
+            const secciones = ['introduccion', 'objetivos', 'marco_teorico', 'metodologia', 'desarrollo', 'conclusiones', 'recomendaciones', 'referencias'];
+            const nombres = ['Introducción', 'Objetivos', 'Marco Teórico', 'Metodología', 'Desarrollo', 'Conclusiones', 'Recomendaciones', 'Referencias'];
+            
+            document.querySelectorAll('.editor-tab').forEach((tab, i) => {
+                tab.onclick = () => {
+                    document.querySelectorAll('.editor-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.getElementById('editorTexto').value = seccionesGeneradas[secciones[i]] || '';
+                };
+            });
+            
+            document.getElementById('editorTexto').value = seccionesGeneradas.introduccion || '';
+            document.getElementById('editorPanel').scrollIntoView({ behavior: 'smooth' });
+        }
 
-  document.getElementById('generarBtn').disabled = true;
-  document.getElementById('generarBtn').textContent = '⏳ Generando... (30-60 segundos)';
+        document.getElementById('exportarPDFBtn').onclick = async () => {
+            const seccionActiva = document.querySelector('.editor-tab.active').dataset.seccion;
+            const seccionesActualizadas = { ...seccionesGeneradas };
+            
+            // Actualizar la sección activa con el texto editado
+            const indice = document.querySelectorAll('.editor-tab').indexOf(document.querySelector('.editor-tab.active'));
+            const claves = ['introduccion', 'objetivos', 'marco_teorico', 'metodologia', 'desarrollo', 'conclusiones', 'recomendaciones', 'referencias'];
+            seccionesActualizadas[claves[indice]] = document.getElementById('editorTexto').value;
+            
+            const response = await fetch('/exportar-pdf', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ secciones: seccionesActualizadas, datos_usuario: datosUsuario })
+            });
+            
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `informe_${Date.now()}.pdf`;
+            a.click();
+            URL.revokeObjectURL(url);
+        };
 
-  try {
-    const res = await fetch('/generar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        tema: tema,
-        texto_usuario: document.getElementById('textoUsuario').value,
-        tipo_informe: tipoActual,
-        norma: normaActual,
-        modo: modoActual,
-        autores: autores,
-        asignatura: document.getElementById('asignatura').value,
-        profesor: document.getElementById('profesor').value,
-        institucion: document.getElementById('institucion').value,
-        ciudad: document.getElementById('ciudad').value,
-        fecha: document.getElementById('fecha').value
-      })
-    });
-    const data = await res.json();
-    if (data.success) {
-      seccionesGeneradas = data.secciones;
-      datosUsuario = data.datos_usuario;
-      mostrarEditor();
-    } else {
-      alert('Error: ' + data.error);
-    }
-  } catch (err) {
-    alert('Error de conexión: ' + err.message);
-  } finally {
-    document.getElementById('generarBtn').disabled = false;
-    document.getElementById('generarBtn').textContent = '🚀 GENERAR INFORME';
-  }
-};
-
-function mostrarEditor() {
-  const editorPanel = document.getElementById('editorPanel');
-  const tabsContainer = document.getElementById('editorTabs');
-  const editorTexto = document.getElementById('editorTexto');
-  
-  const seccionesLista = [
-    { id: 'introduccion', nombre: 'Introducción' },
-    { id: 'objetivos', nombre: 'Objetivos' },
-    { id: 'marco_teorico', nombre: 'Marco Teórico' },
-    { id: 'metodologia', nombre: 'Metodología' },
-    { id: 'desarrollo', nombre: 'Desarrollo' },
-    { id: 'conclusiones', nombre: 'Conclusiones' },
-    { id: 'recomendaciones', nombre: 'Recomendaciones' },
-    { id: 'referencias', nombre: 'Referencias' }
-  ];
-  
-  tabsContainer.innerHTML = '';
-  seccionesLista.forEach((sec, idx) => {
-    const btn = document.createElement('button');
-    btn.className = 'editor-tab' + (idx === 0 ? ' active' : '');
-    btn.textContent = sec.nombre;
-    btn.onclick = () => {
-      document.querySelectorAll('.editor-tab').forEach(t => t.classList.remove('active'));
-      btn.classList.add('active');
-      editorTexto.value = seccionesGeneradas[sec.id] || '';
-    };
-    tabsContainer.appendChild(btn);
-  });
-  
-  editorTexto.value = seccionesGeneradas.introduccion || '';
-  editorPanel.style.display = 'block';
-  editorPanel.scrollIntoView({ behavior: 'smooth' });
-}
-
-document.getElementById('exportarPDFBtn').onclick = async () => {
-  const seccionesEditadas = {};
-  const seccionesIds = ['introduccion', 'objetivos', 'marco_teorico', 'metodologia', 'desarrollo', 'conclusiones', 'recomendaciones', 'referencias'];
-  seccionesIds.forEach((id, i) => {
-    seccionesEditadas[id] = document.querySelectorAll('.editor-tab')[i]?.classList.contains('active') 
-      ? document.getElementById('editorTexto').value 
-      : seccionesGeneradas[id] || '';
-  });
-  
-  const res = await fetch('/exportar-pdf', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ secciones: seccionesEditadas, datos_usuario: datosUsuario })
-  });
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `informe_${datosUsuario.tema?.slice(0,30).replace(/\s/g, '_') || 'informe'}.pdf`;
-  a.click();
-  URL.revokeObjectURL(url);
-};
-
-document.getElementById('exportarWordBtn').onclick = async () => {
-  const seccionesEditadas = {};
-  const seccionesIds = ['introduccion', 'objetivos', 'marco_teorico', 'metodologia', 'desarrollo', 'conclusiones', 'recomendaciones', 'referencias'];
-  seccionesIds.forEach((id, i) => {
-    seccionesEditadas[id] = document.querySelectorAll('.editor-tab')[i]?.classList.contains('active')
-      ? document.getElementById('editorTexto').value
-      : seccionesGeneradas[id] || '';
-  });
-  
-  const res = await fetch('/exportar-word', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ secciones: seccionesEditadas, datos_usuario: datosUsuario })
-  });
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `informe_${datosUsuario.tema?.slice(0,30).replace(/\s/g, '_') || 'informe'}.docx`;
-  a.click();
-  URL.revokeObjectURL(url);
-};
-</script>
+        document.getElementById('exportarWordBtn').onclick = async () => {
+            const seccionActiva = document.querySelector('.editor-tab.active').dataset.seccion;
+            const seccionesActualizadas = { ...seccionesGeneradas };
+            
+            const indice = document.querySelectorAll('.editor-tab').indexOf(document.querySelector('.editor-tab.active'));
+            const claves = ['introduccion', 'objetivos', 'marco_teorico', 'metodologia', 'desarrollo', 'conclusiones', 'recomendaciones', 'referencias'];
+            seccionesActualizadas[claves[indice]] = document.getElementById('editorTexto').value;
+            
+            const response = await fetch('/exportar-word', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ secciones: seccionesActualizadas, datos_usuario: datosUsuario })
+            });
+            
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `informe_${Date.now()}.docx`;
+            a.click();
+            URL.revokeObjectURL(url);
+        };
+    </script>
 </body>
 </html>
