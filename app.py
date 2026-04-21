@@ -37,88 +37,83 @@ logger.info(f"🔑 API Key configurada: {'SÍ ✅' if DEEPSEEK_API_KEY else 'NO 
 logger.info("=" * 60)
 
 # ============================================================
-# CONFIGURACIÓN POR NIVEL EDUCATIVO
+# CONSTRUCCIÓN DE PROMPT SEGÚN TIPO DE INFORME
 # ============================================================
-def get_prompt_segun_nivel(tema, info_extra, nivel):
-    """Genera el prompt según el nivel educativo seleccionado"""
+def construir_prompt(tema, info_extra, tipo_informe, norma, modo):
+    """Construye el prompt según el tipo de informe y modo seleccionado"""
     
-    prompts = {
-        "colegio": f"""Eres un asistente educativo. Genera un informe para estudiantes de colegio (14-17 años) sobre: "{tema}"
-
-Información adicional: {info_extra if info_extra else 'No hay información adicional'}
-
-ESTRUCTURA:
-**INTRODUCCIÓN** (explica el tema con un ejemplo cotidiano)
-**OBJETIVOS** (qué vamos a aprender)
-**DESARROLLO** (explicación clara y sencilla)
-**CONCLUSIONES** (lo más importante para recordar)
-**RECOMENDACIONES** (cómo aplicar lo aprendido)
-
-REQUISITOS:
-- Usa lenguaje sencillo y claro
-- Incluye ejemplos de la vida diaria
-- Evita términos técnicos complicados
-- Extensión: 2-3 páginas
-- Escribe en español""",
-
-        "tecnico": f"""Eres un instructor técnico. Genera un informe para estudiantes de nivel técnico o primeros años de universidad sobre: "{tema}"
-
-Información adicional: {info_extra if info_extra else 'No hay información adicional'}
-
-ESTRUCTURA:
-**INTRODUCCIÓN** (contexto y aplicación práctica)
-**OBJETIVOS** (1 general + 4 específicos)
-**MARCO TEÓRICO** (conceptos clave explicados)
-**METODOLOGÍA** (cómo se aborda el tema)
-**DESARROLLO** (análisis con datos concretos)
-**CONCLUSIONES** (4-5 puntos clave)
-**RECOMENDACIONES** (3-4 sugerencias aplicables)
-**REFERENCIAS** (4-5 fuentes)
-
-REQUISITOS:
-- Lenguaje profesional pero accesible
-- Incluye términos técnicos con explicación
-- Da ejemplos prácticos del campo
-- Extensión: 4-6 páginas
-- Escribe en español""",
-
-        "universitario": f"""Eres un académico experto. Genera un informe para nivel universitario avanzado sobre: "{tema}"
-
-Información adicional: {info_extra if info_extra else 'No hay información adicional'}
-
-ESTRUCTURA:
-**INTRODUCCIÓN** (contexto académico, estado del arte, justificación)
-**OBJETIVOS** (1 general + 5 específicos detallados)
-**MARCO TEÓRICO** (antecedentes, teorías, definiciones)
+    info_extra_texto = info_extra if info_extra else 'No hay información adicional'
+    
+    # Estructuras según tipo de informe
+    estructuras = {
+        "academico": """
+**INTRODUCCIÓN** (contexto, problema, justificación, 2-3 párrafos)
+**OBJETIVOS** (1 general + 4-5 específicos)
+**MARCO TEÓRICO** (conceptos clave, antecedentes, definiciones)
+**METODOLOGÍA** (tipo de investigación, población, técnicas, procedimiento)
+**DESARROLLO** (resultados, análisis, discusión de hallazgos)
+**CONCLUSIONES** (5-6 puntos numerados)
+**RECOMENDACIONES** (3-4 sugerencias prácticas)
+**REFERENCIAS** (6-8 fuentes en formato {norma})""",
+        
+        "laboratorio": """
+**INTRODUCCIÓN** (objetivo del experimento, fundamento teórico, hipótesis)
+**MATERIALES Y MÉTODOS** (equipos, reactivos, procedimiento paso a paso)
+**RESULTADOS** (datos obtenidos, tablas, observaciones)
+**DISCUSIÓN** (análisis de resultados, comparación con teoría, errores)
+**CONCLUSIONES** (5 conclusiones específicas)
+**RECOMENDACIONES** (mejoras para futuros experimentos)
+**REFERENCIAS** (5-6 fuentes en formato {norma})""",
+        
+        "ejecutivo": """
+**RESUMEN EJECUTIVO** (hallazgos clave en 1 página)
+**INTRODUCCIÓN** (contexto empresarial, propósito, alcance)
+**ANÁLISIS DE SITUACIÓN** (FODA, mercado, competencia, KPIs)
+**HALLAZGOS CLAVE** (oportunidades, amenazas, tendencias)
+**RECOMENDACIONES** (estrategias corto, mediano y largo plazo)
+**CONCLUSIONES** (5 puntos principales)
+**REFERENCIAS** (fuentes consultadas en formato {norma})""",
+        
+        "tesis": """
+**RESUMEN** (abstract en español, 250 palabras, palabras clave)
+**INTRODUCCIÓN** (contexto, problema, justificación, antecedentes)
+**OBJETIVOS** (1 general + 5 específicos)
+**MARCO TEÓRICO** (bases teóricas, estado del arte, definiciones)
 **METODOLOGÍA** (diseño, población, instrumentos, procedimiento)
-**DESARROLLO** (análisis profundo, discusión de hallazgos)
-**CONCLUSIONES** (5-6 conclusiones con implicaciones)
-**RECOMENDACIONES** (4-5 sugerencias para investigadores)
-**REFERENCIAS** (mínimo 8 fuentes académicas)
-
-REQUISITOS:
-- Lenguaje académico riguroso
-- Profundidad analítica y crítica
-- Citas a autores relevantes
-- Extensión: 8-12 páginas
-- Escribe en español"""
+**RESULTADOS ESPERADOS** (hallazgos anticipados, limitaciones)
+**CONCLUSIONES PRELIMINARES** (5-6 conclusiones)
+**REFERENCIAS** (mínimo 12 fuentes en formato {norma})"""
     }
     
-    return prompts.get(nivel, prompts["universitario"])
+    estructura = estructuras.get(tipo_informe, estructuras["academico"])
+    
+    prompt = f"""Eres un asistente académico experto. Genera un informe de tipo {tipo_informe.upper()} sobre: "{tema}"
+
+Información adicional del usuario: {info_extra_texto}
+
+ESTRUCTURA OBLIGATORIA:
+{estructura}
+
+REQUISITOS:
+- Escribe en español académico profesional
+- Usa **negritas** SOLO para los títulos de sección
+- Sé específico, incluye datos concretos, fechas, nombres
+- Extensión: 5-10 páginas según el tipo de informe
+- Mantén coherencia entre todas las secciones
+
+¡Genera un informe completo y de alta calidad!"""
+    
+    return prompt
 
 # ============================================================
-# FUNCIÓN PRINCIPAL DE GENERACIÓN CON IA
+# FUNCIÓN PARA LLAMAR A DEEPSEEK
 # ============================================================
-def generar_informe_con_ia(tema, info_extra="", nivel="universitario"):
-    """Genera informe usando DeepSeek API - Contenido 100% real generado por IA"""
+def llamar_deepseek(prompt):
+    """Llama a la API de DeepSeek y devuelve el contenido generado"""
     
     if not DEEPSEEK_API_KEY:
         logger.error("❌ No hay API key configurada")
         return None
-    
-    logger.info(f"🤖 Generando informe - Nivel: {nivel} - Tema: {tema[:50]}...")
-    
-    prompt = get_prompt_segun_nivel(tema, info_extra, nivel)
     
     headers = {
         "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
@@ -128,10 +123,10 @@ def generar_informe_con_ia(tema, info_extra="", nivel="universitario"):
     data = {
         "model": "deepseek-chat",
         "messages": [
-            {"role": "system", "content": "Eres un asistente académico profesional. Generas contenido original, bien estructurado y adaptado al nivel educativo solicitado."},
+            {"role": "system", "content": "Eres un asistente académico profesional. Generas contenido original, bien estructurado y de alta calidad en español."},
             {"role": "user", "content": prompt}
         ],
-        "max_tokens": 6000 if nivel == "universitario" else (3500 if nivel == "tecnico" else 2000),
+        "max_tokens": 6000,
         "temperature": 0.7
     }
     
@@ -142,7 +137,7 @@ def generar_informe_con_ia(tema, info_extra="", nivel="universitario"):
         if response.status_code == 200:
             resultado = response.json()
             contenido = resultado['choices'][0]['message']['content']
-            logger.info(f"✅ Informe generado ({len(contenido)} caracteres)")
+            logger.info(f"✅ Contenido generado ({len(contenido)} caracteres)")
             return contenido
         else:
             logger.error(f"❌ Error HTTP {response.status_code}: {response.text}")
@@ -153,99 +148,57 @@ def generar_informe_con_ia(tema, info_extra="", nivel="universitario"):
         return None
 
 # ============================================================
-# FUNCIÓN PARA MEJORAR REDACTAR (BOTONES DE MEJORA)
+# GENERAR INFORME COMPLETO
 # ============================================================
-def mejorar_redaccion(texto_original, accion="mejorar"):
-    """Mejora, expande o simplifica el texto usando IA"""
+def generar_informe_con_ia(tema, info_extra, tipo_informe, norma, modo):
+    """Genera el informe completo usando DeepSeek"""
     
-    if not DEEPSEEK_API_KEY:
-        return "Error: No hay API key configurada"
+    prompt = construir_prompt(tema, info_extra, tipo_informe, norma, modo)
+    contenido = llamar_deepseek(prompt)
     
-    acciones = {
-        "mejorar": "Mejora la redacción del siguiente texto. Hazlo más claro, profesional y bien estructurado. No cambies el contenido principal:",
-        "expandir": "Expande el siguiente texto. Añade más detalles, ejemplos y profundidad. Mantén la coherencia:",
-        "simplificar": "Simplifica el siguiente texto. Hazlo más fácil de entender, usa lenguaje claro y ejemplos sencillos:"
-    }
+    if not contenido:
+        return None
     
-    prompt = f"""{acciones.get(accion, acciones['mejorar'])}
-
-TEXTO ORIGINAL:
-{texto_original}
-
-TEXTO MEJORADO:"""
-    
-    headers = {
-        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    
-    data = {
-        "model": "deepseek-chat",
-        "messages": [
-            {"role": "system", "content": "Eres un asistente de edición de textos. Mejoras la redacción manteniendo el significado original."},
-            {"role": "user", "content": prompt}
-        ],
-        "max_tokens": 2000,
-        "temperature": 0.5
-    }
-    
-    try:
-        response = requests.post(DEEPSEEK_URL, headers=headers, json=data, timeout=60)
-        if response.status_code == 200:
-            return response.json()['choices'][0]['message']['content']
-        return texto_original
-    except Exception as e:
-        logger.error(f"Error en mejora: {e}")
-        return texto_original
-
-# ============================================================
-# EXTRACCIÓN DE SECCIONES
-# ============================================================
-def extraer_secciones(contenido):
-    """Extrae cada sección del contenido generado por IA"""
-    
+    # Extraer secciones básicas
     secciones = {
-        'introduccion': '',
-        'objetivos': '',
-        'marco_teorico': '',
-        'metodologia': '',
-        'desarrollo': '',
-        'conclusiones': '',
-        'recomendaciones': '',
-        'referencias': ''
+        'introduccion': extraer_seccion(contenido, 'INTRODUCCIÓN'),
+        'objetivos': extraer_seccion(contenido, 'OBJETIVOS'),
+        'marco_teorico': extraer_seccion(contenido, 'MARCO TEÓRICO'),
+        'metodologia': extraer_seccion(contenido, 'METODOLOGÍA'),
+        'desarrollo': extraer_seccion(contenido, 'DESARROLLO') or extraer_seccion(contenido, 'RESULTADOS'),
+        'conclusiones': extraer_seccion(contenido, 'CONCLUSIONES'),
+        'recomendaciones': extraer_seccion(contenido, 'RECOMENDACIONES'),
+        'referencias': extraer_seccion(contenido, 'REFERENCIAS')
     }
-    
-    # Patrones flexibles para diferentes formatos
-    patrones = {
-        'introduccion': r'\*\*INTRODUCCIÓN\*\*:?(.*?)(?=\*\*OBJETIVOS|\*\*MARCO|\*\*METODOLOGÍA|\*\*DESARROLLO|\*\*CONCLUSIONES|$)',
-        'objetivos': r'\*\*OBJETIVOS\*\*:?(.*?)(?=\*\*MARCO|\*\*METODOLOGÍA|\*\*DESARROLLO|\*\*CONCLUSIONES|$)',
-        'marco_teorico': r'\*\*MARCO TEÓRICO\*\*:?(.*?)(?=\*\*METODOLOGÍA|\*\*DESARROLLO|\*\*CONCLUSIONES|$)',
-        'metodologia': r'\*\*METODOLOGÍA\*\*:?(.*?)(?=\*\*DESARROLLO|\*\*CONCLUSIONES|$)',
-        'desarrollo': r'\*\*DESARROLLO\*\*:?(.*?)(?=\*\*CONCLUSIONES|$)',
-        'conclusiones': r'\*\*CONCLUSIONES\*\*:?(.*?)(?=\*\*RECOMENDACIONES|$)',
-        'recomendaciones': r'\*\*RECOMENDACIONES\*\*:?(.*?)(?=\*\*REFERENCIAS|$)',
-        'referencias': r'\*\*REFERENCIAS\*\*:?(.*?)$'
-    }
-    
-    for key, patron in patrones.items():
-        match = re.search(patron, contenido, re.DOTALL | re.IGNORECASE)
-        if match:
-            texto = match.group(1).strip()
-            texto = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', texto)
-            texto = texto.replace('\n', '<br/>')
-            secciones[key] = texto
     
     return secciones
 
+def extraer_seccion(contenido, nombre):
+    """Extrae una sección del contenido generado"""
+    patron = rf'\*\*{nombre}\*\*:?(.*?)(?=\*\*[A-Z]|REFERENCIAS|CONCLUSIONES|RECOMENDACIONES|$)'
+    match = re.search(patron, contenido, re.DOTALL | re.IGNORECASE)
+    if match:
+        texto = match.group(1).strip()
+        texto = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', texto)
+        texto = texto.replace('\n', '<br/>')
+        return texto
+    return ""
+
 # ============================================================
-# GENERADOR DE PDF
+# GENERAR PDF
 # ============================================================
 def generar_pdf(datos_usuario, secciones):
-    """Genera el PDF con el contenido generado por IA"""
+    """Genera el PDF profesional"""
     
     nombre = datos_usuario.get('nombre', 'Estudiante')
     tema = datos_usuario.get('tema', 'Tema de Investigación')
-    nivel = datos_usuario.get('nivel', 'universitario')
+    asignatura = datos_usuario.get('asignatura', '')
+    profesor = datos_usuario.get('profesor', '')
+    institucion = datos_usuario.get('institucion', '')
+    ciudad = datos_usuario.get('ciudad', '')
+    fecha = datos_usuario.get('fecha', datetime.now().strftime('%d/%m/%Y'))
+    norma = datos_usuario.get('norma', 'APA 7')
+    tipo_informe = datos_usuario.get('tipo_informe', 'academico')
     
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     unique_id = uuid.uuid4().hex[:8]
@@ -299,8 +252,16 @@ def generar_pdf(datos_usuario, secciones):
     story.append(Paragraph(tema.upper(), styles['TextoCentrado']))
     story.append(Spacer(1, 1.5*inch))
     story.append(Paragraph(f"<b>Presentado por:</b> {nombre}", styles['TextoCentrado']))
-    story.append(Paragraph(f"<b>Nivel:</b> {nivel}", styles['TextoCentrado']))
-    story.append(Paragraph(f"<b>Fecha:</b> {datetime.now().strftime('%d/%m/%Y')}", styles['TextoCentrado']))
+    if asignatura:
+        story.append(Paragraph(f"<b>Asignatura:</b> {asignatura}", styles['TextoCentrado']))
+    if profesor:
+        story.append(Paragraph(f"<b>Docente:</b> {profesor}", styles['TextoCentrado']))
+    if institucion:
+        story.append(Paragraph(f"<b>Institución:</b> {institucion}", styles['TextoCentrado']))
+    if ciudad:
+        story.append(Paragraph(f"<b>Ciudad:</b> {ciudad}", styles['TextoCentrado']))
+    story.append(Paragraph(f"<b>Fecha:</b> {fecha}", styles['TextoCentrado']))
+    story.append(Paragraph(f"<b>Norma:</b> {norma}", styles['TextoCentrado']))
     story.append(PageBreak())
     
     # Secciones
@@ -322,7 +283,7 @@ def generar_pdf(datos_usuario, secciones):
         if contenido:
             story.append(Paragraph(contenido, styles['TextoJustificado']))
         else:
-            story.append(Paragraph("Esta sección no fue generada automáticamente. Puedes agregar contenido manualmente si lo deseas.", styles['TextoJustificado']))
+            story.append(Paragraph("Esta sección será generada por IA al completar el informe.", styles['TextoJustificado']))
         story.append(PageBreak())
     
     doc.build(story)
@@ -335,71 +296,95 @@ def generar_pdf(datos_usuario, secciones):
 def index():
     return render_template('index.html')
 
-@app.route('/generar', methods=['POST'])
-def generar():
+@app.route('/preview', methods=['POST'])
+def preview():
+    """Genera una vista previa del contenido sin crear el PDF"""
     try:
         data = request.json
-        tema = data.get('tema', '').strip()
-        info_extra = data.get('texto_completo', '')
-        nombre = data.get('nombre', 'Estudiante')
-        nivel = data.get('nivel', 'universitario')
+        tema = data.get('tema', '')
+        info_extra = data.get('texto_usuario', '')
+        tipo_informe = data.get('tipo_informe', 'academico')
+        norma = data.get('norma', 'APA 7')
+        modo = data.get('modo', 'rapido')
         
         if not tema:
             return jsonify({'success': False, 'error': 'El tema es requerido'}), 400
         
-        logger.info(f"📨 Generando - Nivel: {nivel} - Tema: {tema[:50]}")
+        prompt = construir_prompt(tema, info_extra, tipo_informe, norma, modo)
+        contenido = llamar_deepseek(prompt)
         
-        contenido_ia = generar_informe_con_ia(tema, info_extra, nivel)
-        
-        if contenido_ia:
-            secciones = extraer_secciones(contenido_ia)
-            logger.info("✅ Informe generado con IA")
+        if contenido:
+            return jsonify({'success': True, 'contenido': contenido[:3000] + '...'})
         else:
+            return jsonify({'success': False, 'error': 'No se pudo generar el contenido'}), 500
+            
+    except Exception as e:
+        logger.error(f"Error en preview: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/generar', methods=['POST'])
+def generar():
+    """Genera el informe completo y devuelve el PDF"""
+    try:
+        data = request.json
+        
+        # Obtener datos del formulario
+        tema = data.get('tema', '').strip()
+        info_extra = data.get('texto_usuario', '')
+        tipo_informe = data.get('tipo_informe', 'academico')
+        norma = data.get('norma', 'APA 7')
+        modo = data.get('modo', 'rapido')
+        
+        # Datos de autores
+        autores = data.get('autores', [])
+        nombre_principal = autores[0].get('nombre', 'Estudiante') if autores else 'Estudiante'
+        
+        # Datos académicos
+        asignatura = data.get('asignatura', '')
+        profesor = data.get('profesor', '')
+        institucion = data.get('institucion', '')
+        ciudad = data.get('ciudad', '')
+        fecha = data.get('fecha', datetime.now().strftime('%d/%m/%Y'))
+        
+        if not tema:
+            return jsonify({'success': False, 'error': 'El tema es requerido'}), 400
+        
+        if not autores:
+            return jsonify({'success': False, 'error': 'Agrega al menos un autor'}), 400
+        
+        logger.info(f"📨 Generando informe - Tipo: {tipo_informe} - Tema: {tema[:50]}...")
+        
+        # Generar con IA
+        secciones = generar_informe_con_ia(tema, info_extra, tipo_informe, norma, modo)
+        
+        if not secciones:
             return jsonify({'success': False, 'error': 'No se pudo generar el informe. Verifica tu conexión y saldo de DeepSeek.'}), 500
         
+        # Preparar datos para el PDF
         datos_usuario = {
-            'nombre': nombre,
+            'nombre': nombre_principal,
             'tema': tema,
-            'nivel': nivel
+            'asignatura': asignatura,
+            'profesor': profesor,
+            'institucion': institucion,
+            'ciudad': ciudad,
+            'fecha': fecha,
+            'norma': norma,
+            'tipo_informe': tipo_informe
         }
         
         filename, filepath = generar_pdf(datos_usuario, secciones)
         
-        return jsonify({
-            'success': True,
-            'download_url': f'/descargar/{filename}'
-        })
+        return send_file(
+            filepath,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/pdf'
+        )
         
     except Exception as e:
-        logger.error(f"❌ Error: {e}")
+        logger.error(f"Error en generar: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/mejorar', methods=['POST'])
-def mejorar():
-    """Endpoint para mejorar/expandir/simplificar texto"""
-    try:
-        data = request.json
-        texto = data.get('texto', '')
-        accion = data.get('accion', 'mejorar')
-        
-        if not texto:
-            return jsonify({'success': False, 'error': 'No hay texto para mejorar'}), 400
-        
-        texto_mejorado = mejorar_redaccion(texto, accion)
-        
-        return jsonify({
-            'success': True,
-            'texto_mejorado': texto_mejorado
-        })
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/descargar/<filename>')
-def descargar(filename):
-    filepath = os.path.join('informes_generados', filename)
-    if not os.path.exists(filepath):
-        return jsonify({'success': False, 'error': 'Archivo no encontrado'}), 404
-    return send_file(filepath, as_attachment=True, download_name=filename, mimetype='application/pdf')
 
 @app.route('/health')
 def health():
