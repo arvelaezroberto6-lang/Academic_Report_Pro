@@ -22,109 +22,150 @@ os.makedirs('informes_generados', exist_ok=True)
 DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
 DEEPSEEK_URL = "https://api.deepseek.com/v1/chat/completions"
 
-# ============================================================
-# FUNCIÓN CORREGIDA PARA LLAMAR A DEEPSEEK
-# ============================================================
-def llamar_deepseek(prompt_texto):
-    """Envía una solicitud a DeepSeek y devuelve la respuesta."""
-    if not DEEPSEEK_API_KEY:
-        logger.error("API Key de DeepSeek no configurada.")
-        return None
+logger.info("=" * 60)
+logger.info("🚀 ACADEMIC REPORT PRO - VERSIÓN FUNCIONANDO")
+logger.info(f"🔑 API Key configurada: {'SÍ ✅' if DEEPSEEK_API_KEY else 'NO ❌'}")
+logger.info("=" * 60)
 
+def llamar_deepseek(prompt):
+    """Llama a la API de DeepSeek - versión probada"""
     headers = {
         "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
         "Content-Type": "application/json"
     }
-
-    # --- ESTRUCTURA CORREGIDA Y SIMPLIFICADA ---
-    payload = {
+    data = {
         "model": "deepseek-chat",
         "messages": [
-            {"role": "user", "content": prompt_texto}
+            {"role": "system", "content": "Eres un asistente académico profesional. Generas contenido original y bien estructurado en español."},
+            {"role": "user", "content": prompt}
         ],
-        "max_tokens": 4000,
+        "max_tokens": 6000,
         "temperature": 0.7
     }
-
     try:
-        logger.info("Enviando solicitud a DeepSeek...")
-        response = requests.post(DEEPSEEK_URL, headers=headers, json=payload, timeout=60)
-        
-        # --- LOG PARA VER EL ERROR EXACTO ---
-        if response.status_code != 200:
-            logger.error(f"Error HTTP {response.status_code}: {response.text}")
+        response = requests.post(DEEPSEEK_URL, headers=headers, json=data, timeout=120)
+        if response.status_code == 200:
+            return response.json()['choices'][0]['message']['content']
+        else:
+            logger.error(f"Error HTTP {response.status_code}")
             return None
-            
-        resultado = response.json()
-        contenido = resultado['choices'][0]['message']['content']
-        logger.info(f"Solicitud exitosa. Tokens usados: {resultado['usage']['total_tokens']}")
-        return contenido
-
     except Exception as e:
-        logger.error(f"Error en la solicitud a DeepSeek: {e}")
+        logger.error(f"Error: {e}")
         return None
 
-# ============================================================
-# RUTA PRINCIPAL
-# ============================================================
+def extraer_seccion(contenido, nombre):
+    """Extrae una sección del contenido"""
+    patron = rf'\*\*{nombre}\*\*:?\s*(.*?)(?=\*\*[A-ZÁÉÍÓÚÜÑ]|\Z)'
+    match = re.search(patron, contenido, re.DOTALL | re.IGNORECASE)
+    if match:
+        texto = match.group(1).strip()
+        texto = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', texto)
+        texto = texto.replace('\n', '<br/>')
+        return texto
+    return ""
+
+def generar_pdf(tema, nombre, secciones):
+    """Genera el PDF"""
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    filename = f"informe_{timestamp}_{uuid.uuid4().hex[:8]}.pdf"
+    filepath = os.path.join('informes_generados', filename)
+    
+    styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(name='TextoJustificado', parent=styles['Normal'], alignment=TA_JUSTIFY, fontSize=11, fontName='Times-Roman', spaceAfter=12, leading=16))
+    styles.add(ParagraphStyle(name='Titulo1', parent=styles['Heading1'], fontSize=16, fontName='Helvetica-Bold', textColor=colors.HexColor('#1a365d'), spaceBefore=24, spaceAfter=12))
+    styles.add(ParagraphStyle(name='TituloPortada', parent=styles['Title'], fontSize=24, alignment=TA_CENTER, textColor=colors.HexColor('#1a365d')))
+    styles.add(ParagraphStyle(name='TextoCentrado', parent=styles['Normal'], alignment=TA_CENTER, fontSize=12))
+    
+    doc = SimpleDocTemplate(filepath, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=72)
+    story = []
+    
+    # Portada
+    story.append(Spacer(1, 2.0*inch))
+    story.append(Paragraph("INFORME ACADÉMICO", styles['TituloPortada']))
+    story.append(Spacer(1, 0.3*inch))
+    story.append(Paragraph(tema.upper(), styles['TextoCentrado']))
+    story.append(Spacer(1, 1.5*inch))
+    story.append(Paragraph(f"<b>Presentado por:</b> {nombre}", styles['TextoCentrado']))
+    story.append(Paragraph(f"<b>Fecha:</b> {datetime.now().strftime('%d/%m/%Y')}", styles['TextoCentrado']))
+    story.append(PageBreak())
+    
+    # Secciones
+    for titulo, clave in [("1. INTRODUCCIÓN", 'introduccion'), ("2. OBJETIVOS", 'objetivos'), ("3. MARCO TEÓRICO", 'marco_teorico'), ("4. METODOLOGÍA", 'metodologia'), ("5. DESARROLLO", 'desarrollo'), ("6. CONCLUSIONES", 'conclusiones'), ("7. RECOMENDACIONES", 'recomendaciones'), ("8. REFERENCIAS", 'referencias')]:
+        story.append(Paragraph(titulo, styles['Titulo1']))
+        story.append(Spacer(1, 0.2*inch))
+        contenido = secciones.get(clave, '')
+        if contenido:
+            story.append(Paragraph(contenido, styles['TextoJustificado']))
+        else:
+            story.append(Paragraph("No se pudo generar esta sección.", styles['TextoJustificado']))
+        story.append(PageBreak())
+    
+    doc.build(story)
+    return filename, filepath
+
 @app.route('/')
 def index():
     return render_template('index.html')
 
-# ============================================================
-# RUTA PARA GENERAR EL INFORME (VERSIÓN SIMPLIFICADA Y SEGURA)
-# ============================================================
 @app.route('/generar', methods=['POST'])
 def generar():
     try:
         data = request.json
         tema = data.get('tema', '').strip()
+        info_extra = data.get('texto_usuario', '')
         nombre = data.get('nombre', 'Estudiante')
         
         if not tema:
             return jsonify({'success': False, 'error': 'El tema es requerido'}), 400
+        
+        logger.info(f"📨 Generando informe - Tema: {tema[:50]}...")
+        
+        prompt = f"""Genera un informe académico profesional sobre: "{tema}"
 
-        # --- PROMPT CORTO Y EFECTIVO PARA PRUEBA ---
-        prompt = f"""Genera un informe académico corto sobre el tema: "{tema}".
+Información adicional: {info_extra if info_extra else 'No hay información adicional'}
 
-El informe debe tener la siguiente estructura:
-1. Introducción
-2. Objetivos (1 general, 3 específicos)
-3. Desarrollo (análisis del tema)
-4. Conclusiones (3 puntos)
-5. Recomendaciones (2 puntos)
+ESTRUCTURA OBLIGATORIA:
 
-Escribe en español, con un tono profesional y claro. Sé conciso.
+**INTRODUCCIÓN** (contexto, problema, justificación)
+**OBJETIVOS** (1 general + 4 específicos)
+**MARCO TEÓRICO** (conceptos clave, antecedentes)
+**METODOLOGÍA** (tipo de investigación, población, técnicas)
+**DESARROLLO** (resultados, análisis, hallazgos)
+**CONCLUSIONES** (5 puntos numerados)
+**RECOMENDACIONES** (3-4 sugerencias)
+**REFERENCIAS** (5-6 fuentes en formato APA)
+
+Escribe en español académico profesional.
+Usa **negritas** solo para los títulos.
 """
         
-        logger.info(f"Generando informe para: {tema}")
-        contenido_ia = llamar_deepseek(prompt)
-
-        if not contenido_ia:
-            return jsonify({'success': False, 'error': 'La IA no pudo generar el contenido.'}), 500
-
-        # --- AQUÍ LUEGO AGREGARÁS LA LÓGICA PARA CREAR EL PDF ---
-        # Por ahora, devolvemos el texto para confirmar que funciona.
-        return jsonify({
-            'success': True,
-            'contenido': contenido_ia,
-            'mensaje': 'Informe generado correctamente. (Fase 1: solo texto)'
-        })
-
+        contenido = llamar_deepseek(prompt)
+        
+        if not contenido:
+            return jsonify({'success': False, 'error': 'No se pudo generar el contenido'}), 500
+        
+        secciones = {
+            'introduccion': extraer_seccion(contenido, 'INTRODUCCIÓN'),
+            'objetivos': extraer_seccion(contenido, 'OBJETIVOS'),
+            'marco_teorico': extraer_seccion(contenido, 'MARCO TEÓRICO'),
+            'metodologia': extraer_seccion(contenido, 'METODOLOGÍA'),
+            'desarrollo': extraer_seccion(contenido, 'DESARROLLO'),
+            'conclusiones': extraer_seccion(contenido, 'CONCLUSIONES'),
+            'recomendaciones': extraer_seccion(contenido, 'RECOMENDACIONES'),
+            'referencias': extraer_seccion(contenido, 'REFERENCIAS')
+        }
+        
+        filename, filepath = generar_pdf(tema, nombre, secciones)
+        
+        return send_file(filepath, as_attachment=True, download_name=filename, mimetype='application/pdf')
+        
     except Exception as e:
-        logger.error(f"Error en /generar: {e}")
+        logger.error(f"Error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-# ============================================================
-# HEALTH CHECK
-# ============================================================
 @app.route('/health')
 def health():
-    return jsonify({
-        'status': 'healthy',
-        'api_configured': bool(DEEPSEEK_API_KEY),
-        'timestamp': datetime.now().isoformat()
-    })
+    return jsonify({'status': 'healthy', 'api_configured': bool(DEEPSEEK_API_KEY)})
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
