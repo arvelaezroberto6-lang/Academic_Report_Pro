@@ -149,14 +149,9 @@ footer{text-align:center;padding:2rem;border-top:1px solid var(--border);font-si
     
     <!-- PASOS VISUALES -->
     <div class="progress-container" id="progressContainer" style="display:none;">
-      <div class="progress-steps">
-        <div class="progress-step" id="step1">1. Configurar</div>
-        <div class="progress-step" id="step2">2. Generar IA</div>
-        <div class="progress-step" id="step3">3. Editar</div>
-        <div class="progress-step" id="step4">4. Descargar</div>
-      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.8rem;" id="seccionesStatus"></div>
       <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-      <p id="progressMessage" style="font-size:.7rem; color:var(--text2); margin-top:.5rem; text-align:center;"></p>
+      <p id="progressMessage" style="font-size:.75rem;color:var(--text2);margin-top:.6rem;text-align:center;min-height:1.2em;"></p>
     </div>
 
     <div class="g2c" style="margin-bottom:1.2rem;">
@@ -244,9 +239,10 @@ footer{text-align:center;padding:2rem;border-top:1px solid var(--border);font-si
     <div class="card-hd"><div class="card-ico">✏️</div><div><div class="card-ttl">Edita tu informe</div></div></div>
     <div class="editor-tabs" id="editorTabs"></div>
     <textarea id="editorTexto" rows="12"></textarea>
-    <div style="display:flex; gap:1rem; margin-top:1rem;">
+    <div style="display:flex; gap:1rem; margin-top:1rem; flex-wrap:wrap;">
       <button id="exportarPDFBtn" class="btn-gold" style="flex:1;">📄 Descargar PDF</button>
       <button id="exportarWordBtn" class="btn-outline" style="flex:1;">📝 Descargar Word</button>
+      <button id="regenerarSeccionBtn" class="btn-outline" style="flex:1;border-color:rgba(201,168,76,.3);color:var(--gold);">🔄 Regenerar sección</button>
     </div>
   </div>
 </section>
@@ -274,7 +270,6 @@ let normaActual = 'APA 7';
 let refsModo = 'auto';
 let seccionesGeneradas = {};
 let datosUsuario = {};
-let informesUsados = 0; // Sin límite de informes
 
 // Modo
 document.querySelectorAll('#modoTabs .mode-tab').forEach(btn => {
@@ -337,14 +332,49 @@ function getAutores() {
   return autores;
 }
 
-function actualizarProgreso(paso, mensaje, porcentaje) {
-  document.getElementById('progressFill').style.width = porcentaje + '%';
-  document.getElementById('progressMessage').innerText = mensaje;
-  for(let i=1; i<=4; i++) {
-    const step = document.getElementById(`step${i}`);
-    if(i < paso) step.classList.add('completed');
-    else if(i === paso) step.classList.add('active');
-    else step.classList.remove('active', 'completed');
+// ========== GENERACIÓN POR SECCIONES ==========
+const SECCIONES_INFO = [
+  { clave: 'introduccion',    nombre: 'Introducción'    },
+  { clave: 'objetivos',       nombre: 'Objetivos'       },
+  { clave: 'marco_teorico',   nombre: 'Marco Teórico'   },
+  { clave: 'metodologia',     nombre: 'Metodología'     },
+  { clave: 'desarrollo',      nombre: 'Desarrollo'      },
+  { clave: 'conclusiones',    nombre: 'Conclusiones'    },
+  { clave: 'recomendaciones', nombre: 'Recomendaciones' },
+  { clave: 'referencias',     nombre: 'Referencias'     },
+];
+
+function iniciarIndicadores() {
+  const cont = document.getElementById('seccionesStatus');
+  cont.innerHTML = '';
+  SECCIONES_INFO.forEach(s => {
+    const chip = document.createElement('span');
+    chip.id = 'chip-' + s.clave;
+    chip.textContent = s.nombre;
+    chip.style.cssText = 'padding:.25rem .75rem;border-radius:100px;font-size:.7rem;font-weight:700;border:1px solid var(--border);color:var(--text3);background:transparent;transition:all .3s;';
+    cont.appendChild(chip);
+  });
+}
+
+function marcarChip(clave, estado) {
+  const chip = document.getElementById('chip-' + clave);
+  if (!chip) return;
+  const nombre = SECCIONES_INFO.find(s => s.clave === clave).nombre;
+  if (estado === 'generando') {
+    chip.style.background = 'var(--gold-dim)';
+    chip.style.borderColor = 'rgba(201,168,76,.5)';
+    chip.style.color = 'var(--gold)';
+    chip.textContent = '⏳ ' + nombre;
+  } else if (estado === 'ok') {
+    chip.style.background = 'rgba(86,196,137,.12)';
+    chip.style.borderColor = 'rgba(86,196,137,.4)';
+    chip.style.color = 'var(--green)';
+    chip.textContent = '✓ ' + nombre;
+  } else if (estado === 'error') {
+    chip.style.background = 'rgba(224,92,92,.12)';
+    chip.style.borderColor = 'rgba(224,92,92,.4)';
+    chip.style.color = 'var(--red)';
+    chip.textContent = '✕ ' + nombre;
   }
 }
 
@@ -352,69 +382,95 @@ document.getElementById('generarBtn').onclick = async () => {
   const tema = document.getElementById('tema').value.trim();
   if (!tema) { Swal.fire('Error', 'Escribe el tema del informe', 'error'); return; }
 
-  
   const autores = getAutores();
   const nombrePrincipal = document.getElementById('nombre').value.trim() || (autores[0]?.nombre || 'Estudiante');
-  
+  const payload = {
+    tema,
+    nivel: document.getElementById('nivel').value,
+    tipo_informe: tipoActual,
+    norma: normaActual,
+    texto_usuario: document.getElementById('textoUsuario').value
+  };
+
   document.getElementById('generarBtn').disabled = true;
   document.getElementById('generarBtn').innerHTML = '⏳ Generando informe...';
   document.getElementById('progressContainer').style.display = 'block';
-  
-  actualizarProgreso(1, 'Conectando con IA...', 10);
-  await new Promise(r => setTimeout(r, 500));
-  actualizarProgreso(1, 'Analizando tu tema...', 25);
-  await new Promise(r => setTimeout(r, 800));
-  actualizarProgreso(2, 'Generando contenido académico...', 50);
-  
-  try {
-    const res = await fetch('/generar', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        tema: tema, modo: modo, nivel: document.getElementById('nivel').value,
-        tipo_informe: tipoActual, norma: normaActual,
-        nombre: nombrePrincipal, asignatura: document.getElementById('asignatura').value,
-        profesor: document.getElementById('profesor').value,
-        institucion: document.getElementById('institucion').value,
-        ciudad: document.getElementById('ciudad').value,
-        texto_usuario: document.getElementById('textoUsuario').value
-      })
-    });
-    actualizarProgreso(3, 'Estructurando el informe...', 75);
-    await new Promise(r => setTimeout(r, 500));
-    const data = await res.json();
-    if (data.success) {
-      seccionesGeneradas = data.secciones;
-      datosUsuario = data.datos_usuario;
+  document.getElementById('progressFill').style.width = '0%';
+  iniciarIndicadores();
 
-      actualizarProgreso(4, '¡Informe listo!', 100);
-      setTimeout(() => {
-        document.getElementById('progressContainer').style.display = 'none';
-        mostrarEditor();
-      }, 600);
-      Swal.fire('¡Éxito!', 'Informe generado correctamente', 'success');
-    } else { throw new Error(data.error); }
-  } catch (error) {
-    document.getElementById('progressContainer').style.display = 'none';
-    Swal.fire('Error', error.message, 'error');
-  } finally {
-    document.getElementById('generarBtn').disabled = false;
-    document.getElementById('generarBtn').innerHTML = '🚀 GENERAR INFORME';
+  seccionesGeneradas = {};
+  let errores = 0;
+
+  for (let i = 0; i < SECCIONES_INFO.length; i++) {
+    const { clave, nombre } = SECCIONES_INFO[i];
+    marcarChip(clave, 'generando');
+    document.getElementById('progressMessage').textContent = `Generando: ${nombre} (${i + 1} de ${SECCIONES_INFO.length})...`;
+    document.getElementById('progressFill').style.width = ((i / SECCIONES_INFO.length) * 100) + '%';
+
+    try {
+      const res = await fetch('/generar-seccion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...payload, seccion: clave })
+      });
+      const data = await res.json();
+      if (data.success && data.contenido) {
+        seccionesGeneradas[clave] = data.contenido;
+        marcarChip(clave, 'ok');
+      } else {
+        seccionesGeneradas[clave] = '';
+        marcarChip(clave, 'error');
+        errores++;
+      }
+    } catch (e) {
+      seccionesGeneradas[clave] = '';
+      marcarChip(clave, 'error');
+      errores++;
+    }
   }
+
+  document.getElementById('progressFill').style.width = '100%';
+  document.getElementById('progressMessage').textContent = errores === 0
+    ? '¡Informe completo generado!'
+    : `Informe generado con ${errores} sección(es) con error.`;
+
+  datosUsuario = {
+    nombre: nombrePrincipal,
+    tema,
+    asignatura: document.getElementById('asignatura').value,
+    profesor: document.getElementById('profesor').value,
+    institucion: document.getElementById('institucion').value,
+    ciudad: document.getElementById('ciudad').value,
+    fecha: new Date().toISOString().split('T')[0],
+    norma: normaActual
+  };
+
+  setTimeout(() => {
+    document.getElementById('progressContainer').style.display = 'none';
+    mostrarEditor();
+  }, 1000);
+
+  if (errores === 0) {
+    Swal.fire({ icon: 'success', title: '¡Informe listo!', text: 'Todas las secciones generadas correctamente.', timer: 2500, showConfirmButton: false });
+  } else {
+    Swal.fire({ icon: 'warning', title: 'Casi listo', text: `${SECCIONES_INFO.length - errores} de ${SECCIONES_INFO.length} secciones generadas. Puedes regenerar las que fallaron desde el editor.` });
+  }
+
+  document.getElementById('generarBtn').disabled = false;
+  document.getElementById('generarBtn').innerHTML = '🚀 GENERAR INFORME';
 };
 
 function mostrarEditor() {
-  const secciones = ['introduccion', 'objetivos', 'marco_teorico', 'metodologia', 'desarrollo', 'conclusiones', 'recomendaciones', 'referencias'];
-  const nombres = ['Introducción', 'Objetivos', 'Marco Teórico', 'Metodología', 'Desarrollo', 'Conclusiones', 'Recomendaciones', 'Referencias'];
   const tabsDiv = document.getElementById('editorTabs');
   tabsDiv.innerHTML = '';
-  secciones.forEach((sec, i) => {
+  SECCIONES_INFO.forEach((s, i) => {
     const btn = document.createElement('button');
-    btn.textContent = nombres[i];
+    btn.textContent = s.nombre;
     btn.className = 'editor-tab' + (i === 0 ? ' active' : '');
     btn.onclick = () => {
       document.querySelectorAll('.editor-tab').forEach(t => t.classList.remove('active'));
       btn.classList.add('active');
-      document.getElementById('editorTexto').value = seccionesGeneradas[sec] || '';
+      document.getElementById('editorTexto').value = seccionesGeneradas[s.clave] || '';
     };
     tabsDiv.appendChild(btn);
   });
@@ -423,13 +479,48 @@ function mostrarEditor() {
   document.getElementById('editorPanel').scrollIntoView({ behavior: 'smooth' });
 }
 
+// ========== REGENERAR SECCIÓN ==========
+document.getElementById('regenerarSeccionBtn').onclick = async () => {
+  const indiceActivo = Array.from(document.querySelectorAll('.editor-tab')).findIndex(t => t.classList.contains('active'));
+  if (indiceActivo === -1) return;
+  const { clave, nombre } = SECCIONES_INFO[indiceActivo];
+  const btn = document.getElementById('regenerarSeccionBtn');
+  btn.disabled = true;
+  btn.innerHTML = `⏳ Regenerando ${nombre}...`;
+  try {
+    const res = await fetch('/generar-seccion', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        seccion: clave,
+        tema: datosUsuario.tema,
+        nivel: document.getElementById('nivel').value,
+        tipo_informe: tipoActual,
+        norma: normaActual,
+        texto_usuario: document.getElementById('textoUsuario').value
+      })
+    });
+    const data = await res.json();
+    if (data.success && data.contenido) {
+      seccionesGeneradas[clave] = data.contenido;
+      document.getElementById('editorTexto').value = data.contenido;
+      Swal.fire({ icon: 'success', title: 'Sección regenerada', text: `${nombre} actualizada.`, timer: 1800, showConfirmButton: false });
+    } else {
+      throw new Error(data.error || 'Error desconocido');
+    }
+  } catch (e) {
+    Swal.fire('Error', 'No se pudo regenerar: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '🔄 Regenerar sección';
+  }
+};
+
+// ========== EXPORTAR ==========
 document.getElementById('exportarPDFBtn').onclick = async () => {
   const seccionesEditadas = { ...seccionesGeneradas };
   const indiceActivo = Array.from(document.querySelectorAll('.editor-tab')).findIndex(t => t.classList.contains('active'));
-  if (indiceActivo !== -1) {
-    const claves = ['introduccion', 'objetivos', 'marco_teorico', 'metodologia', 'desarrollo', 'conclusiones', 'recomendaciones', 'referencias'];
-    seccionesEditadas[claves[indiceActivo]] = document.getElementById('editorTexto').value;
-  }
+  if (indiceActivo !== -1) seccionesEditadas[SECCIONES_INFO[indiceActivo].clave] = document.getElementById('editorTexto').value;
   const res = await fetch('/exportar-pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ secciones: seccionesEditadas, datos_usuario: datosUsuario }) });
   const blob = await res.blob(); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `informe_${Date.now()}.pdf`; a.click(); URL.revokeObjectURL(url);
 };
@@ -437,10 +528,7 @@ document.getElementById('exportarPDFBtn').onclick = async () => {
 document.getElementById('exportarWordBtn').onclick = async () => {
   const seccionesEditadas = { ...seccionesGeneradas };
   const indiceActivo = Array.from(document.querySelectorAll('.editor-tab')).findIndex(t => t.classList.contains('active'));
-  if (indiceActivo !== -1) {
-    const claves = ['introduccion', 'objetivos', 'marco_teorico', 'metodologia', 'desarrollo', 'conclusiones', 'recomendaciones', 'referencias'];
-    seccionesEditadas[claves[indiceActivo]] = document.getElementById('editorTexto').value;
-  }
+  if (indiceActivo !== -1) seccionesEditadas[SECCIONES_INFO[indiceActivo].clave] = document.getElementById('editorTexto').value;
   const res = await fetch('/exportar-word', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ secciones: seccionesEditadas, datos_usuario: datosUsuario }) });
   const blob = await res.blob(); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `informe_${Date.now()}.docx`; a.click(); URL.revokeObjectURL(url);
 };
