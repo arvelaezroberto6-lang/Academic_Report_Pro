@@ -30,7 +30,7 @@ logger.info(f"🔑 API Key configurada: {'SÍ ✅' if DEEPSEEK_API_KEY else 'NO 
 logger.info("=" * 60)
 
 # ============================================================
-# FUNCIÓN PARA LLAMAR A DEEPSEEK (CORREGIDA)
+# FUNCIÓN PARA LLAMAR A DEEPSEEK
 # ============================================================
 def llamar_deepseek(prompt):
     headers = {
@@ -43,7 +43,7 @@ def llamar_deepseek(prompt):
             {"role": "system", "content": "Eres un asistente académico profesional. Generas informes estructurados en español."},
             {"role": "user", "content": prompt}
         ],
-        "max_tokens": 8000,  # Aumentado para que no se corte
+        "max_tokens": 8000,
         "temperature": 0.7
     }
     try:
@@ -51,7 +51,6 @@ def llamar_deepseek(prompt):
         if response.status_code == 200:
             resultado = response.json()
             contenido = resultado['choices'][0]['message']['content']
-            # Forzar codificación UTF-8 limpia
             contenido = contenido.encode('utf-8', 'ignore').decode('utf-8')
             logger.info(f"✅ Contenido recibido: {len(contenido)} caracteres")
             return contenido
@@ -63,7 +62,7 @@ def llamar_deepseek(prompt):
         return None
 
 # ============================================================
-# EXTRACCIÓN DE SECCIONES (CORREGIDA - MÚLTIPLES PATRONES)
+# EXTRACCIÓN DE SECCIONES - VERSIÓN CORREGIDA
 # ============================================================
 def extraer_seccion(contenido, nombre):
     """Extrae una sección del contenido - VERSIÓN CORREGIDA"""
@@ -71,26 +70,42 @@ def extraer_seccion(contenido, nombre):
     if not contenido:
         return ""
     
-    # Limpiar caracteres basura primero
+    # Limpiar caracteres basura
     contenido = contenido.encode('utf-8', 'ignore').decode('utf-8')
     contenido = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', contenido)
     
-    # Múltiples patrones para diferentes formatos
-    patrones = [
-        rf'\*\*{nombre}\*\*:?\s*(.*?)(?=\*\*[A-ZÁÉÍÓÚÜÑ]|\Z)',
-        rf'\*\*{nombre}\*\*(.*?)(?=\*\*[A-ZÁÉÍÓÚÜÑ]|\Z)',
-        rf'\n{nombre}\n[=\-]+\s*(.*?)(?=\n[A-ZÁÉÍÓÚÜÑ]|\Z)',
-        rf'\d+\.\s*{nombre}\s*(.*?)(?=\d+\.\s*[A-ZÁÉÍÓÚÜÑ]|\Z)',
+    # Buscar el título en diferentes formatos
+    patrones_titulo = [
+        rf'\*\*{nombre}\*\*:?',
+        rf'\*\*{nombre}\*\*',
+        rf'### {nombre}',
+        rf'#{nombre}#',
+        rf'{nombre}',
     ]
     
-    for patron in patrones:
-        match = re.search(patron, contenido, re.DOTALL | re.IGNORECASE)
+    for patron_titulo in patrones_titulo:
+        patron_seccion = rf'{patron_titulo}\s*(.*?)(?=\n\s*\*\*[A-ZÁÉÍÓÚÜÑ]|\n\s*\d+\.\s*\*\*|\Z)'
+        match = re.search(patron_seccion, contenido, re.DOTALL | re.IGNORECASE)
         if match:
             texto = match.group(1).strip()
-            if len(texto) > 50:
+            if len(texto) > 100:
                 texto = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', texto)
                 texto = texto.replace('\n', '<br/>')
                 return texto
+    
+    # Búsqueda más simple
+    idx = contenido.upper().find(nombre.upper())
+    if idx != -1:
+        siguiente_match = re.search(r'\n\s*\*\*[A-ZÁÉÍÓÚÜÑ]|\n\s*\d+\.\s*\*\*', contenido[idx+len(nombre):])
+        if siguiente_match:
+            texto = contenido[idx+len(nombre):idx+len(nombre)+siguiente_match.start()].strip()
+        else:
+            texto = contenido[idx+len(nombre):].strip()
+        
+        if len(texto) > 100:
+            texto = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', texto)
+            texto = texto.replace('\n', '<br/>')
+            return texto
     
     return ""
 
@@ -105,20 +120,55 @@ Nivel educativo: {nivel}
 
 Información adicional: {info_extra if info_extra else 'No hay información adicional'}
 
-ESTRUCTURA OBLIGATORIA (usa **negritas** solo para los títulos):
+⚠️ INSTRUCCIONES ESTRICTAS:
+1. Cada sección DEBE tener el título en **negritas** como se muestra abajo
+2. Después de cada título, escribe mínimo 3 párrafos completos
+3. NO te saltes ninguna sección
+4. NO uses caracteres especiales extraños
 
 **INTRODUCCIÓN**
-**OBJETIVOS**
-**MARCO TEÓRICO**
-**METODOLOGÍA**
-**DESARROLLO**
-**CONCLUSIONES**
-**RECOMENDACIONES**
-**REFERENCIAS**
+[Escribe aquí 3-4 párrafos completos sobre el contexto, problema y justificación]
 
-Escribe en español académico profesional.
-Incluye datos numéricos específicos.
-Extensión: 5-10 páginas.
+**OBJETIVOS**
+- Objetivo General: [escribe aquí]
+- Objetivos Específicos:
+  1. [escribe aquí]
+  2. [escribe aquí]
+  3. [escribe aquí]
+  4. [escribe aquí]
+  5. [escribe aquí]
+
+**MARCO TEÓRICO**
+[Escribe aquí 3-4 párrafos completos con conceptos clave, antecedentes y definiciones]
+
+**METODOLOGÍA**
+[Escribe aquí 3-4 párrafos completos describiendo tipo de investigación, población, técnicas y procedimiento]
+
+**DESARROLLO**
+[Escribe aquí 3-4 párrafos completos con resultados, análisis y hallazgos]
+
+**CONCLUSIONES**
+1. [conclusión 1]
+2. [conclusión 2]
+3. [conclusión 3]
+4. [conclusión 4]
+5. [conclusión 5]
+
+**RECOMENDACIONES**
+1. [recomendación 1]
+2. [recomendación 2]
+3. [recomendación 3]
+4. [recomendación 4]
+
+**REFERENCIAS**
+- [Referencia 1 en formato {norma}]
+- [Referencia 2 en formato {norma}]
+- [Referencia 3 en formato {norma}]
+- [Referencia 4 en formato {norma}]
+- [Referencia 5 en formato {norma}]
+- [Referencia 6 en formato {norma}]
+
+¡ESCRIBE CONTENIDO SUSTANCIAL EN CADA SECCIÓN! Mínimo 3 párrafos por sección.
 """
     
     contenido = llamar_deepseek(prompt)
@@ -137,10 +187,15 @@ Extensión: 5-10 páginas.
         'referencias': extraer_seccion(contenido, 'REFERENCIAS')
     }
     
+    # Log para depuración
+    for key, value in secciones.items():
+        status = "✅" if value and len(value) > 100 else "❌"
+        logger.info(f"{status} {key}: {len(value) if value else 0} caracteres")
+    
     return secciones
 
 # ============================================================
-# GENERAR PDF (CORREGIDO - MEJOR MANEJO DE SECCIONES VACÍAS)
+# GENERAR PDF
 # ============================================================
 def generar_pdf(datos_usuario, secciones):
     nombre = datos_usuario.get('nombre', 'Estudiante')
@@ -208,7 +263,7 @@ def generar_pdf(datos_usuario, secciones):
         story.append(Paragraph(titulo, styles['Titulo1']))
         story.append(Spacer(1, 0.2*inch))
         contenido = secciones.get(clave, '')
-        if contenido and len(contenido) > 50:
+        if contenido and len(contenido) > 100:
             story.append(Paragraph(contenido, styles['TextoJustificado']))
         else:
             story.append(Paragraph("No se pudo generar esta sección.", styles['TextoJustificado']))
@@ -291,7 +346,6 @@ def generar():
         ciudad = data.get('ciudad', '')
         texto_usuario = data.get('texto_usuario', '')
         
-        # Obtener autores
         autores = data.get('autores', [])
         if autores:
             nombre_principal = autores[0].get('nombre', nombre)
