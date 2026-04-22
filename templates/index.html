@@ -28,13 +28,14 @@ main{position:relative;z-index:1;}
 
 nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:.9rem 2.5rem;background:rgba(8,11,18,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
 .nav-logo{display:flex;align-items:center;gap:.7rem;font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:700;color:var(--text);text-decoration:none;}
-.nav-logo-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--gold) 0%,#8b6914 100%);display:flex;align-items:center;justify-content:center;}
+.nav-logo-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--gold) 0%,#8b6914 100%);display:flex;align-items:center;justify-content:center;font-size:14px;}
 .nav-badge{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--gold);background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);padding:.2rem .7rem;border-radius:100px;}
 .btn-gold{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.8rem;background:linear-gradient(135deg,var(--gold) 0%,#a8832a 100%);color:#000;font-family:'Syne',sans-serif;font-size:.88rem;font-weight:700;border:none;border-radius:var(--radius);cursor:pointer;transition:all .2s;}
 .btn-gold:hover{transform:translateY(-2px);box-shadow:0 8px 36px rgba(201,168,76,.45);}
-.btn-outline{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.8rem;background:transparent;color:var(--text);font-family:'Syne',sans-serif;font-size:.88rem;font-weight:600;border:1px solid var(--border2);border-radius:var(--radius);cursor:pointer;}
+.btn-outline{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.8rem;background:transparent;color:var(--text);font-family:'Syne',sans-serif;font-size:.88rem;font-weight:600;border:1px solid var(--border2);border-radius:var(--radius);cursor:pointer;transition:all .2s;}
 .btn-outline:hover{border-color:var(--gold);color:var(--gold);}
 
+/* HERO */
 .hero{min-height:80vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7rem 2rem 4rem;text-align:center;position:relative;}
 .glow{position:absolute;border-radius:50%;pointer-events:none;}
 .g1{top:15%;left:50%;transform:translateX(-50%);width:600px;height:600px;background:radial-gradient(circle,rgba(201,168,76,.08) 0%,transparent 70%);}
@@ -56,39 +57,77 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:cen
 .form-wrap{max-width:980px;margin:0 auto;padding:0 1.5rem 4rem;}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1.2rem;}
 .card-hd{display:flex;align-items:center;gap:.7rem;margin-bottom:1rem;}
-.card-ico{width:34px;height:34px;border-radius:9px;background:var(--gold-dim);border:1px solid rgba(201,168,76,.2);display:flex;align-items:center;justify-content:center;}
+.card-ico{width:34px;height:34px;border-radius:9px;background:var(--gold-dim);border:1px solid rgba(201,168,76,.2);display:flex;align-items:center;justify-content:center;font-size:15px;}
+.card-ttl{font-weight:700;font-size:.9rem;}
+.card-sub{font-size:.72rem;color:var(--text2);margin-top:.15rem;}
+.g2c{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+@media(max-width:640px){.g2c{grid-template-columns:1fr;}}
+
+/* TABS DE MODO */
 .mode-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;}
-.mode-tab{padding:.8rem;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text2);font-weight:600;cursor:pointer;text-align:center;}
+.mode-tab{padding:.8rem;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text2);font-weight:600;cursor:pointer;text-align:center;font-family:'Syne',sans-serif;font-size:.82rem;transition:all .2s;}
 .mode-tab.active{background:var(--gold-dim);border-color:rgba(201,168,76,.35);color:var(--gold);}
-.tipo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.7rem;}
-.tipo-card{padding:1rem;background:transparent;border:1px solid var(--border);border-radius:12px;cursor:pointer;text-align:center;}
-.tipo-card.active{background:var(--gold-dim);border-color:rgba(201,168,76,.35);}
-.tipo-card.active .tn{color:var(--gold);}
+.mode-tab:hover:not(.active){border-color:var(--border2);color:var(--text);}
+
+/* TIPO CARDS */
+.tipo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem;}
+@media(max-width:640px){.tipo-grid{grid-template-columns:repeat(2,1fr);}}
+.tipo-card{padding:.9rem .7rem;background:transparent;border:1px solid var(--border);border-radius:12px;cursor:pointer;text-align:center;font-size:.78rem;font-weight:600;color:var(--text2);transition:all .2s;line-height:1.4;}
+.tipo-card.active{background:var(--gold-dim);border-color:rgba(201,168,76,.35);color:var(--gold);}
+.tipo-card:hover:not(.active){border-color:var(--border2);color:var(--text);}
+
+/* CHIPS DE NORMA */
 .chips{display:flex;flex-wrap:wrap;gap:.5rem;}
-.chip{padding:.35rem 1rem;background:transparent;border:1px solid var(--border);border-radius:100px;font-size:.75rem;font-weight:700;cursor:pointer;}
+.chip{padding:.35rem .9rem;background:transparent;border:1px solid var(--border);border-radius:100px;font-size:.73rem;font-weight:700;cursor:pointer;transition:all .2s;color:var(--text2);font-family:'JetBrains Mono',monospace;}
 .chip.active{background:var(--gold-dim);border-color:rgba(201,168,76,.4);color:var(--gold);}
-input,select,textarea{width:100%;padding:.75rem;background:var(--bg);border:1px solid var(--border);border-radius:10px;font-family:'Syne',sans-serif;font-size:.88rem;color:var(--text);outline:none;}
+.chip:hover:not(.active){border-color:var(--border2);color:var(--text);}
+.norma-desc{font-size:.68rem;color:var(--text3);margin-top:.6rem;padding:.5rem .8rem;background:var(--surface2);border-radius:8px;border-left:2px solid var(--gold);font-family:'JetBrains Mono',monospace;line-height:1.5;}
+
+/* INPUTS */
+input,select,textarea{width:100%;padding:.75rem;background:var(--bg);border:1px solid var(--border);border-radius:10px;font-family:'Syne',sans-serif;font-size:.88rem;color:var(--text);outline:none;transition:border-color .2s;}
 input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.5);}
-.btn-gen{width:100%;padding:1.1rem;background:linear-gradient(135deg,var(--gold) 0%,#9a6e1a 100%);color:#000;border:none;border-radius:var(--radius);font-weight:800;cursor:pointer;margin-top:1rem;}
+input::placeholder,textarea::placeholder{color:var(--text3);}
+
+/* BOTÓN GENERAR */
+.btn-gen{width:100%;padding:1.1rem;background:linear-gradient(135deg,var(--gold) 0%,#9a6e1a 100%);color:#000;border:none;border-radius:var(--radius);font-weight:800;cursor:pointer;margin-top:1rem;font-family:'Syne',sans-serif;font-size:1rem;letter-spacing:.03em;transition:all .2s;}
+.btn-gen:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 36px rgba(201,168,76,.4);}
+.btn-gen:disabled{opacity:.6;cursor:not-allowed;transform:none;}
 
 /* PROGRESS */
-.progress-container{background:var(--surface2);border-radius:12px;padding:1rem;margin-bottom:1rem;}
-.progress-steps{display:flex;justify-content:space-between;margin-bottom:1rem;}
-.progress-step{flex:1;text-align:center;font-size:.7rem;color:var(--text3);position:relative;}
-.progress-step.active{color:var(--gold);font-weight:600;}
-.progress-step.completed{color:var(--green);}
-.progress-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
-.progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));width:0%;transition:width .3s;}
+.progress-container{background:var(--surface2);border-radius:12px;padding:1rem;margin-bottom:1rem;border:1px solid var(--border);}
+.progress-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:.8rem;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));width:0%;transition:width .4s ease;}
+
+/* CHIPS DE SECCIÓN */
+.seccion-chips{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.8rem;}
+.sec-chip{padding:.22rem .7rem;border-radius:100px;font-size:.68rem;font-weight:700;border:1px solid var(--border);color:var(--text3);background:transparent;transition:all .3s;font-family:'JetBrains Mono',monospace;}
 
 /* EDITOR */
 #editorPanel{display:none;margin-top:1.5rem;}
 .editor-tabs{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem;}
-.editor-tab{padding:.5rem 1rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:.8rem;}
+.editor-tab{padding:.45rem .9rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:.78rem;font-weight:600;color:var(--text2);transition:all .2s;font-family:'Syne',sans-serif;}
 .editor-tab.active{background:var(--gold-dim);border-color:var(--gold);color:var(--gold);}
-#editorTexto{width:100%;padding:1rem;background:var(--bg);border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:monospace;min-height:400px;resize:vertical;}
+.editor-tab:hover:not(.active){border-color:var(--border2);color:var(--text);}
+#editorTexto{width:100%;padding:1rem;background:var(--bg);border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.82rem;min-height:420px;resize:vertical;line-height:1.7;}
+.editor-actions{display:flex;gap:.8rem;margin-top:1rem;flex-wrap:wrap;}
+.editor-actions button{flex:1;min-width:140px;}
+
+/* TOOLTIP DE NORMA */
+.norma-tooltip{display:none;position:absolute;z-index:200;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:.8rem;font-size:.72rem;color:var(--text2);max-width:280px;line-height:1.5;font-family:'JetBrains Mono',monospace;}
+
+/* BADGE NUEVO */
+.badge-new{display:inline-block;font-size:.55rem;background:var(--gold);color:#000;padding:.1rem .4rem;border-radius:4px;font-weight:800;margin-left:.3rem;vertical-align:middle;}
+
+/* REFS TABS */
+.ref-tab{flex:1;padding:.55rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:.78rem;font-weight:600;color:var(--text2);transition:all .2s;text-align:center;font-family:'Syne',sans-serif;}
+.ref-tab.active{background:var(--gold-dim);border-color:rgba(201,168,76,.4);color:var(--gold);}
 
 footer{text-align:center;padding:2rem;border-top:1px solid var(--border);font-size:.78rem;color:var(--text3);}
-.hidden{display:none;}
+.hidden{display:none!important;}
+
+/* Autor row */
+.autor-row{display:grid;grid-template-columns:1fr 1fr auto;gap:.5rem;margin-bottom:.5rem;align-items:center;}
+.autor-row .btn-remove{padding:.5rem .7rem;background:rgba(224,92,92,.1);border:1px solid rgba(224,92,92,.3);color:var(--red);border-radius:8px;cursor:pointer;font-size:.8rem;font-family:'Syne',sans-serif;}
 </style>
 </head>
 <body>
@@ -103,6 +142,7 @@ footer{text-align:center;padding:2rem;border-top:1px solid var(--border);font-si
   </a>
   <div style="display:flex;align-items:center;gap:1rem;">
     <span class="nav-badge">DeepSeek V3</span>
+    <span class="nav-badge" style="color:var(--green);border-color:rgba(86,196,137,.3);background:rgba(86,196,137,.1);">v2.0</span>
     <a href="#generar" class="btn-gold" style="padding:.5rem 1.2rem;font-size:.8rem;">Generar informe ↓</a>
   </div>
 </nav>
@@ -113,23 +153,22 @@ footer{text-align:center;padding:2rem;border-top:1px solid var(--border);font-si
   <div class="hero-eyebrow">⚡ Más que IA - Informes estructurados listos para entregar</div>
   <h1 class="hero-title">Informes académicos<br><em>de nivel profesional</em></h1>
   <p class="hero-sub">Escribe un tema y la IA genera un informe completo con portada, índice, marco teórico, conclusiones y referencias — listo para editar y descargar en PDF o Word.</p>
-  
-  <!-- COMPARATIVA VISUAL -->
+
   <div class="comparison">
     <div class="comp-card comp-bad">
-      <p style="color:var(--red); font-size:.8rem;">❌ Usar ChatGPT</p>
-      <p style="font-size:.7rem; color:var(--text2);">Texto plano sin estructura. Tienes que formatear todo manualmente.</p>
+      <p style="color:var(--red);font-size:.8rem;">❌ Usar ChatGPT</p>
+      <p style="font-size:.7rem;color:var(--text2);">Texto plano sin estructura. Tienes que formatear todo manualmente.</p>
     </div>
     <div class="comp-card comp-good">
-      <p style="color:var(--green); font-size:.8rem;">✅ Academic Report Pro</p>
-      <p style="font-size:.7rem; color:var(--text2);">Informe listo con portada, índice, secciones y referencias. Solo descargas.</p>
+      <p style="color:var(--green);font-size:.8rem;">✅ Academic Report Pro</p>
+      <p style="font-size:.7rem;color:var(--text2);">Informe listo con portada, índice, secciones y referencias correctas.</p>
     </div>
   </div>
-  
+
   <div class="hero-stats">
     <div class="stat"><span class="stat-num">8</span><span class="stat-lbl">Normas</span></div>
-    <div class="stat"><span class="stat-num">4</span><span class="stat-lbl">Tipos</span></div>
-    <div class="stat"><span class="stat-num">3</span><span class="stat-lbl">Modos</span></div>
+    <div class="stat"><span class="stat-num">6</span><span class="stat-lbl">Tipos</span></div>
+    <div class="stat"><span class="stat-num">8</span><span class="stat-lbl">Secciones</span></div>
     <div class="stat"><span class="stat-num">PDF+Word</span><span class="stat-lbl">Descarga</span></div>
   </div>
 </section>
@@ -137,130 +176,152 @@ footer{text-align:center;padding:2rem;border-top:1px solid var(--border);font-si
 <section class="form-wrap" id="generar">
   <div style="text-align:center;margin-bottom:2rem;">
     <span class="hero-eyebrow" style="display:inline-flex;">✨ EJEMPLO REAL</span>
-    <p style="color:var(--gold); font-size:.9rem;">"El impacto de las inteligencias artificiales en Colombia - Análisis completo con datos 2023-2024"</p>
-    <div style="display:flex; gap:1rem; justify-content:center; margin-top:.5rem;">
-      <span style="font-size:.7rem; color:var(--text2);">📄 8 secciones</span>
-      <span style="font-size:.7rem; color:var(--text2);">📊 Con tablas</span>
-      <span style="font-size:.7rem; color:var(--text2);">📚 6 referencias</span>
+    <p style="color:var(--gold);font-size:.9rem;">"El impacto de las inteligencias artificiales en Colombia — Análisis completo con datos 2023-2024"</p>
+    <div style="display:flex;gap:1rem;justify-content:center;margin-top:.5rem;flex-wrap:wrap;">
+      <span style="font-size:.7rem;color:var(--text2);">📄 8 secciones completas</span>
+      <span style="font-size:.7rem;color:var(--text2);">📐 Norma aplicada correctamente</span>
+      <span style="font-size:.7rem;color:var(--text2);">📚 10 referencias reales</span>
     </div>
   </div>
 
-  <form id="reportForm" onsubmit="return false;">
-    
-    <!-- PASOS VISUALES -->
-    <div class="progress-container" id="progressContainer" style="display:none;">
-      <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.8rem;" id="seccionesStatus"></div>
-      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-      <p id="progressMessage" style="font-size:.75rem;color:var(--text2);margin-top:.6rem;text-align:center;min-height:1.2em;"></p>
+  <!-- PROGRESS BAR -->
+  <div class="progress-container" id="progressContainer" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;">
+      <span style="font-size:.78rem;font-weight:700;color:var(--gold);">Generando informe...</span>
+      <span id="progressCount" style="font-size:.7rem;color:var(--text2);font-family:'JetBrains Mono',monospace;"></span>
     </div>
+    <div class="seccion-chips" id="seccionesStatus"></div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <p id="progressMessage" style="font-size:.73rem;color:var(--text2);margin-top:.5rem;text-align:center;min-height:1.2em;font-family:'JetBrains Mono',monospace;"></p>
+  </div>
 
-    <div class="g2c" style="margin-bottom:1.2rem;">
-      <div class="card">
-        <div class="card-hd"><div class="card-ico">⚙️</div><div><div class="card-ttl">Modo de generación</div></div></div>
-        <div class="mode-tabs" id="modoTabs">
-          <button type="button" class="mode-tab active" data-modo="rapido">⚡ Rápido</button>
-          <button type="button" class="mode-tab" data-modo="automatico">🔄 Automático</button>
-          <button type="button" class="mode-tab" data-modo="manual">✏️ Manual</button>
-        </div>
-        <p id="modoDesc" style="font-size:.7rem; color:var(--text2); margin-top:.8rem;">Solo escribe el tema y la IA genera todo el informe automáticamente.</p>
-      </div>
-      <div class="card">
-        <div class="card-hd"><div class="card-ico">🎓</div><div><div class="card-ttl">Nivel educativo</div></div></div>
-        <select id="nivel">
-          <option value="colegio">🏫 Colegio / Secundaria</option>
-          <option value="tecnico">📚 Técnico / Pregrado</option>
-          <option value="universitario" selected>🎓 Universitario / Avanzado</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="g2c" style="margin-bottom:1.2rem;">
-      <div class="card">
-        <div class="card-hd"><div class="card-ico">📋</div><div><div class="card-ttl">Tipo de informe</div></div></div>
-        <div class="tipo-grid" id="tipoGrid">
-          <div class="tipo-card active" data-tipo="academico">📄 Académico</div>
-          <div class="tipo-card" data-tipo="laboratorio">🔬 Laboratorio</div>
-          <div class="tipo-card" data-tipo="ejecutivo">💼 Ejecutivo</div>
-          <div class="tipo-card" data-tipo="tesis">🎓 Tesis</div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-hd"><div class="card-ico">📐</div><div><div class="card-ttl">Norma de citación</div></div></div>
-        <div class="chips" id="normaChips">
-          <div class="chip active" data-norma="APA 7">APA 7</div>
-          <div class="chip" data-norma="APA 6">APA 6</div>
-          <div class="chip" data-norma="ICONTEC">ICONTEC</div>
-          <div class="chip" data-norma="IEEE">IEEE</div>
-        </div>
-      </div>
-    </div>
-
+  <!-- MODO -->
+  <div class="g2c" style="margin-bottom:1.2rem;">
     <div class="card">
-      <div class="card-hd"><div class="card-ico">💡</div><div><div class="card-ttl">Tema del informe</div></div></div>
-      <input type="text" id="tema" placeholder="Ej: Impacto de la inteligencia artificial en la educación superior" required/>
-      <div id="textoUsuarioWrap" class="hidden" style="margin-top:1rem;">
-        <textarea id="textoUsuario" rows="4" placeholder="Pega aquí tus apuntes o información adicional..."></textarea>
+      <div class="card-hd"><div class="card-ico">⚙️</div><div><div class="card-ttl">Modo de generación</div></div></div>
+      <div class="mode-tabs" id="modoTabs">
+        <button type="button" class="mode-tab active" data-modo="rapido">⚡ Rápido</button>
+        <button type="button" class="mode-tab" data-modo="automatico">🔄 Con apuntes</button>
+        <button type="button" class="mode-tab" data-modo="manual">✏️ Manual</button>
       </div>
+      <p id="modoDesc" style="font-size:.7rem;color:var(--text2);margin-top:.8rem;line-height:1.5;">Solo escribe el tema y la IA genera todo el informe automáticamente.</p>
     </div>
-
     <div class="card">
-      <div class="card-hd"><div class="card-ico">🏫</div><div><div class="card-ttl">Datos académicos</div></div></div>
-      <div class="g2c">
-        <input type="text" id="asignatura" placeholder="Asignatura">
-        <input type="text" id="profesor" placeholder="Docente">
-        <input type="text" id="institucion" placeholder="Institución">
-        <input type="text" id="ciudad" placeholder="Ciudad">
-        <input type="text" id="nombre" placeholder="Tu nombre">
-      </div>
+      <div class="card-hd"><div class="card-ico">🎓</div><div><div class="card-ttl">Nivel educativo</div></div></div>
+      <select id="nivel">
+        <option value="colegio">🏫 Colegio / Secundaria</option>
+        <option value="tecnico">📚 Técnico / Pregrado</option>
+        <option value="universitario" selected>🎓 Universitario / Avanzado</option>
+        <option value="posgrado">🔬 Posgrado / Maestría / Doctorado</option>
+      </select>
     </div>
+  </div>
 
-    <div class="card">
-      <div class="card-hd"><div class="card-ico">👤</div><div><div class="card-ttl">Autores adicionales</div></div></div>
-      <div id="autoresContainer"></div>
-      <button type="button" class="btn-outline" onclick="agregarAutor()" style="font-size:.8rem; margin-top:.5rem;">+ Agregar autor</button>
+  <!-- TIPO DE INFORME -->
+  <div class="card" style="margin-bottom:1.2rem;">
+    <div class="card-hd"><div class="card-ico">📋</div><div><div class="card-ttl">Tipo de informe</div><div class="card-sub">Cada tipo ajusta el contenido y la estructura</div></div></div>
+    <div class="tipo-grid" id="tipoGrid">
+      <div class="tipo-card active" data-tipo="academico">📄<br>Académico</div>
+      <div class="tipo-card" data-tipo="laboratorio">🔬<br>Laboratorio</div>
+      <div class="tipo-card" data-tipo="ejecutivo">💼<br>Ejecutivo</div>
+      <div class="tipo-card" data-tipo="tesis">🎓<br>Tesis</div>
+      <div class="tipo-card" data-tipo="pasantia">🏢<br>Pasantía <span class="badge-new">NUEVO</span></div>
+      <div class="tipo-card" data-tipo="proyecto">📊<br>Proyecto <span class="badge-new">NUEVO</span></div>
     </div>
+  </div>
 
-    <div class="card">
-      <div class="card-hd"><div class="card-ico">📚</div><div><div class="card-ttl">Referencias</div></div></div>
-      <div class="refs-tabs" style="display:flex; gap:.5rem; margin-bottom:1rem;">
-        <button type="button" class="ref-tab active" data-refs="auto" style="flex:1; padding:.5rem; background:var(--surface2); border-radius:8px; cursor:pointer;">🤖 Automático</button>
-        <button type="button" class="ref-tab" data-refs="manual" style="flex:1; padding:.5rem; background:var(--surface2); border-radius:8px; cursor:pointer;">✍️ Manual</button>
-      </div>
-      <div id="refsManualContainer" class="hidden">
-        <textarea id="referenciasManual" rows="3" placeholder="Escribe tus referencias (una por línea)"></textarea>
-      </div>
+  <!-- NORMA DE CITACIÓN -->
+  <div class="card" style="margin-bottom:1.2rem;">
+    <div class="card-hd"><div class="card-ico">📐</div><div><div class="card-ttl">Norma de citación</div><div class="card-sub">Aplicada correctamente en cuerpo del texto y referencias</div></div></div>
+    <div class="chips" id="normaChips">
+      <div class="chip active" data-norma="APA 7">APA 7</div>
+      <div class="chip" data-norma="APA 6">APA 6</div>
+      <div class="chip" data-norma="ICONTEC">ICONTEC</div>
+      <div class="chip" data-norma="IEEE">IEEE</div>
+      <div class="chip" data-norma="Vancouver">Vancouver <span class="badge-new">NUEVO</span></div>
+      <div class="chip" data-norma="Chicago">Chicago <span class="badge-new">NUEVO</span></div>
+      <div class="chip" data-norma="MLA">MLA <span class="badge-new">NUEVO</span></div>
+      <div class="chip" data-norma="Harvard">Harvard <span class="badge-new">NUEVO</span></div>
     </div>
+    <div class="norma-desc" id="normaDesc">
+      <strong>APA 7ª edición</strong> — Citas en texto: (Autor, año). Referencias con DOI. Más de 3 autores: et al. Orden alfabético.
+    </div>
+  </div>
 
-    <button type="button" class="btn-gen" id="generarBtn">🚀 GENERAR INFORME</button>
-  </form>
+  <!-- TEMA -->
+  <div class="card" style="margin-bottom:1.2rem;">
+    <div class="card-hd"><div class="card-ico">💡</div><div><div class="card-ttl">Tema del informe</div></div></div>
+    <input type="text" id="tema" placeholder="Ej: Impacto de la inteligencia artificial en la educación superior en Colombia"/>
+    <div id="textoUsuarioWrap" class="hidden" style="margin-top:1rem;">
+      <label style="font-size:.75rem;color:var(--text2);display:block;margin-bottom:.4rem;">📎 Pega tus apuntes o información adicional:</label>
+      <textarea id="textoUsuario" rows="5" placeholder="La IA usará esta información como base para desarrollar el informe..."></textarea>
+    </div>
+  </div>
+
+  <!-- DATOS ACADÉMICOS -->
+  <div class="card" style="margin-bottom:1.2rem;">
+    <div class="card-hd"><div class="card-ico">🏫</div><div><div class="card-ttl">Datos académicos</div><div class="card-sub">Aparecen en la portada del informe</div></div></div>
+    <div class="g2c">
+      <input type="text" id="nombre" placeholder="Tu nombre completo">
+      <input type="text" id="asignatura" placeholder="Asignatura / Materia">
+      <input type="text" id="profesor" placeholder="Nombre del docente">
+      <input type="text" id="institucion" placeholder="Institución / Universidad">
+      <input type="text" id="ciudad" placeholder="Ciudad">
+      <input type="date" id="fecha" title="Fecha del informe">
+    </div>
+  </div>
+
+  <!-- AUTORES ADICIONALES -->
+  <div class="card" style="margin-bottom:1.2rem;">
+    <div class="card-hd"><div class="card-ico">👥</div><div><div class="card-ttl">Autores adicionales</div><div class="card-sub">Para trabajos en grupo</div></div></div>
+    <div id="autoresContainer"></div>
+    <button type="button" class="btn-outline" onclick="agregarAutor()" style="font-size:.8rem;margin-top:.5rem;padding:.5rem 1rem;">+ Agregar coautor</button>
+  </div>
+
+  <!-- REFERENCIAS -->
+  <div class="card" style="margin-bottom:1.2rem;">
+    <div class="card-hd"><div class="card-ico">📚</div><div><div class="card-ttl">Referencias bibliográficas</div></div></div>
+    <div style="display:flex;gap:.5rem;margin-bottom:1rem;">
+      <button type="button" class="ref-tab active" data-refs="auto">🤖 Automático (IA genera 8-10 refs)</button>
+      <button type="button" class="ref-tab" data-refs="manual">✍️ Incluir mis referencias</button>
+    </div>
+    <div id="refsManualContainer" class="hidden">
+      <label style="font-size:.75rem;color:var(--text2);display:block;margin-bottom:.4rem;">Tus referencias (una por línea). La IA las incluirá y complementará:</label>
+      <textarea id="referenciasManual" rows="4" placeholder="Gaviria, C. (2023). Educación y tecnología en Colombia. Bogotá: Uniandes.&#10;Ministerio de Educación. (2022). Informe anual TIC..."></textarea>
+    </div>
+  </div>
+
+  <!-- BOTÓN GENERAR -->
+  <button type="button" class="btn-gen" id="generarBtn">🚀 GENERAR INFORME COMPLETO</button>
 
   <!-- EDITOR -->
-  <div id="editorPanel" class="card">
-    <div class="card-hd"><div class="card-ico">✏️</div><div><div class="card-ttl">Edita tu informe</div></div></div>
+  <div id="editorPanel" class="card" style="margin-top:1.5rem;">
+    <div class="card-hd"><div class="card-ico">✏️</div><div><div class="card-ttl">Editor de secciones</div><div class="card-sub">Edita el contenido directamente antes de descargar</div></div></div>
     <div class="editor-tabs" id="editorTabs"></div>
-    <textarea id="editorTexto" rows="12"></textarea>
-    <div style="display:flex; gap:1rem; margin-top:1rem; flex-wrap:wrap;">
-      <button id="exportarPDFBtn" class="btn-gold" style="flex:1;">📄 Descargar PDF</button>
-      <button id="exportarWordBtn" class="btn-outline" style="flex:1;">📝 Descargar Word</button>
-      <button id="regenerarSeccionBtn" class="btn-outline" style="flex:1;border-color:rgba(201,168,76,.3);color:var(--gold);">🔄 Regenerar sección</button>
+    <textarea id="editorTexto" rows="16" spellcheck="false"></textarea>
+    <div class="editor-actions">
+      <button id="exportarPDFBtn" class="btn-gold">📄 Descargar PDF</button>
+      <button id="exportarWordBtn" class="btn-outline">📝 Descargar Word</button>
+      <button id="regenerarSeccionBtn" class="btn-outline" style="border-color:rgba(201,168,76,.3);color:var(--gold);">🔄 Regenerar sección</button>
     </div>
+    <p style="font-size:.68rem;color:var(--text3);margin-top:.8rem;text-align:center;">Los cambios que hagas en el editor se incluirán en el PDF y Word descargados.</p>
   </div>
 </section>
 </main>
 
 <footer>
-  <strong>Academic Report Pro</strong> · Generador profesional de informes con IA · 8 normas · 4 tipos · PDF + Word
+  <strong>Academic Report Pro v2.0</strong> · 8 normas · 6 tipos de informe · PDF + Word · Powered by DeepSeek V3
 </footer>
 
 <script>
 // ========== CURSOR ==========
-const cur=document.getElementById('cursor'),curR=document.getElementById('cursor-ring');
-let mx=0,my=0,rx=0,ry=0;
-document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px';});
-(function anim(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;curR.style.left=rx+'px';curR.style.top=ry+'px';requestAnimationFrame(anim);})();
-document.querySelectorAll('button,.chip,.tipo-card,.mode-tab').forEach(el=>{
-  el.addEventListener('mouseenter',()=>{cur.style.width='16px';cur.style.height='16px';curR.style.width='52px';curR.style.height='52px';});
-  el.addEventListener('mouseleave',()=>{cur.style.width='10px';cur.style.height='10px';curR.style.width='36px';curR.style.height='36px';});
+const cur = document.getElementById('cursor'), curR = document.getElementById('cursor-ring');
+let mx = 0, my = 0, rx = 0, ry = 0;
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; cur.style.left = mx + 'px'; cur.style.top = my + 'px'; });
+(function anim() { rx += (mx - rx) * .12; ry += (my - ry) * .12; curR.style.left = rx + 'px'; curR.style.top = ry + 'px'; requestAnimationFrame(anim); })();
+document.querySelectorAll('button,.chip,.tipo-card,.mode-tab,.ref-tab,.editor-tab').forEach(el => {
+  el.addEventListener('mouseenter', () => { cur.style.width = '16px'; cur.style.height = '16px'; curR.style.width = '52px'; curR.style.height = '52px'; });
+  el.addEventListener('mouseleave', () => { cur.style.width = '10px'; cur.style.height = '10px'; curR.style.width = '36px'; curR.style.height = '36px'; });
 });
 
 // ========== ESTADO ==========
@@ -271,7 +332,19 @@ let refsModo = 'auto';
 let seccionesGeneradas = {};
 let datosUsuario = {};
 
-// Modo
+// ========== DESCRIPCIONES DE NORMAS ==========
+const NORMAS_DESC = {
+  'APA 7':    '<strong>APA 7ª edición</strong> — Citas en texto: (Autor, año). Más de 3 autores: et al. Referencias con DOI obligatorio. Orden alfabético.',
+  'APA 6':    '<strong>APA 6ª edición</strong> — Citas: (Autor, año, p. XX). 3-5 autores: todos la primera vez, luego et al. Referencias con "Recuperado de".',
+  'ICONTEC':  '<strong>ICONTEC (NTC 5613)</strong> — Citas con notas al pie numeradas o autor-año. Referencias en orden de aparición. Apellido en MAYÚSCULA.',
+  'IEEE':     '<strong>IEEE</strong> — Citas con números entre corchetes [1] en orden de aparición. Referencias numeradas, no alfabéticas. Estándar en ingeniería.',
+  'Vancouver':'<strong>Vancouver</strong> — Sistema numérico por orden de aparición. Usado en ciencias de la salud y medicina. Hasta 6 autores, luego et al.',
+  'Chicago':  '<strong>Chicago 17ª ed.</strong> — Sistema autor-fecha: (Apellido año, página). Bibliografía en orden alfabético. Muy usado en humanidades.',
+  'MLA':      '<strong>MLA 9ª edición</strong> — Citas: (Apellido página). "Works Cited" al final. Sin coma entre autor y número de página. Literatura y humanidades.',
+  'Harvard':  '<strong>Harvard</strong> — Citas: (Apellido año) o (Apellido año, p. XX). Referencias alfabéticas. Ampliamente usado en ciencias sociales y UK.'
+};
+
+// ========== MODO ==========
 document.querySelectorAll('#modoTabs .mode-tab').forEach(btn => {
   btn.onclick = () => {
     document.querySelectorAll('#modoTabs .mode-tab').forEach(b => b.classList.remove('active'));
@@ -280,12 +353,16 @@ document.querySelectorAll('#modoTabs .mode-tab').forEach(btn => {
     const wrap = document.getElementById('textoUsuarioWrap');
     if (modo !== 'rapido') wrap.classList.remove('hidden');
     else wrap.classList.add('hidden');
-    const desc = {rapido:'Solo escribe el tema y la IA genera todo el informe automáticamente.',automatico:'Pega tus apuntes y la IA los organiza en un informe profesional.',manual:'Escribe sección por sección y la IA mejora tu redacción.'};
+    const desc = {
+      rapido: 'Solo escribe el tema y la IA genera todo el informe automáticamente.',
+      automatico: 'Pega tus apuntes y la IA los organiza y desarrolla en un informe profesional.',
+      manual: 'Escribe información detallada y la IA la convierte en redacción académica formal.'
+    };
     document.getElementById('modoDesc').innerText = desc[modo];
   };
 });
 
-// Tipo
+// ========== TIPO ==========
 document.querySelectorAll('#tipoGrid .tipo-card').forEach(card => {
   card.onclick = () => {
     document.querySelectorAll('#tipoGrid .tipo-card').forEach(c => c.classList.remove('active'));
@@ -294,45 +371,48 @@ document.querySelectorAll('#tipoGrid .tipo-card').forEach(card => {
   };
 });
 
-// Norma
+// ========== NORMA ==========
 document.querySelectorAll('#normaChips .chip').forEach(chip => {
   chip.onclick = () => {
     document.querySelectorAll('#normaChips .chip').forEach(c => c.classList.remove('active'));
     chip.classList.add('active');
     normaActual = chip.dataset.norma;
+    document.getElementById('normaDesc').innerHTML = NORMAS_DESC[normaActual] || '';
   };
 });
 
-// Referencias
+// ========== REFERENCIAS ==========
 document.querySelectorAll('.ref-tab').forEach(tab => {
   tab.onclick = () => {
-    document.querySelectorAll('.ref-tab').forEach(t => t.style.background = 'var(--surface2)');
-    tab.style.background = 'var(--gold-dim)';
+    document.querySelectorAll('.ref-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
     refsModo = tab.dataset.refs;
     document.getElementById('refsManualContainer').classList.toggle('hidden', refsModo !== 'manual');
   };
 });
 
+// ========== AUTORES ==========
 function agregarAutor() {
   const container = document.getElementById('autoresContainer');
   const div = document.createElement('div');
-  div.className = 'g2c';
-  div.style.marginBottom = '.5rem';
-  div.innerHTML = `<input type="text" class="autor-nombre" placeholder="Nombre completo"><input type="text" class="autor-cargo" placeholder="Código/Cargo"><button class="btn-outline" onclick="this.parentElement.remove()" style="padding:.3rem; font-size:.7rem;">✕</button>`;
+  div.className = 'autor-row';
+  div.innerHTML = `<input type="text" class="autor-nombre" placeholder="Nombre del coautor"><input type="text" class="autor-cargo" placeholder="Código / Cargo"><button class="btn-remove" onclick="this.parentElement.remove()">✕</button>`;
   container.appendChild(div);
 }
 
 function getAutores() {
   const autores = [];
-  document.querySelectorAll('.autor-nombre').forEach((input, i) => {
+  const nombres = document.querySelectorAll('.autor-nombre');
+  const cargos = document.querySelectorAll('.autor-cargo');
+  nombres.forEach((input, i) => {
     if (input.value.trim()) {
-      autores.push({ nombre: input.value.trim(), cargo: document.querySelectorAll('.autor-cargo')[i]?.value.trim() || '' });
+      autores.push({ nombre: input.value.trim(), cargo: cargos[i]?.value.trim() || '' });
     }
   });
   return autores;
 }
 
-// ========== GENERACIÓN POR SECCIONES ==========
+// ========== SECCIONES INFO ==========
 const SECCIONES_INFO = [
   { clave: 'introduccion',    nombre: 'Introducción'    },
   { clave: 'objetivos',       nombre: 'Objetivos'       },
@@ -350,8 +430,8 @@ function iniciarIndicadores() {
   SECCIONES_INFO.forEach(s => {
     const chip = document.createElement('span');
     chip.id = 'chip-' + s.clave;
+    chip.className = 'sec-chip';
     chip.textContent = s.nombre;
-    chip.style.cssText = 'padding:.25rem .75rem;border-radius:100px;font-size:.7rem;font-weight:700;border:1px solid var(--border);color:var(--text3);background:transparent;transition:all .3s;';
     cont.appendChild(chip);
   });
 }
@@ -378,24 +458,31 @@ function marcarChip(clave, estado) {
   }
 }
 
+// ========== GENERAR INFORME ==========
 document.getElementById('generarBtn').onclick = async () => {
   const tema = document.getElementById('tema').value.trim();
-  if (!tema) { Swal.fire('Error', 'Escribe el tema del informe', 'error'); return; }
+  if (!tema) { Swal.fire({ icon: 'warning', title: 'Falta el tema', text: 'Por favor escribe el tema del informe.', confirmButtonColor: '#c9a84c' }); return; }
 
   const autores = getAutores();
   const nombrePrincipal = document.getElementById('nombre').value.trim() || (autores[0]?.nombre || 'Estudiante');
+  const refsManuales = refsModo === 'manual' ? (document.getElementById('referenciasManual').value.trim()) : '';
+
   const payload = {
     tema,
     nivel: document.getElementById('nivel').value,
     tipo_informe: tipoActual,
     norma: normaActual,
-    texto_usuario: document.getElementById('textoUsuario').value
+    texto_usuario: document.getElementById('textoUsuario').value,
+    refs_manuales: refsManuales,
+    autores: [{ nombre: nombrePrincipal }, ...autores]
   };
 
-  document.getElementById('generarBtn').disabled = true;
-  document.getElementById('generarBtn').innerHTML = '⏳ Generando informe...';
+  const btn = document.getElementById('generarBtn');
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Generando...';
   document.getElementById('progressContainer').style.display = 'block';
   document.getElementById('progressFill').style.width = '0%';
+  document.getElementById('editorPanel').style.display = 'none';
   iniciarIndicadores();
 
   seccionesGeneradas = {};
@@ -405,6 +492,7 @@ document.getElementById('generarBtn').onclick = async () => {
     const { clave, nombre } = SECCIONES_INFO[i];
     marcarChip(clave, 'generando');
     document.getElementById('progressMessage').textContent = `Generando: ${nombre} (${i + 1} de ${SECCIONES_INFO.length})...`;
+    document.getElementById('progressCount').textContent = `${i + 1}/${SECCIONES_INFO.length}`;
     document.getElementById('progressFill').style.width = ((i / SECCIONES_INFO.length) * 100) + '%';
 
     try {
@@ -430,36 +518,40 @@ document.getElementById('generarBtn').onclick = async () => {
   }
 
   document.getElementById('progressFill').style.width = '100%';
+  document.getElementById('progressCount').textContent = `${SECCIONES_INFO.length}/${SECCIONES_INFO.length}`;
   document.getElementById('progressMessage').textContent = errores === 0
-    ? '¡Informe completo generado!'
-    : `Informe generado con ${errores} sección(es) con error.`;
+    ? '✅ ¡Informe completo generado!'
+    : `⚠️ Informe generado con ${errores} sección(es) con error. Puedes regenerarlas desde el editor.`;
 
+  // CORRECCIÓN: Incluir autores_extra correctamente
   datosUsuario = {
     nombre: nombrePrincipal,
+    autores_extra: autores,
     tema,
     asignatura: document.getElementById('asignatura').value,
     profesor: document.getElementById('profesor').value,
     institucion: document.getElementById('institucion').value,
     ciudad: document.getElementById('ciudad').value,
-    fecha: new Date().toISOString().split('T')[0],
+    fecha: document.getElementById('fecha').value || new Date().toLocaleDateString('es-CO'),
     norma: normaActual
   };
 
   setTimeout(() => {
     document.getElementById('progressContainer').style.display = 'none';
     mostrarEditor();
-  }, 1000);
+  }, 1200);
 
   if (errores === 0) {
-    Swal.fire({ icon: 'success', title: '¡Informe listo!', text: 'Todas las secciones generadas correctamente.', timer: 2500, showConfirmButton: false });
+    Swal.fire({ icon: 'success', title: '¡Informe listo!', text: 'Todas las secciones generadas correctamente.', timer: 2500, showConfirmButton: false, confirmButtonColor: '#c9a84c' });
   } else {
-    Swal.fire({ icon: 'warning', title: 'Casi listo', text: `${SECCIONES_INFO.length - errores} de ${SECCIONES_INFO.length} secciones generadas. Puedes regenerar las que fallaron desde el editor.` });
+    Swal.fire({ icon: 'warning', title: 'Casi listo', text: `${SECCIONES_INFO.length - errores} de ${SECCIONES_INFO.length} secciones generadas. Puedes regenerar las que fallaron.`, confirmButtonColor: '#c9a84c' });
   }
 
-  document.getElementById('generarBtn').disabled = false;
-  document.getElementById('generarBtn').innerHTML = '🚀 GENERAR INFORME';
+  btn.disabled = false;
+  btn.innerHTML = '🚀 GENERAR INFORME COMPLETO';
 };
 
+// ========== MOSTRAR EDITOR ==========
 function mostrarEditor() {
   const tabsDiv = document.getElementById('editorTabs');
   tabsDiv.innerHTML = '';
@@ -468,6 +560,12 @@ function mostrarEditor() {
     btn.textContent = s.nombre;
     btn.className = 'editor-tab' + (i === 0 ? ' active' : '');
     btn.onclick = () => {
+      // Guardar cambios del tab actual antes de cambiar
+      const activo = document.querySelector('.editor-tab.active');
+      if (activo) {
+        const idxActivo = Array.from(document.querySelectorAll('.editor-tab')).indexOf(activo);
+        if (idxActivo >= 0) seccionesGeneradas[SECCIONES_INFO[idxActivo].clave] = document.getElementById('editorTexto').value;
+      }
       document.querySelectorAll('.editor-tab').forEach(t => t.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById('editorTexto').value = seccionesGeneradas[s.clave] || '';
@@ -481,12 +579,16 @@ function mostrarEditor() {
 
 // ========== REGENERAR SECCIÓN ==========
 document.getElementById('regenerarSeccionBtn').onclick = async () => {
-  const indiceActivo = Array.from(document.querySelectorAll('.editor-tab')).findIndex(t => t.classList.contains('active'));
+  const tabs = Array.from(document.querySelectorAll('.editor-tab'));
+  const indiceActivo = tabs.findIndex(t => t.classList.contains('active'));
   if (indiceActivo === -1) return;
   const { clave, nombre } = SECCIONES_INFO[indiceActivo];
   const btn = document.getElementById('regenerarSeccionBtn');
   btn.disabled = true;
   btn.innerHTML = `⏳ Regenerando ${nombre}...`;
+
+  const refsManuales = refsModo === 'manual' ? (document.getElementById('referenciasManual').value.trim()) : '';
+
   try {
     const res = await fetch('/generar-seccion', {
       method: 'POST',
@@ -497,40 +599,87 @@ document.getElementById('regenerarSeccionBtn').onclick = async () => {
         nivel: document.getElementById('nivel').value,
         tipo_informe: tipoActual,
         norma: normaActual,
-        texto_usuario: document.getElementById('textoUsuario').value
+        texto_usuario: document.getElementById('textoUsuario').value,
+        refs_manuales: refsManuales
       })
     });
     const data = await res.json();
     if (data.success && data.contenido) {
       seccionesGeneradas[clave] = data.contenido;
       document.getElementById('editorTexto').value = data.contenido;
-      Swal.fire({ icon: 'success', title: 'Sección regenerada', text: `${nombre} actualizada.`, timer: 1800, showConfirmButton: false });
+      Swal.fire({ icon: 'success', title: 'Sección regenerada', text: `${nombre} actualizada correctamente.`, timer: 1800, showConfirmButton: false });
     } else {
       throw new Error(data.error || 'Error desconocido');
     }
   } catch (e) {
-    Swal.fire('Error', 'No se pudo regenerar: ' + e.message, 'error');
+    Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo regenerar: ' + e.message, confirmButtonColor: '#c9a84c' });
   } finally {
     btn.disabled = false;
     btn.innerHTML = '🔄 Regenerar sección';
   }
 };
 
-// ========== EXPORTAR ==========
+// ========== EXPORTAR — GUARDAR EDICIONES PRIMERO ==========
+function getSeccionesConEdicion() {
+  const copia = { ...seccionesGeneradas };
+  const tabs = Array.from(document.querySelectorAll('.editor-tab'));
+  const indiceActivo = tabs.findIndex(t => t.classList.contains('active'));
+  if (indiceActivo !== -1) {
+    copia[SECCIONES_INFO[indiceActivo].clave] = document.getElementById('editorTexto').value;
+  }
+  return copia;
+}
+
 document.getElementById('exportarPDFBtn').onclick = async () => {
-  const seccionesEditadas = { ...seccionesGeneradas };
-  const indiceActivo = Array.from(document.querySelectorAll('.editor-tab')).findIndex(t => t.classList.contains('active'));
-  if (indiceActivo !== -1) seccionesEditadas[SECCIONES_INFO[indiceActivo].clave] = document.getElementById('editorTexto').value;
-  const res = await fetch('/exportar-pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ secciones: seccionesEditadas, datos_usuario: datosUsuario }) });
-  const blob = await res.blob(); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `informe_${Date.now()}.pdf`; a.click(); URL.revokeObjectURL(url);
+  const btn = document.getElementById('exportarPDFBtn');
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Generando PDF...';
+  try {
+    const res = await fetch('/exportar-pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secciones: getSeccionesConEdicion(), datos_usuario: datosUsuario })
+    });
+    if (!res.ok) throw new Error('Error del servidor');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `informe_${Date.now()}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo generar el PDF: ' + e.message, confirmButtonColor: '#c9a84c' });
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '📄 Descargar PDF';
+  }
 };
 
 document.getElementById('exportarWordBtn').onclick = async () => {
-  const seccionesEditadas = { ...seccionesGeneradas };
-  const indiceActivo = Array.from(document.querySelectorAll('.editor-tab')).findIndex(t => t.classList.contains('active'));
-  if (indiceActivo !== -1) seccionesEditadas[SECCIONES_INFO[indiceActivo].clave] = document.getElementById('editorTexto').value;
-  const res = await fetch('/exportar-word', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ secciones: seccionesEditadas, datos_usuario: datosUsuario }) });
-  const blob = await res.blob(); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `informe_${Date.now()}.docx`; a.click(); URL.revokeObjectURL(url);
+  const btn = document.getElementById('exportarWordBtn');
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Generando Word...';
+  try {
+    const res = await fetch('/exportar-word', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secciones: getSeccionesConEdicion(), datos_usuario: datosUsuario })
+    });
+    if (!res.ok) throw new Error('Error del servidor');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `informe_${Date.now()}.docx`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo generar el Word: ' + e.message, confirmButtonColor: '#c9a84c' });
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '📝 Descargar Word';
+  }
 };
 </script>
 </body>
