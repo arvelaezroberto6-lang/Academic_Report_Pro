@@ -30,20 +30,24 @@ logger.info(f"🔑 API Key configurada: {'SÍ ✅' if DEEPSEEK_API_KEY else 'NO 
 logger.info("=" * 60)
 
 # ============================================================
-# FUNCIÓN PARA LLAMAR A DEEPSEEK
+# FUNCIÓN PARA LLAMAR A DEEPSEEK - CORREGIDA
 # ============================================================
-def llamar_deepseek(prompt):
+def llamar_deepseek(prompt, system_prompt=None, max_tokens=3000):
+    """Llama a DeepSeek API con soporte para system_prompt y max_tokens personalizados"""
     headers = {
         "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
         "Content-Type": "application/json"
     }
+    
+    messages = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role": "user", "content": prompt})
+    
     data = {
         "model": "deepseek-chat",
-        "messages": [
-            {"role": "system", "content": "Eres un asistente académico profesional. Generas informes estructurados en español."},
-            {"role": "user", "content": prompt}
-        ],
-        "max_tokens": 8000,
+        "messages": messages,
+        "max_tokens": max_tokens,
         "temperature": 0.7
     }
     try:
@@ -60,54 +64,6 @@ def llamar_deepseek(prompt):
     except Exception as e:
         logger.error(f"Error: {e}")
         return None
-
-# ============================================================
-# EXTRACCIÓN DE SECCIONES - VERSIÓN CORREGIDA
-# ============================================================
-def extraer_seccion(contenido, nombre):
-    """Extrae una sección del contenido - VERSIÓN CORREGIDA"""
-    
-    if not contenido:
-        return ""
-    
-    # Limpiar caracteres basura
-    contenido = contenido.encode('utf-8', 'ignore').decode('utf-8')
-    contenido = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', contenido)
-    
-    # Buscar el título en diferentes formatos
-    patrones_titulo = [
-        rf'\*\*{nombre}\*\*:?',
-        rf'\*\*{nombre}\*\*',
-        rf'### {nombre}',
-        rf'#{nombre}#',
-        rf'{nombre}',
-    ]
-    
-    for patron_titulo in patrones_titulo:
-        patron_seccion = rf'{patron_titulo}\s*(.*?)(?=\n\s*\*\*[A-ZÁÉÍÓÚÜÑ]|\n\s*\d+\.\s*\*\*|\Z)'
-        match = re.search(patron_seccion, contenido, re.DOTALL | re.IGNORECASE)
-        if match:
-            texto = match.group(1).strip()
-            if len(texto) > 100:
-                texto = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', texto)
-                texto = texto.replace('\n', '<br/>')
-                return texto
-    
-    # Búsqueda más simple
-    idx = contenido.upper().find(nombre.upper())
-    if idx != -1:
-        siguiente_match = re.search(r'\n\s*\*\*[A-ZÁÉÍÓÚÜÑ]|\n\s*\d+\.\s*\*\*', contenido[idx+len(nombre):])
-        if siguiente_match:
-            texto = contenido[idx+len(nombre):idx+len(nombre)+siguiente_match.start()].strip()
-        else:
-            texto = contenido[idx+len(nombre):].strip()
-        
-        if len(texto) > 100:
-            texto = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', texto)
-            texto = texto.replace('\n', '<br/>')
-            return texto
-    
-    return ""
 
 # ============================================================
 # PROMPTS DEDICADOS POR SECCIÓN
@@ -236,7 +192,6 @@ def generar_seccion(seccion, tema, info_extra, tipo_informe, norma, nivel):
     contenido = contenido.replace('\n', '<br/>')
     logger.info(f"Sección '{seccion}' generada: {len(contenido)} caracteres")
     return contenido
-
 
 # ============================================================
 # GENERAR INFORME COMPLETO (mantener para compatibilidad)
