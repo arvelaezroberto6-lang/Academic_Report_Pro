@@ -1,12 +1,10 @@
 from flask import Flask, render_template, request, jsonify, send_file
 from reportlab.lib.pagesizes import letter
-from reportlab.lib.units import inch, mm
-from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER, TA_LEFT
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, Table, TableStyle
+from reportlab.lib.units import inch
+from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
 from docx import Document
 from io import BytesIO
 import os
@@ -18,7 +16,7 @@ import re
 
 app = Flask(__name__)
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 os.makedirs('informes_generados', exist_ok=True)
@@ -27,7 +25,7 @@ DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
 DEEPSEEK_URL = "https://api.deepseek.com/v1/chat/completions"
 
 logger.info("=" * 60)
-logger.info("🚀 ACADEMIC REPORT PRO - VERSIÓN PROFESIONAL")
+logger.info("🚀 ACADEMIC REPORT PRO - VERSIÓN CON DISEÑO PREMIUM")
 logger.info(f"🔑 API Key configurada: {'SÍ ✅' if DEEPSEEK_API_KEY else 'NO ❌'}")
 logger.info("=" * 60)
 
@@ -62,58 +60,43 @@ def extraer_seccion(contenido, nombre):
     return ""
 
 def generar_pdf_profesional(datos_usuario, secciones):
-    """Genera un PDF con formato profesional tipo Word"""
+    """Genera PDF con formato profesional tipo Word"""
     
     nombre = datos_usuario.get('nombre', 'Estudiante')
-    tema = datos_usuario.get('tema', 'Tema de Investigación')
+    tema = datos_usuario.get('tema', 'Tema')
     asignatura = datos_usuario.get('asignatura', '')
     profesor = datos_usuario.get('profesor', '')
     institucion = datos_usuario.get('institucion', '')
+    ciudad = datos_usuario.get('ciudad', '')
     fecha = datos_usuario.get('fecha', datetime.now().strftime('%d/%m/%Y'))
     norma = datos_usuario.get('norma', 'APA 7')
     
     filename = f"informe_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}.pdf"
     filepath = os.path.join('informes_generados', filename)
     
-    # Estilos profesionales
     styles = getSampleStyleSheet()
     
-    # Título principal de portada
+    # Estilo portada
     styles.add(ParagraphStyle(
         name='TituloPortada',
         parent=styles['Title'],
         fontSize=28,
         fontName='Helvetica-Bold',
         alignment=TA_CENTER,
-        spaceAfter=30,
-        textColor=colors.HexColor('#1a3a5c')
+        spaceAfter=20,
+        textColor=colors.HexColor('#1a365d')
     ))
     
-    # Subtítulo de portada
     styles.add(ParagraphStyle(
         name='SubtituloPortada',
         parent=styles['Normal'],
         fontSize=14,
         alignment=TA_CENTER,
         spaceAfter=40,
-        textColor=colors.HexColor('#4a6a8a')
+        textColor=colors.HexColor('#4a5568')
     ))
     
-    # Títulos de sección (1, 2, 3...)
-    styles.add(ParagraphStyle(
-        name='TituloSeccion',
-        parent=styles['Heading1'],
-        fontSize=16,
-        fontName='Helvetica-Bold',
-        textColor=colors.HexColor('#2c5282'),
-        spaceBefore=30,
-        spaceAfter=15,
-        borderPadding=5,
-        borderWidth=0,
-        borderRadius=0
-    ))
-    
-    # Texto normal justificado
+    # Estilo texto justificado
     styles.add(ParagraphStyle(
         name='TextoJustificado',
         parent=styles['Normal'],
@@ -121,46 +104,36 @@ def generar_pdf_profesional(datos_usuario, secciones):
         fontSize=11,
         fontName='Times-Roman',
         spaceAfter=12,
-        leading=16,
-        leftIndent=0,
-        rightIndent=0
+        leading=16
     ))
     
-    # Texto centrado para datos
+    # Estilo títulos de sección
+    styles.add(ParagraphStyle(
+        name='TituloSeccion',
+        parent=styles['Heading1'],
+        fontSize=16,
+        fontName='Helvetica-Bold',
+        textColor=colors.HexColor('#1a365d'),
+        spaceBefore=24,
+        spaceAfter=12
+    ))
+    
     styles.add(ParagraphStyle(
         name='TextoCentrado',
         parent=styles['Normal'],
         alignment=TA_CENTER,
-        fontSize=11,
-        fontName='Times-Roman',
-        spaceAfter=8
+        fontSize=12
     ))
     
-    # Crear documento con márgenes profesionales
-    doc = SimpleDocTemplate(
-        filepath,
-        pagesize=letter,
-        rightMargin=72,
-        leftMargin=72,
-        topMargin=72,
-        bottomMargin=72,
-        title=tema,
-        author=nombre
-    )
-    
+    doc = SimpleDocTemplate(filepath, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=72)
     story = []
     
-    # ========== PORTADA PROFESIONAL ==========
+    # Portada
     story.append(Spacer(1, 2.5*inch))
     story.append(Paragraph("INFORME ACADÉMICO", styles['TituloPortada']))
-    story.append(Spacer(1, 0.2*inch))
+    story.append(Spacer(1, 0.3*inch))
     story.append(Paragraph(tema.upper(), styles['SubtituloPortada']))
     story.append(Spacer(1, 1.5*inch))
-    
-    # Línea decorativa
-    story.append(Paragraph("<hr width='50%' color='#c9a84c'/>", styles['TextoCentrado']))
-    story.append(Spacer(1, 0.3*inch))
-    
     story.append(Paragraph(f"<b>Presentado por:</b> {nombre}", styles['TextoCentrado']))
     if asignatura:
         story.append(Paragraph(f"<b>Asignatura:</b> {asignatura}", styles['TextoCentrado']))
@@ -168,33 +141,21 @@ def generar_pdf_profesional(datos_usuario, secciones):
         story.append(Paragraph(f"<b>Docente:</b> {profesor}", styles['TextoCentrado']))
     if institucion:
         story.append(Paragraph(f"<b>Institución:</b> {institucion}", styles['TextoCentrado']))
-    story.append(Paragraph(f"<b>Fecha de entrega:</b> {fecha}", styles['TextoCentrado']))
-    story.append(Paragraph(f"<b>Norma de citación:</b> {norma}", styles['TextoCentrado']))
-    
+    if ciudad:
+        story.append(Paragraph(f"<b>Ciudad:</b> {ciudad}", styles['TextoCentrado']))
+    story.append(Paragraph(f"<b>Fecha:</b> {fecha}", styles['TextoCentrado']))
+    story.append(Paragraph(f"<b>Norma:</b> {norma}", styles['TextoCentrado']))
     story.append(PageBreak())
     
-    # ========== ÍNDICE ==========
+    # Índice
     story.append(Paragraph("ÍNDICE", styles['TituloSeccion']))
     story.append(Spacer(1, 0.2*inch))
-    
-    indices = [
-        "1. INTRODUCCIÓN",
-        "2. OBJETIVOS",
-        "3. MARCO TEÓRICO",
-        "4. METODOLOGÍA",
-        "5. DESARROLLO",
-        "6. CONCLUSIONES",
-        "7. RECOMENDACIONES",
-        "8. REFERENCIAS BIBLIOGRÁFICAS"
-    ]
-    
-    for idx in indices:
+    for idx in ["1. INTRODUCCIÓN", "2. OBJETIVOS", "3. MARCO TEÓRICO", "4. METODOLOGÍA", "5. DESARROLLO", "6. CONCLUSIONES", "7. RECOMENDACIONES", "8. REFERENCIAS"]:
         story.append(Paragraph(f"• {idx}", styles['TextoJustificado']))
         story.append(Spacer(1, 0.1*inch))
-    
     story.append(PageBreak())
     
-    # ========== SECCIONES ==========
+    # Secciones
     secciones_orden = [
         ("1. INTRODUCCIÓN", 'introduccion'),
         ("2. OBJETIVOS", 'objetivos'),
@@ -203,85 +164,65 @@ def generar_pdf_profesional(datos_usuario, secciones):
         ("5. DESARROLLO", 'desarrollo'),
         ("6. CONCLUSIONES", 'conclusiones'),
         ("7. RECOMENDACIONES", 'recomendaciones'),
-        ("8. REFERENCIAS BIBLIOGRÁFICAS", 'referencias')
+        ("8. REFERENCIAS", 'referencias')
     ]
     
     for titulo, clave in secciones_orden:
         story.append(Paragraph(titulo, styles['TituloSeccion']))
-        story.append(Spacer(1, 0.15*inch))
+        story.append(Spacer(1, 0.2*inch))
         contenido = secciones.get(clave, '')
-        if contenido and len(contenido) > 30:
-            # Dividir en párrafos si tiene saltos
-            parrafos = contenido.split('<br/><br/>')
-            for parrafo in parrafos:
-                if parrafo.strip():
-                    story.append(Paragraph(parrafo.strip(), styles['TextoJustificado']))
-                    story.append(Spacer(1, 0.1*inch))
+        if contenido:
+            story.append(Paragraph(contenido, styles['TextoJustificado']))
         else:
-            story.append(Paragraph("Contenido no disponible para esta sección.", styles['TextoJustificado']))
-        
+            story.append(Paragraph("No se pudo generar esta sección.", styles['TextoJustificado']))
         story.append(PageBreak())
     
     doc.build(story)
     return filename, filepath
 
 def generar_word_profesional(datos_usuario, secciones):
-    """Genera un Word con formato profesional"""
+    """Genera Word con formato profesional"""
     
     nombre = datos_usuario.get('nombre', 'Estudiante')
     tema = datos_usuario.get('tema', 'Tema')
     asignatura = datos_usuario.get('asignatura', '')
     profesor = datos_usuario.get('profesor', '')
     institucion = datos_usuario.get('institucion', '')
+    ciudad = datos_usuario.get('ciudad', '')
     fecha = datos_usuario.get('fecha', datetime.now().strftime('%d/%m/%Y'))
     norma = datos_usuario.get('norma', 'APA 7')
     
     doc = Document()
-    
-    # Título principal
-    title = doc.add_heading('INFORME ACADÉMICO', 0)
-    title.alignment = 1
-    
+    doc.add_heading('INFORME ACADÉMICO', 0)
     doc.add_heading(tema, level=1)
-    doc.add_paragraph()
-    
     doc.add_paragraph(f"Presentado por: {nombre}")
-    if asignatura:
-        doc.add_paragraph(f"Asignatura: {asignatura}")
-    if profesor:
-        doc.add_paragraph(f"Docente: {profesor}")
-    if institucion:
-        doc.add_paragraph(f"Institución: {institucion}")
-    doc.add_paragraph(f"Fecha de entrega: {fecha}")
-    doc.add_paragraph(f"Norma de citación: {norma}")
+    if asignatura: doc.add_paragraph(f"Asignatura: {asignatura}")
+    if profesor: doc.add_paragraph(f"Docente: {profesor}")
+    if institucion: doc.add_paragraph(f"Institución: {institucion}")
+    if ciudad: doc.add_paragraph(f"Ciudad: {ciudad}")
+    doc.add_paragraph(f"Fecha: {fecha}")
+    doc.add_paragraph(f"Norma: {norma}")
     doc.add_page_break()
     
-    # Índice
     doc.add_heading('ÍNDICE', level=2)
-    for titulo in ['INTRODUCCIÓN', 'OBJETIVOS', 'MARCO TEÓRICO', 'METODOLOGÍA', 'DESARROLLO', 'CONCLUSIONES', 'RECOMENDACIONES', 'REFERENCIAS BIBLIOGRÁFICAS']:
+    for titulo in ['INTRODUCCIÓN', 'OBJETIVOS', 'MARCO TEÓRICO', 'METODOLOGÍA', 'DESARROLLO', 'CONCLUSIONES', 'RECOMENDACIONES', 'REFERENCIAS']:
         doc.add_paragraph(f"• {titulo}")
     doc.add_page_break()
     
-    # Secciones
     secciones_orden = [
-        ("INTRODUCCIÓN", 'introduccion'),
-        ("OBJETIVOS", 'objetivos'),
-        ("MARCO TEÓRICO", 'marco_teorico'),
-        ("METODOLOGÍA", 'metodologia'),
-        ("DESARROLLO", 'desarrollo'),
-        ("CONCLUSIONES", 'conclusiones'),
-        ("RECOMENDACIONES", 'recomendaciones'),
-        ("REFERENCIAS BIBLIOGRÁFICAS", 'referencias')
+        ("INTRODUCCIÓN", 'introduccion'), ("OBJETIVOS", 'objetivos'),
+        ("MARCO TEÓRICO", 'marco_teorico'), ("METODOLOGÍA", 'metodologia'),
+        ("DESARROLLO", 'desarrollo'), ("CONCLUSIONES", 'conclusiones'),
+        ("RECOMENDACIONES", 'recomendaciones'), ("REFERENCIAS", 'referencias')
     ]
     
     for titulo, clave in secciones_orden:
         doc.add_heading(titulo, level=2)
         contenido = secciones.get(clave, '')
         if contenido:
-            texto_limpio = contenido.replace('<br/>', '\n').replace('<b>', '').replace('</b>', '')
-            doc.add_paragraph(texto_limpio)
+            doc.add_paragraph(contenido.replace('<br/>', '\n').replace('<b>', '').replace('</b>', ''))
         else:
-            doc.add_paragraph("Contenido no disponible para esta sección.")
+            doc.add_paragraph("No se pudo generar esta sección.")
         doc.add_page_break()
     
     buffer = BytesIO()
@@ -306,42 +247,33 @@ def generar():
         asignatura = data.get('asignatura', '')
         profesor = data.get('profesor', '')
         institucion = data.get('institucion', '')
+        ciudad = data.get('ciudad', '')
+        texto_usuario = data.get('texto_usuario', '')
         
         if not tema:
             return jsonify({'success': False, 'error': 'El tema es requerido'}), 400
         
-        # Obtener autores
-        autores = data.get('autores', [])
-        if autores:
-            nombre_principal = autores[0].get('nombre', nombre)
-        else:
-            nombre_principal = nombre
-        
         prompt = f"""Genera un informe académico profesional de tipo {tipo_informe} sobre: "{tema}"
 Nivel educativo: {nivel}
-Modo de generación: {modo}
+Modo: {modo}
 
-ESTRUCTURA OBLIGATORIA (usa **negritas** solo para los títulos):
-
-**INTRODUCCIÓN** (contexto, problema, justificación, 2-3 párrafos)
-**OBJETIVOS** (1 objetivo general + 4 objetivos específicos)
-**MARCO TEÓRICO** (conceptos clave, antecedentes, 3-4 párrafos)
-**METODOLOGÍA** (tipo de investigación, población, técnicas, procedimiento)
-**DESARROLLO** (resultados, análisis, hallazgos con datos numéricos)
-**CONCLUSIONES** (5 puntos numerados con datos específicos)
-**RECOMENDACIONES** (4 sugerencias prácticas)
+ESTRUCTURA OBLIGATORIA:
+**INTRODUCCIÓN** (contexto, problema, justificación)
+**OBJETIVOS** (1 general + 4 específicos)
+**MARCO TEÓRICO** (conceptos clave, antecedentes)
+**METODOLOGÍA** (tipo de investigación, población, técnicas)
+**DESARROLLO** (resultados, análisis, hallazgos)
+**CONCLUSIONES** (5 puntos numerados)
+**RECOMENDACIONES** (4 sugerencias)
 **REFERENCIAS** (6 fuentes en formato {norma})
 
-REQUISITOS:
-- Escribe en español académico profesional
-- Incluye datos numéricos específicos (porcentajes, fechas, cantidades)
-- Sé específico y evita texto genérico
-- Extensión: 5-10 páginas
+Escribe en español académico profesional.
+Usa **negritas** solo para los títulos.
 """
         
         contenido = llamar_deepseek(prompt)
         if not contenido:
-            return jsonify({'success': False, 'error': 'No se pudo generar el contenido'}), 500
+            return jsonify({'success': False, 'error': 'No se pudo generar'}), 500
         
         secciones = {
             'introduccion': extraer_seccion(contenido, 'INTRODUCCIÓN'),
@@ -355,18 +287,13 @@ REQUISITOS:
         }
         
         datos_usuario = {
-            'nombre': nombre_principal,
-            'tema': tema,
-            'asignatura': asignatura,
-            'profesor': profesor,
-            'institucion': institucion,
-            'fecha': datetime.now().strftime('%Y-%m-%d'),
-            'norma': norma
+            'nombre': nombre, 'tema': tema, 'asignatura': asignatura,
+            'profesor': profesor, 'institucion': institucion, 'ciudad': ciudad,
+            'fecha': datetime.now().strftime('%Y-%m-%d'), 'norma': norma
         }
         
         return jsonify({'success': True, 'secciones': secciones, 'datos_usuario': datos_usuario})
     except Exception as e:
-        logger.error(f"Error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/exportar-pdf', methods=['POST'])
@@ -386,7 +313,7 @@ def preview():
     try:
         data = request.json
         tema = data.get('tema', '')
-        prompt = f"Genera un breve resumen ejecutivo sobre: {tema} en 300 palabras máximo."
+        prompt = f"Genera un breve resumen sobre: {tema} en 300 palabras"
         contenido = llamar_deepseek(prompt)
         if contenido:
             return jsonify({'success': True, 'contenido': contenido[:1000]})
