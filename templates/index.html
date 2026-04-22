@@ -1,497 +1,449 @@
-from flask import Flask, render_template, request, jsonify, send_file
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.units import inch
-from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib import colors
-from docx import Document
-from io import BytesIO
-import os
-import uuid
-from datetime import datetime
-import requests
-import logging
-import re
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Academic Report Pro — Generador IA de Informes Académicos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+:root {
+  --bg:#080b12; --surface:#0d1117; --surface2:#111720;
+  --border:rgba(255,255,255,.07); --border2:rgba(255,255,255,.12);
+  --gold:#c9a84c; --gold2:#e8c96a; --gold-dim:rgba(201,168,76,.15);
+  --blue:#4f7cf7; --blue-dim:rgba(79,124,247,.12);
+  --text:#e8e6df; --text2:#8a8880; --text3:#4a4845;
+  --red:#e05c5c; --green:#56c489;
+  --radius:12px; --radius-lg:20px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;cursor:none;}
+#cursor{position:fixed;z-index:9999;pointer-events:none;width:10px;height:10px;border-radius:50%;background:var(--gold);transform:translate(-50%,-50%);transition:width .2s,height .2s;mix-blend-mode:difference;}
+#cursor-ring{position:fixed;z-index:9998;pointer-events:none;width:36px;height:36px;border-radius:50%;border:1px solid rgba(201,168,76,.4);transform:translate(-50%,-50%);transition:width .2s,height .2s;}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");opacity:.6;}
+body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse 80% 80% at 50% 0%,black 40%,transparent 100%);}
+main{position:relative;z-index:1;}
 
-app = Flask(__name__)
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:.9rem 2.5rem;background:rgba(8,11,18,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
+.nav-logo{display:flex;align-items:center;gap:.7rem;font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:700;color:var(--text);text-decoration:none;}
+.nav-logo-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--gold) 0%,#8b6914 100%);display:flex;align-items:center;justify-content:center;}
+.nav-badge{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--gold);background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);padding:.2rem .7rem;border-radius:100px;}
+.btn-gold{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.8rem;background:linear-gradient(135deg,var(--gold) 0%,#a8832a 100%);color:#000;font-family:'Syne',sans-serif;font-size:.88rem;font-weight:700;border:none;border-radius:var(--radius);cursor:pointer;transition:all .2s;}
+.btn-gold:hover{transform:translateY(-2px);box-shadow:0 8px 36px rgba(201,168,76,.45);}
+.btn-outline{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.8rem;background:transparent;color:var(--text);font-family:'Syne',sans-serif;font-size:.88rem;font-weight:600;border:1px solid var(--border2);border-radius:var(--radius);cursor:pointer;}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold);}
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+.hero{min-height:80vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7rem 2rem 4rem;text-align:center;position:relative;}
+.glow{position:absolute;border-radius:50%;pointer-events:none;}
+.g1{top:15%;left:50%;transform:translateX(-50%);width:600px;height:600px;background:radial-gradient(circle,rgba(201,168,76,.08) 0%,transparent 70%);}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:.5rem;font-family:'JetBrains Mono',monospace;font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);background:var(--gold-dim);border:1px solid rgba(201,168,76,.25);padding:.4rem 1.1rem;border-radius:100px;margin-bottom:2rem;}
+.hero-title{font-family:'Cormorant Garamond',serif;font-size:clamp(3rem,8vw,6rem);font-weight:700;line-height:1.05;}
+.hero-title em{font-style:italic;background:linear-gradient(135deg,var(--gold) 0%,var(--gold2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.hero-sub{font-size:1.05rem;color:var(--text2);max-width:520px;margin:1.5rem auto;}
+.hero-stats{display:flex;gap:3rem;justify-content:center;flex-wrap:wrap;margin-top:3rem;padding-top:2rem;border-top:1px solid var(--border);}
+.stat-num{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700;color:var(--gold);display:block;}
+.stat-lbl{font-size:.7rem;color:var(--text2);letter-spacing:.08em;text-transform:uppercase;}
 
-os.makedirs('informes_generados', exist_ok=True)
+/* COMPARATIVA */
+.comparison{display:flex;justify-content:center;gap:1rem;margin:2rem auto;max-width:600px;}
+.comp-card{flex:1;padding:1rem;border-radius:12px;text-align:center;}
+.comp-bad{background:rgba(224,92,92,.1);border:1px solid rgba(224,92,92,.3);}
+.comp-good{background:rgba(86,196,137,.1);border:1px solid rgba(86,196,137,.3);}
 
-DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
-DEEPSEEK_URL = "https://api.deepseek.com/v1/chat/completions"
+/* FORMULARIO */
+.form-wrap{max-width:980px;margin:0 auto;padding:0 1.5rem 4rem;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1.2rem;}
+.card-hd{display:flex;align-items:center;gap:.7rem;margin-bottom:1rem;}
+.card-ico{width:34px;height:34px;border-radius:9px;background:var(--gold-dim);border:1px solid rgba(201,168,76,.2);display:flex;align-items:center;justify-content:center;}
+.mode-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;}
+.mode-tab{padding:.8rem;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text2);font-weight:600;cursor:pointer;text-align:center;}
+.mode-tab.active{background:var(--gold-dim);border-color:rgba(201,168,76,.35);color:var(--gold);}
+.tipo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.7rem;}
+.tipo-card{padding:1rem;background:transparent;border:1px solid var(--border);border-radius:12px;cursor:pointer;text-align:center;}
+.tipo-card.active{background:var(--gold-dim);border-color:rgba(201,168,76,.35);}
+.tipo-card.active .tn{color:var(--gold);}
+.chips{display:flex;flex-wrap:wrap;gap:.5rem;}
+.chip{padding:.35rem 1rem;background:transparent;border:1px solid var(--border);border-radius:100px;font-size:.75rem;font-weight:700;cursor:pointer;}
+.chip.active{background:var(--gold-dim);border-color:rgba(201,168,76,.4);color:var(--gold);}
+input,select,textarea{width:100%;padding:.75rem;background:var(--bg);border:1px solid var(--border);border-radius:10px;font-family:'Syne',sans-serif;font-size:.88rem;color:var(--text);outline:none;}
+input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.5);}
+.btn-gen{width:100%;padding:1.1rem;background:linear-gradient(135deg,var(--gold) 0%,#9a6e1a 100%);color:#000;border:none;border-radius:var(--radius);font-weight:800;cursor:pointer;margin-top:1rem;}
 
-logger.info("=" * 60)
-logger.info("🚀 ACADEMIC REPORT PRO - VERSIÓN CORREGIDA")
-logger.info(f"🔑 API Key configurada: {'SÍ ✅' if DEEPSEEK_API_KEY else 'NO ❌'}")
-logger.info("=" * 60)
+/* PROGRESS */
+.progress-container{background:var(--surface2);border-radius:12px;padding:1rem;margin-bottom:1rem;}
+.progress-steps{display:flex;justify-content:space-between;margin-bottom:1rem;}
+.progress-step{flex:1;text-align:center;font-size:.7rem;color:var(--text3);position:relative;}
+.progress-step.active{color:var(--gold);font-weight:600;}
+.progress-step.completed{color:var(--green);}
+.progress-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));width:0%;transition:width .3s;}
 
-# ============================================================
-# FUNCIÓN PARA LLAMAR A DEEPSEEK
-# ============================================================
-def llamar_deepseek(prompt):
-    headers = {
-        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    data = {
-        "model": "deepseek-chat",
-        "messages": [
-            {"role": "system", "content": "Eres un asistente académico profesional. Generas informes estructurados en español."},
-            {"role": "user", "content": prompt}
-        ],
-        "max_tokens": 8000,
-        "temperature": 0.7
-    }
-    try:
-        response = requests.post(DEEPSEEK_URL, headers=headers, json=data, timeout=120)
-        if response.status_code == 200:
-            resultado = response.json()
-            contenido = resultado['choices'][0]['message']['content']
-            contenido = contenido.encode('utf-8', 'ignore').decode('utf-8')
-            logger.info(f"✅ Contenido recibido: {len(contenido)} caracteres")
-            return contenido
-        else:
-            logger.error(f"Error HTTP {response.status_code}")
-            return None
-    except Exception as e:
-        logger.error(f"Error: {e}")
-        return None
+/* EDITOR */
+#editorPanel{display:none;margin-top:1.5rem;}
+.editor-tabs{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem;}
+.editor-tab{padding:.5rem 1rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:.8rem;}
+.editor-tab.active{background:var(--gold-dim);border-color:var(--gold);color:var(--gold);}
+#editorTexto{width:100%;padding:1rem;background:var(--bg);border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:monospace;min-height:400px;resize:vertical;}
 
-# ============================================================
-# EXTRACCIÓN DE SECCIONES - VERSIÓN CORREGIDA
-# ============================================================
-def extraer_seccion(contenido, nombre):
-    """Extrae una sección del contenido - VERSIÓN CORREGIDA"""
+footer{text-align:center;padding:2rem;border-top:1px solid var(--border);font-size:.78rem;color:var(--text3);}
+.hidden{display:none;}
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<nav>
+  <a href="#" class="nav-logo">
+    <div class="nav-logo-icon">📄</div>
+    Academic Report Pro
+  </a>
+  <div style="display:flex;align-items:center;gap:1rem;">
+    <span class="nav-badge">DeepSeek V3</span>
+    <a href="#generar" class="btn-gold" style="padding:.5rem 1.2rem;font-size:.8rem;">Generar informe ↓</a>
+  </div>
+</nav>
+
+<main>
+<section class="hero" id="inicio">
+  <div class="glow g1"></div>
+  <div class="hero-eyebrow">⚡ Más que IA - Informes estructurados listos para entregar</div>
+  <h1 class="hero-title">Informes académicos<br><em>de nivel profesional</em></h1>
+  <p class="hero-sub">Escribe un tema y la IA genera un informe completo con portada, índice, marco teórico, conclusiones y referencias — listo para editar y descargar en PDF o Word.</p>
+  
+  <!-- COMPARATIVA VISUAL -->
+  <div class="comparison">
+    <div class="comp-card comp-bad">
+      <p style="color:var(--red); font-size:.8rem;">❌ Usar ChatGPT</p>
+      <p style="font-size:.7rem; color:var(--text2);">Texto plano sin estructura. Tienes que formatear todo manualmente.</p>
+    </div>
+    <div class="comp-card comp-good">
+      <p style="color:var(--green); font-size:.8rem;">✅ Academic Report Pro</p>
+      <p style="font-size:.7rem; color:var(--text2);">Informe listo con portada, índice, secciones y referencias. Solo descargas.</p>
+    </div>
+  </div>
+  
+  <div class="hero-stats">
+    <div class="stat"><span class="stat-num">8</span><span class="stat-lbl">Normas</span></div>
+    <div class="stat"><span class="stat-num">4</span><span class="stat-lbl">Tipos</span></div>
+    <div class="stat"><span class="stat-num">3</span><span class="stat-lbl">Modos</span></div>
+    <div class="stat"><span class="stat-num">PDF+Word</span><span class="stat-lbl">Descarga</span></div>
+  </div>
+</section>
+
+<section class="form-wrap" id="generar">
+  <div style="text-align:center;margin-bottom:2rem;">
+    <span class="hero-eyebrow" style="display:inline-flex;">✨ EJEMPLO REAL</span>
+    <p style="color:var(--gold); font-size:.9rem;">"El impacto de las inteligencias artificiales en Colombia - Análisis completo con datos 2023-2024"</p>
+    <div style="display:flex; gap:1rem; justify-content:center; margin-top:.5rem;">
+      <span style="font-size:.7rem; color:var(--text2);">📄 8 secciones</span>
+      <span style="font-size:.7rem; color:var(--text2);">📊 Con tablas</span>
+      <span style="font-size:.7rem; color:var(--text2);">📚 6 referencias</span>
+    </div>
+  </div>
+
+  <form id="reportForm" onsubmit="return false;">
     
-    if not contenido:
-        return ""
-    
-    # Limpiar caracteres basura
-    contenido = contenido.encode('utf-8', 'ignore').decode('utf-8')
-    contenido = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', contenido)
-    
-    # Buscar el título en diferentes formatos
-    patrones_titulo = [
-        rf'\*\*{nombre}\*\*:?',
-        rf'\*\*{nombre}\*\*',
-        rf'### {nombre}',
-        rf'#{nombre}#',
-        rf'{nombre}',
-    ]
-    
-    for patron_titulo in patrones_titulo:
-        patron_seccion = rf'{patron_titulo}\s*(.*?)(?=\n\s*\*\*[A-ZÁÉÍÓÚÜÑ]|\n\s*\d+\.\s*\*\*|\Z)'
-        match = re.search(patron_seccion, contenido, re.DOTALL | re.IGNORECASE)
-        if match:
-            texto = match.group(1).strip()
-            if len(texto) > 100:
-                texto = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', texto)
-                texto = texto.replace('\n', '<br/>')
-                return texto
-    
-    # Búsqueda más simple
-    idx = contenido.upper().find(nombre.upper())
-    if idx != -1:
-        siguiente_match = re.search(r'\n\s*\*\*[A-ZÁÉÍÓÚÜÑ]|\n\s*\d+\.\s*\*\*', contenido[idx+len(nombre):])
-        if siguiente_match:
-            texto = contenido[idx+len(nombre):idx+len(nombre)+siguiente_match.start()].strip()
-        else:
-            texto = contenido[idx+len(nombre):].strip()
-        
-        if len(texto) > 100:
-            texto = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', texto)
-            texto = texto.replace('\n', '<br/>')
-            return texto
-    
-    return ""
+    <!-- PASOS VISUALES -->
+    <div class="progress-container" id="progressContainer" style="display:none;">
+      <div class="progress-steps">
+        <div class="progress-step" id="step1">1. Configurar</div>
+        <div class="progress-step" id="step2">2. Generar IA</div>
+        <div class="progress-step" id="step3">3. Editar</div>
+        <div class="progress-step" id="step4">4. Descargar</div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <p id="progressMessage" style="font-size:.7rem; color:var(--text2); margin-top:.5rem; text-align:center;"></p>
+    </div>
 
-# ============================================================
-# PROMPTS DEDICADOS POR SECCIÓN
-# ============================================================
-PROMPTS_SECCIONES = {
-    'introduccion': lambda tema, info, tipo, norma, nivel: f"""Escribe ÚNICAMENTE la sección de INTRODUCCIÓN para un informe académico de tipo "{tipo}" sobre: "{tema}".
-Nivel educativo: {nivel}. Información adicional: {info or 'Ninguna'}.
+    <div class="g2c" style="margin-bottom:1.2rem;">
+      <div class="card">
+        <div class="card-hd"><div class="card-ico">⚙️</div><div><div class="card-ttl">Modo de generación</div></div></div>
+        <div class="mode-tabs" id="modoTabs">
+          <button type="button" class="mode-tab active" data-modo="rapido">⚡ Rápido</button>
+          <button type="button" class="mode-tab" data-modo="automatico">🔄 Automático</button>
+          <button type="button" class="mode-tab" data-modo="manual">✏️ Manual</button>
+        </div>
+        <p id="modoDesc" style="font-size:.7rem; color:var(--text2); margin-top:.8rem;">Solo escribe el tema y la IA genera todo el informe automáticamente.</p>
+      </div>
+      <div class="card">
+        <div class="card-hd"><div class="card-ico">🎓</div><div><div class="card-ttl">Nivel educativo</div></div></div>
+        <select id="nivel">
+          <option value="colegio">🏫 Colegio / Secundaria</option>
+          <option value="tecnico">📚 Técnico / Pregrado</option>
+          <option value="universitario" selected>🎓 Universitario / Avanzado</option>
+        </select>
+      </div>
+    </div>
 
-Requisitos:
-- Mínimo 4 párrafos completos y bien desarrollados
-- Incluir: contexto general del tema, justificación e importancia, planteamiento del problema, estructura del informe
-- Redacción formal y académica
-- NO incluyas el título, solo el contenido
+    <div class="g2c" style="margin-bottom:1.2rem;">
+      <div class="card">
+        <div class="card-hd"><div class="card-ico">📋</div><div><div class="card-ttl">Tipo de informe</div></div></div>
+        <div class="tipo-grid" id="tipoGrid">
+          <div class="tipo-card active" data-tipo="academico">📄 Académico</div>
+          <div class="tipo-card" data-tipo="laboratorio">🔬 Laboratorio</div>
+          <div class="tipo-card" data-tipo="ejecutivo">💼 Ejecutivo</div>
+          <div class="tipo-card" data-tipo="tesis">🎓 Tesis</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><div class="card-ico">📐</div><div><div class="card-ttl">Norma de citación</div></div></div>
+        <div class="chips" id="normaChips">
+          <div class="chip active" data-norma="APA 7">APA 7</div>
+          <div class="chip" data-norma="APA 6">APA 6</div>
+          <div class="chip" data-norma="ICONTEC">ICONTEC</div>
+          <div class="chip" data-norma="IEEE">IEEE</div>
+        </div>
+      </div>
+    </div>
 
-Escribe el contenido directamente, sin títulos ni encabezados.""",
+    <div class="card">
+      <div class="card-hd"><div class="card-ico">💡</div><div><div class="card-ttl">Tema del informe</div></div></div>
+      <input type="text" id="tema" placeholder="Ej: Impacto de la inteligencia artificial en la educación superior" required/>
+      <div id="textoUsuarioWrap" class="hidden" style="margin-top:1rem;">
+        <textarea id="textoUsuario" rows="4" placeholder="Pega aquí tus apuntes o información adicional..."></textarea>
+      </div>
+    </div>
 
-    'objetivos': lambda tema, info, tipo, norma, nivel: f"""Escribe ÚNICAMENTE la sección de OBJETIVOS para un informe académico de tipo "{tipo}" sobre: "{tema}".
-Nivel educativo: {nivel}.
+    <div class="card">
+      <div class="card-hd"><div class="card-ico">🏫</div><div><div class="card-ttl">Datos académicos</div></div></div>
+      <div class="g2c">
+        <input type="text" id="asignatura" placeholder="Asignatura">
+        <input type="text" id="profesor" placeholder="Docente">
+        <input type="text" id="institucion" placeholder="Institución">
+        <input type="text" id="ciudad" placeholder="Ciudad">
+        <input type="text" id="nombre" placeholder="Tu nombre">
+      </div>
+    </div>
 
-Formato exacto:
-OBJETIVO GENERAL:
-[Un objetivo general claro y medible que abarque todo el informe]
+    <div class="card">
+      <div class="card-hd"><div class="card-ico">👤</div><div><div class="card-ttl">Autores adicionales</div></div></div>
+      <div id="autoresContainer"></div>
+      <button type="button" class="btn-outline" onclick="agregarAutor()" style="font-size:.8rem; margin-top:.5rem;">+ Agregar autor</button>
+    </div>
 
-OBJETIVOS ESPECÍFICOS:
-1. [Objetivo específico 1 — acción concreta y verificable]
-2. [Objetivo específico 2 — acción concreta y verificable]
-3. [Objetivo específico 3 — acción concreta y verificable]
-4. [Objetivo específico 4 — acción concreta y verificable]
-5. [Objetivo específico 5 — acción concreta y verificable]
+    <div class="card">
+      <div class="card-hd"><div class="card-ico">📚</div><div><div class="card-ttl">Referencias</div></div></div>
+      <div class="refs-tabs" style="display:flex; gap:.5rem; margin-bottom:1rem;">
+        <button type="button" class="ref-tab active" data-refs="auto" style="flex:1; padding:.5rem; background:var(--surface2); border-radius:8px; cursor:pointer;">🤖 Automático</button>
+        <button type="button" class="ref-tab" data-refs="manual" style="flex:1; padding:.5rem; background:var(--surface2); border-radius:8px; cursor:pointer;">✍️ Manual</button>
+      </div>
+      <div id="refsManualContainer" class="hidden">
+        <textarea id="referenciasManual" rows="3" placeholder="Escribe tus referencias (una por línea)"></textarea>
+      </div>
+    </div>
 
-Usa verbos en infinitivo (Analizar, Identificar, Evaluar, Determinar, Describir...).
-Escribe el contenido directamente, sin título de sección.""",
+    <button type="button" class="btn-gen" id="generarBtn">🚀 GENERAR INFORME</button>
+  </form>
 
-    'marco_teorico': lambda tema, info, tipo, norma, nivel: f"""Escribe ÚNICAMENTE el MARCO TEÓRICO para un informe académico de tipo "{tipo}" sobre: "{tema}".
-Nivel educativo: {nivel}. Información adicional: {info or 'Ninguna'}.
+  <!-- EDITOR -->
+  <div id="editorPanel" class="card">
+    <div class="card-hd"><div class="card-ico">✏️</div><div><div class="card-ttl">Edita tu informe</div></div></div>
+    <div class="editor-tabs" id="editorTabs"></div>
+    <textarea id="editorTexto" rows="12"></textarea>
+    <div style="display:flex; gap:1rem; margin-top:1rem;">
+      <button id="exportarPDFBtn" class="btn-gold" style="flex:1;">📄 Descargar PDF</button>
+      <button id="exportarWordBtn" class="btn-outline" style="flex:1;">📝 Descargar Word</button>
+    </div>
+  </div>
+</section>
+</main>
 
-Requisitos:
-- Mínimo 5 párrafos completos
-- Incluir: antecedentes históricos del tema, definiciones de conceptos clave, teorías y modelos relevantes, estado actual del conocimiento
-- Citar autores y fuentes relevantes de manera académica
-- Redacción formal con vocabulario especializado
+<footer>
+  <strong>Academic Report Pro</strong> · Generador profesional de informes con IA · 8 normas · 4 tipos · PDF + Word
+</footer>
 
-Escribe el contenido directamente, sin título de sección.""",
+<script>
+// ========== CURSOR ==========
+const cur=document.getElementById('cursor'),curR=document.getElementById('cursor-ring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px';});
+(function anim(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;curR.style.left=rx+'px';curR.style.top=ry+'px';requestAnimationFrame(anim);})();
+document.querySelectorAll('button,.chip,.tipo-card,.mode-tab').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{cur.style.width='16px';cur.style.height='16px';curR.style.width='52px';curR.style.height='52px';});
+  el.addEventListener('mouseleave',()=>{cur.style.width='10px';cur.style.height='10px';curR.style.width='36px';curR.style.height='36px';});
+});
 
-    'metodologia': lambda tema, info, tipo, norma, nivel: f"""Escribe ÚNICAMENTE la sección de METODOLOGÍA para un informe académico de tipo "{tipo}" sobre: "{tema}".
-Nivel educativo: {nivel}.
+// ========== ESTADO ==========
+let modo = 'rapido';
+let tipoActual = 'academico';
+let normaActual = 'APA 7';
+let refsModo = 'auto';
+let seccionesGeneradas = {};
+let datosUsuario = {};
+let informesUsados = 0; // Sin límite de informes
 
-Requisitos:
-- Mínimo 4 párrafos completos
-- Incluir: tipo y enfoque de investigación, población o muestra (si aplica), técnicas e instrumentos de recolección de datos, procedimiento de análisis, consideraciones éticas
-- Justificar cada decisión metodológica
-- Redacción en pasado o presente académico
+// Modo
+document.querySelectorAll('#modoTabs .mode-tab').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('#modoTabs .mode-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    modo = btn.dataset.modo;
+    const wrap = document.getElementById('textoUsuarioWrap');
+    if (modo !== 'rapido') wrap.classList.remove('hidden');
+    else wrap.classList.add('hidden');
+    const desc = {rapido:'Solo escribe el tema y la IA genera todo el informe automáticamente.',automatico:'Pega tus apuntes y la IA los organiza en un informe profesional.',manual:'Escribe sección por sección y la IA mejora tu redacción.'};
+    document.getElementById('modoDesc').innerText = desc[modo];
+  };
+});
 
-Escribe el contenido directamente, sin título de sección.""",
+// Tipo
+document.querySelectorAll('#tipoGrid .tipo-card').forEach(card => {
+  card.onclick = () => {
+    document.querySelectorAll('#tipoGrid .tipo-card').forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+    tipoActual = card.dataset.tipo;
+  };
+});
 
-    'desarrollo': lambda tema, info, tipo, norma, nivel: f"""Escribe ÚNICAMENTE el DESARROLLO para un informe académico de tipo "{tipo}" sobre: "{tema}".
-Nivel educativo: {nivel}. Información adicional: {info or 'Ninguna'}.
+// Norma
+document.querySelectorAll('#normaChips .chip').forEach(chip => {
+  chip.onclick = () => {
+    document.querySelectorAll('#normaChips .chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    normaActual = chip.dataset.norma;
+  };
+});
 
-Requisitos:
-- Mínimo 6 párrafos completos — esta es la sección más extensa
-- Incluir: presentación de resultados o hallazgos, análisis detallado, discusión crítica, comparación con teorías del marco teórico, datos relevantes o ejemplos concretos
-- Organizar con subtemas claros dentro del contenido
-- Profundidad académica real
+// Referencias
+document.querySelectorAll('.ref-tab').forEach(tab => {
+  tab.onclick = () => {
+    document.querySelectorAll('.ref-tab').forEach(t => t.style.background = 'var(--surface2)');
+    tab.style.background = 'var(--gold-dim)';
+    refsModo = tab.dataset.refs;
+    document.getElementById('refsManualContainer').classList.toggle('hidden', refsModo !== 'manual');
+  };
+});
 
-Escribe el contenido directamente, sin título de sección.""",
-
-    'conclusiones': lambda tema, info, tipo, norma, nivel: f"""Escribe ÚNICAMENTE las CONCLUSIONES para un informe académico de tipo "{tipo}" sobre: "{tema}".
-Nivel educativo: {nivel}.
-
-Formato:
-1. [Conclusión 1: responde directamente al objetivo general — 3 oraciones mínimo]
-2. [Conclusión 2: hallazgo más importante del desarrollo — 3 oraciones mínimo]
-3. [Conclusión 3: implicaciones prácticas o teóricas — 3 oraciones mínimo]
-4. [Conclusión 4: limitaciones encontradas — 2 oraciones mínimo]
-5. [Conclusión 5: perspectivas futuras o reflexión final — 3 oraciones mínimo]
-
-Cada conclusión debe ser un párrafo sustancial, no solo una oración.
-Escribe el contenido directamente, sin título de sección.""",
-
-    'recomendaciones': lambda tema, info, tipo, norma, nivel: f"""Escribe ÚNICAMENTE las RECOMENDACIONES para un informe académico de tipo "{tipo}" sobre: "{tema}".
-Nivel educativo: {nivel}.
-
-Formato:
-1. [Recomendación 1: dirigida a quién y qué acción concreta — 3 oraciones]
-2. [Recomendación 2: dirigida a quién y qué acción concreta — 3 oraciones]
-3. [Recomendación 3: dirigida a quién y qué acción concreta — 3 oraciones]
-4. [Recomendación 4: dirigida a quién y qué acción concreta — 3 oraciones]
-5. [Recomendación 5: para futuras investigaciones — 3 oraciones]
-
-Cada recomendación debe ser práctica, específica y justificada.
-Escribe el contenido directamente, sin título de sección.""",
-
-    'referencias': lambda tema, info, tipo, norma, nivel: f"""Escribe ÚNICAMENTE las REFERENCIAS para un informe académico sobre: "{tema}".
-Formato de citación: {norma}. Nivel: {nivel}.
-
-Genera 8 referencias bibliográficas reales y relevantes para este tema en formato {norma} estricto.
-- Incluir libros, artículos de revista, reportes de organismos y fuentes web académicas
-- Ordenadas alfabéticamente por apellido del autor
-- Años entre 2015 y 2024 preferiblemente
-- Autores, títulos y editoriales plausibles y académicos
-
-Escribe solo la lista de referencias, sin título de sección."""
+function agregarAutor() {
+  const container = document.getElementById('autoresContainer');
+  const div = document.createElement('div');
+  div.className = 'g2c';
+  div.style.marginBottom = '.5rem';
+  div.innerHTML = `<input type="text" class="autor-nombre" placeholder="Nombre completo"><input type="text" class="autor-cargo" placeholder="Código/Cargo"><button class="btn-outline" onclick="this.parentElement.remove()" style="padding:.3rem; font-size:.7rem;">✕</button>`;
+  container.appendChild(div);
 }
 
-# ============================================================
-# GENERAR UNA SECCIÓN INDIVIDUAL
-# ============================================================
-def generar_seccion(seccion, tema, info_extra, tipo_informe, norma, nivel):
-    """Genera una sola sección con un prompt dedicado"""
-    if seccion not in PROMPTS_SECCIONES:
-        return None
+function getAutores() {
+  const autores = [];
+  document.querySelectorAll('.autor-nombre').forEach((input, i) => {
+    if (input.value.trim()) {
+      autores.push({ nombre: input.value.trim(), cargo: document.querySelectorAll('.autor-cargo')[i]?.value.trim() || '' });
+    }
+  });
+  return autores;
+}
 
-    prompt = PROMPTS_SECCIONES[seccion](tema, info_extra, tipo_informe, norma, nivel)
-    system_prompt = (
-        "Eres un experto en redacción académica universitaria en español. "
-        "Escribes contenido sustancial, formal y bien estructurado. "
-        "Respondes SOLO con el contenido solicitado, sin títulos de sección, sin preámbulos, sin comentarios adicionales."
-    )
+function actualizarProgreso(paso, mensaje, porcentaje) {
+  document.getElementById('progressFill').style.width = porcentaje + '%';
+  document.getElementById('progressMessage').innerText = mensaje;
+  for(let i=1; i<=4; i++) {
+    const step = document.getElementById(`step${i}`);
+    if(i < paso) step.classList.add('completed');
+    else if(i === paso) step.classList.add('active');
+    else step.classList.remove('active', 'completed');
+  }
+}
 
-    contenido = llamar_deepseek(prompt, system_prompt=system_prompt, max_tokens=3000)
+document.getElementById('generarBtn').onclick = async () => {
+  const tema = document.getElementById('tema').value.trim();
+  if (!tema) { Swal.fire('Error', 'Escribe el tema del informe', 'error'); return; }
 
-    if not contenido:
-        return None
+  
+  const autores = getAutores();
+  const nombrePrincipal = document.getElementById('nombre').value.trim() || (autores[0]?.nombre || 'Estudiante');
+  
+  document.getElementById('generarBtn').disabled = true;
+  document.getElementById('generarBtn').innerHTML = '⏳ Generando informe...';
+  document.getElementById('progressContainer').style.display = 'block';
+  
+  actualizarProgreso(1, 'Conectando con IA...', 10);
+  await new Promise(r => setTimeout(r, 500));
+  actualizarProgreso(1, 'Analizando tu tema...', 25);
+  await new Promise(r => setTimeout(r, 800));
+  actualizarProgreso(2, 'Generando contenido académico...', 50);
+  
+  try {
+    const res = await fetch('/generar', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tema: tema, modo: modo, nivel: document.getElementById('nivel').value,
+        tipo_informe: tipoActual, norma: normaActual,
+        nombre: nombrePrincipal, asignatura: document.getElementById('asignatura').value,
+        profesor: document.getElementById('profesor').value,
+        institucion: document.getElementById('institucion').value,
+        ciudad: document.getElementById('ciudad').value,
+        texto_usuario: document.getElementById('textoUsuario').value
+      })
+    });
+    actualizarProgreso(3, 'Estructurando el informe...', 75);
+    await new Promise(r => setTimeout(r, 500));
+    const data = await res.json();
+    if (data.success) {
+      seccionesGeneradas = data.secciones;
+      datosUsuario = data.datos_usuario;
 
-    contenido = contenido.strip()
-    contenido = contenido.replace('\n', '<br/>')
-    logger.info(f"Sección '{seccion}' generada: {len(contenido)} caracteres")
-    return contenido
+      actualizarProgreso(4, '¡Informe listo!', 100);
+      setTimeout(() => {
+        document.getElementById('progressContainer').style.display = 'none';
+        mostrarEditor();
+      }, 600);
+      Swal.fire('¡Éxito!', 'Informe generado correctamente', 'success');
+    } else { throw new Error(data.error); }
+  } catch (error) {
+    document.getElementById('progressContainer').style.display = 'none';
+    Swal.fire('Error', error.message, 'error');
+  } finally {
+    document.getElementById('generarBtn').disabled = false;
+    document.getElementById('generarBtn').innerHTML = '🚀 GENERAR INFORME';
+  }
+};
 
+function mostrarEditor() {
+  const secciones = ['introduccion', 'objetivos', 'marco_teorico', 'metodologia', 'desarrollo', 'conclusiones', 'recomendaciones', 'referencias'];
+  const nombres = ['Introducción', 'Objetivos', 'Marco Teórico', 'Metodología', 'Desarrollo', 'Conclusiones', 'Recomendaciones', 'Referencias'];
+  const tabsDiv = document.getElementById('editorTabs');
+  tabsDiv.innerHTML = '';
+  secciones.forEach((sec, i) => {
+    const btn = document.createElement('button');
+    btn.textContent = nombres[i];
+    btn.className = 'editor-tab' + (i === 0 ? ' active' : '');
+    btn.onclick = () => {
+      document.querySelectorAll('.editor-tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('editorTexto').value = seccionesGeneradas[sec] || '';
+    };
+    tabsDiv.appendChild(btn);
+  });
+  document.getElementById('editorTexto').value = seccionesGeneradas.introduccion || '';
+  document.getElementById('editorPanel').style.display = 'block';
+  document.getElementById('editorPanel').scrollIntoView({ behavior: 'smooth' });
+}
 
-# ============================================================
-# GENERAR INFORME COMPLETO (mantener para compatibilidad)
-# ============================================================
-def generar_informe_completo(tema, info_extra, tipo_informe, norma, nivel):
-    """Genera todas las secciones en secuencia — usado como fallback"""
-    secciones = {}
-    claves = ['introduccion', 'objetivos', 'marco_teorico', 'metodologia',
-              'desarrollo', 'conclusiones', 'recomendaciones', 'referencias']
-    for clave in claves:
-        resultado = generar_seccion(clave, tema, info_extra, tipo_informe, norma, nivel)
-        secciones[clave] = resultado or ''
-    return secciones
+document.getElementById('exportarPDFBtn').onclick = async () => {
+  const seccionesEditadas = { ...seccionesGeneradas };
+  const indiceActivo = Array.from(document.querySelectorAll('.editor-tab')).findIndex(t => t.classList.contains('active'));
+  if (indiceActivo !== -1) {
+    const claves = ['introduccion', 'objetivos', 'marco_teorico', 'metodologia', 'desarrollo', 'conclusiones', 'recomendaciones', 'referencias'];
+    seccionesEditadas[claves[indiceActivo]] = document.getElementById('editorTexto').value;
+  }
+  const res = await fetch('/exportar-pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ secciones: seccionesEditadas, datos_usuario: datosUsuario }) });
+  const blob = await res.blob(); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `informe_${Date.now()}.pdf`; a.click(); URL.revokeObjectURL(url);
+};
 
-# ============================================================
-# GENERAR PDF
-# ============================================================
-def generar_pdf(datos_usuario, secciones):
-    nombre = datos_usuario.get('nombre', 'Estudiante')
-    tema = datos_usuario.get('tema', 'Tema')
-    asignatura = datos_usuario.get('asignatura', '')
-    profesor = datos_usuario.get('profesor', '')
-    institucion = datos_usuario.get('institucion', '')
-    ciudad = datos_usuario.get('ciudad', '')
-    fecha = datos_usuario.get('fecha', datetime.now().strftime('%d/%m/%Y'))
-    norma = datos_usuario.get('norma', 'APA 7')
-    
-    filename = f"informe_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}.pdf"
-    filepath = os.path.join('informes_generados', filename)
-    
-    styles = getSampleStyleSheet()
-    
-    styles.add(ParagraphStyle(name='TextoJustificado', parent=styles['Normal'], alignment=TA_JUSTIFY, fontSize=11, fontName='Times-Roman', spaceAfter=12, leading=16))
-    styles.add(ParagraphStyle(name='Titulo1', parent=styles['Heading1'], fontSize=16, fontName='Helvetica-Bold', textColor=colors.HexColor('#1a365d'), spaceBefore=24, spaceAfter=12))
-    styles.add(ParagraphStyle(name='TituloPortada', parent=styles['Title'], fontSize=24, alignment=TA_CENTER, textColor=colors.HexColor('#1a365d')))
-    styles.add(ParagraphStyle(name='TextoCentrado', parent=styles['Normal'], alignment=TA_CENTER, fontSize=12))
-    
-    doc = SimpleDocTemplate(filepath, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=72)
-    story = []
-    
-    # Portada
-    story.append(Spacer(1, 2.0*inch))
-    story.append(Paragraph("INFORME ACADÉMICO", styles['TituloPortada']))
-    story.append(Spacer(1, 0.3*inch))
-    story.append(Paragraph(tema.upper(), styles['TextoCentrado']))
-    story.append(Spacer(1, 1.5*inch))
-    story.append(Paragraph(f"<b>Presentado por:</b> {nombre}", styles['TextoCentrado']))
-    if asignatura:
-        story.append(Paragraph(f"<b>Asignatura:</b> {asignatura}", styles['TextoCentrado']))
-    if profesor:
-        story.append(Paragraph(f"<b>Docente:</b> {profesor}", styles['TextoCentrado']))
-    if institucion:
-        story.append(Paragraph(f"<b>Institución:</b> {institucion}", styles['TextoCentrado']))
-    if ciudad:
-        story.append(Paragraph(f"<b>Ciudad:</b> {ciudad}", styles['TextoCentrado']))
-    story.append(Paragraph(f"<b>Fecha:</b> {fecha}", styles['TextoCentrado']))
-    story.append(Paragraph(f"<b>Norma:</b> {norma}", styles['TextoCentrado']))
-    story.append(PageBreak())
-    
-    # Índice
-    story.append(Paragraph("ÍNDICE", styles['Titulo1']))
-    story.append(Spacer(1, 0.2*inch))
-    for idx in ["1. INTRODUCCIÓN", "2. OBJETIVOS", "3. MARCO TEÓRICO", "4. METODOLOGÍA", "5. DESARROLLO", "6. CONCLUSIONES", "7. RECOMENDACIONES", "8. REFERENCIAS"]:
-        story.append(Paragraph(f"• {idx}", styles['TextoJustificado']))
-        story.append(Spacer(1, 0.1*inch))
-    story.append(PageBreak())
-    
-    # Secciones
-    secciones_orden = [
-        ("1. INTRODUCCIÓN", 'introduccion'),
-        ("2. OBJETIVOS", 'objetivos'),
-        ("3. MARCO TEÓRICO", 'marco_teorico'),
-        ("4. METODOLOGÍA", 'metodologia'),
-        ("5. DESARROLLO", 'desarrollo'),
-        ("6. CONCLUSIONES", 'conclusiones'),
-        ("7. RECOMENDACIONES", 'recomendaciones'),
-        ("8. REFERENCIAS", 'referencias')
-    ]
-    
-    for titulo, clave in secciones_orden:
-        story.append(Paragraph(titulo, styles['Titulo1']))
-        story.append(Spacer(1, 0.2*inch))
-        contenido = secciones.get(clave, '')
-        if contenido and len(contenido) > 100:
-            story.append(Paragraph(contenido, styles['TextoJustificado']))
-        else:
-            story.append(Paragraph("No se pudo generar esta sección.", styles['TextoJustificado']))
-        story.append(PageBreak())
-    
-    doc.build(story)
-    return filename, filepath
-
-# ============================================================
-# GENERAR WORD
-# ============================================================
-def generar_word(datos_usuario, secciones):
-    nombre = datos_usuario.get('nombre', 'Estudiante')
-    tema = datos_usuario.get('tema', 'Tema')
-    asignatura = datos_usuario.get('asignatura', '')
-    profesor = datos_usuario.get('profesor', '')
-    institucion = datos_usuario.get('institucion', '')
-    ciudad = datos_usuario.get('ciudad', '')
-    fecha = datos_usuario.get('fecha', datetime.now().strftime('%d/%m/%Y'))
-    norma = datos_usuario.get('norma', 'APA 7')
-    
-    doc = Document()
-    doc.add_heading('INFORME ACADÉMICO', 0)
-    doc.add_heading(tema, level=1)
-    doc.add_paragraph(f"Presentado por: {nombre}")
-    if asignatura: doc.add_paragraph(f"Asignatura: {asignatura}")
-    if profesor: doc.add_paragraph(f"Docente: {profesor}")
-    if institucion: doc.add_paragraph(f"Institución: {institucion}")
-    if ciudad: doc.add_paragraph(f"Ciudad: {ciudad}")
-    doc.add_paragraph(f"Fecha: {fecha}")
-    doc.add_paragraph(f"Norma: {norma}")
-    doc.add_page_break()
-    
-    doc.add_heading('ÍNDICE', level=2)
-    for titulo in ['INTRODUCCIÓN', 'OBJETIVOS', 'MARCO TEÓRICO', 'METODOLOGÍA', 'DESARROLLO', 'CONCLUSIONES', 'RECOMENDACIONES', 'REFERENCIAS']:
-        doc.add_paragraph(f"• {titulo}")
-    doc.add_page_break()
-    
-    secciones_orden = [
-        ("INTRODUCCIÓN", 'introduccion'), ("OBJETIVOS", 'objetivos'),
-        ("MARCO TEÓRICO", 'marco_teorico'), ("METODOLOGÍA", 'metodologia'),
-        ("DESARROLLO", 'desarrollo'), ("CONCLUSIONES", 'conclusiones'),
-        ("RECOMENDACIONES", 'recomendaciones'), ("REFERENCIAS", 'referencias')
-    ]
-    
-    for titulo, clave in secciones_orden:
-        doc.add_heading(titulo, level=2)
-        contenido = secciones.get(clave, '')
-        if contenido:
-            doc.add_paragraph(contenido.replace('<br/>', '\n').replace('<b>', '').replace('</b>', ''))
-        else:
-            doc.add_paragraph("No se pudo generar esta sección.")
-        doc.add_page_break()
-    
-    buffer = BytesIO()
-    doc.save(buffer)
-    buffer.seek(0)
-    return buffer
-
-# ============================================================
-# RUTAS DE LA API
-# ============================================================
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@app.route('/generar', methods=['POST'])
-def generar():
-    try:
-        data = request.json
-        tema = data.get('tema', '').strip()
-        nivel = data.get('nivel', 'universitario')
-        modo = data.get('modo', 'rapido')
-        tipo_informe = data.get('tipo_informe', 'academico')
-        norma = data.get('norma', 'APA 7')
-        nombre = data.get('nombre', 'Estudiante')
-        asignatura = data.get('asignatura', '')
-        profesor = data.get('profesor', '')
-        institucion = data.get('institucion', '')
-        ciudad = data.get('ciudad', '')
-        texto_usuario = data.get('texto_usuario', '')
-        
-        autores = data.get('autores', [])
-        if autores:
-            nombre_principal = autores[0].get('nombre', nombre)
-        else:
-            nombre_principal = nombre
-        
-        if not tema:
-            return jsonify({'success': False, 'error': 'El tema es requerido'}), 400
-        
-        logger.info(f"📨 Generando informe - Tema: {tema[:50]}...")
-        
-        secciones = generar_informe_completo(tema, texto_usuario, tipo_informe, norma, nivel)
-        
-        if not secciones:
-            return jsonify({'success': False, 'error': 'No se pudo generar el informe'}), 500
-        
-        datos_usuario = {
-            'nombre': nombre_principal,
-            'tema': tema,
-            'asignatura': asignatura,
-            'profesor': profesor,
-            'institucion': institucion,
-            'ciudad': ciudad,
-            'fecha': datetime.now().strftime('%Y-%m-%d'),
-            'norma': norma
-        }
-        
-        return jsonify({'success': True, 'secciones': secciones, 'datos_usuario': datos_usuario})
-    except Exception as e:
-        logger.error(f"Error: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/generar-seccion', methods=['POST'])
-def generar_seccion_endpoint():
-    """Genera una sola sección — llamado 8 veces desde el frontend"""
-    try:
-        data = request.json
-        seccion   = data.get('seccion', '')
-        tema      = data.get('tema', '').strip()
-        nivel     = data.get('nivel', 'universitario')
-        tipo      = data.get('tipo_informe', 'academico')
-        norma     = data.get('norma', 'APA 7')
-        info      = data.get('texto_usuario', '')
-
-        if not seccion or not tema:
-            return jsonify({'success': False, 'error': 'Faltan parámetros'}), 400
-
-        logger.info(f"Generando sección '{seccion}' para tema: {tema[:40]}...")
-        contenido = generar_seccion(seccion, tema, info, tipo, norma, nivel)
-
-        if contenido:
-            return jsonify({'success': True, 'seccion': seccion, 'contenido': contenido})
-        else:
-            return jsonify({'success': False, 'error': f'No se pudo generar: {seccion}'}), 500
-
-    except Exception as e:
-        logger.error(f"Error en /generar-seccion: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-
-@app.route('/exportar-pdf', methods=['POST'])
-def exportar_pdf():
-    data = request.json
-    filename, filepath = generar_pdf(data['datos_usuario'], data['secciones'])
-    return send_file(filepath, as_attachment=True, download_name=filename)
-
-@app.route('/exportar-word', methods=['POST'])
-def exportar_word():
-    data = request.json
-    buffer = generar_word(data['datos_usuario'], data['secciones'])
-    return send_file(buffer, as_attachment=True, download_name=f"informe_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx")
-
-@app.route('/preview', methods=['POST'])
-def preview():
-    try:
-        data = request.json
-        tema = data.get('tema', '')
-        prompt = f"Genera un breve resumen sobre: {tema} en 300 palabras"
-        contenido = llamar_deepseek(prompt)
-        if contenido:
-            return jsonify({'success': True, 'contenido': contenido[:1000]})
-        return jsonify({'success': False, 'error': 'No se pudo generar'}), 500
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/health')
-def health():
-    return jsonify({'status': 'healthy', 'api_configured': bool(DEEPSEEK_API_KEY)})
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 10000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+document.getElementById('exportarWordBtn').onclick = async () => {
+  const seccionesEditadas = { ...seccionesGeneradas };
+  const indiceActivo = Array.from(document.querySelectorAll('.editor-tab')).findIndex(t => t.classList.contains('active'));
+  if (indiceActivo !== -1) {
+    const claves = ['introduccion', 'objetivos', 'marco_teorico', 'metodologia', 'desarrollo', 'conclusiones', 'recomendaciones', 'referencias'];
+    seccionesEditadas[claves[indiceActivo]] = document.getElementById('editorTexto').value;
+  }
+  const res = await fetch('/exportar-word', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ secciones: seccionesEditadas, datos_usuario: datosUsuario }) });
+  const blob = await res.blob(); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `informe_${Date.now()}.docx`; a.click(); URL.revokeObjectURL(url);
+};
+</script>
+</body>
+</html>
