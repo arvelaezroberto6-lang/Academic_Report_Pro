@@ -9,10 +9,11 @@ from docx import Document
 from io import BytesIO
 import os
 import uuid
+import json
+import re
 from datetime import datetime
 import requests
 import logging
-import re
 
 app = Flask(__name__)
 
@@ -25,14 +26,17 @@ DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
 DEEPSEEK_URL = "https://api.deepseek.com/v1/chat/completions"
 
 logger.info("=" * 60)
-logger.info("🚀 ACADEMIC REPORT PRO - VERSIÓN CORREGIDA")
-logger.info(f"🔑 API Key configurada: {'SÍ ✅' if DEEPSEEK_API_KEY else 'NO ❌'}")
+logger.info("ACADEMIC REPORT PRO - VERSIÓN JSON ROBUSTA")
+logger.info(f"API Key configurada: {'SI' if DEEPSEEK_API_KEY else 'NO'}")
 logger.info("=" * 60)
 
 # ============================================================
 # FUNCIÓN PARA LLAMAR A DEEPSEEK
 # ============================================================
-def llamar_deepseek(prompt):
+def llamar_deepseek(prompt, system_prompt=None, max_tokens=8000):
+    if not system_prompt:
+        system_prompt = "Eres un asistente académico profesional. Generas informes estructurados en español."
+
     headers = {
         "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
         "Content-Type": "application/json"
@@ -40,158 +44,116 @@ def llamar_deepseek(prompt):
     data = {
         "model": "deepseek-chat",
         "messages": [
-            {"role": "system", "content": "Eres un asistente académico profesional. Generas informes estructurados en español."},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}
         ],
-        "max_tokens": 8000,
+        "max_tokens": max_tokens,
         "temperature": 0.7
     }
     try:
-        response = requests.post(DEEPSEEK_URL, headers=headers, json=data, timeout=120)
+        response = requests.post(DEEPSEEK_URL, headers=headers, json=data, timeout=180)
         if response.status_code == 200:
             resultado = response.json()
             contenido = resultado['choices'][0]['message']['content']
             contenido = contenido.encode('utf-8', 'ignore').decode('utf-8')
-            logger.info(f"✅ Contenido recibido: {len(contenido)} caracteres")
+            logger.info(f"Contenido recibido: {len(contenido)} caracteres")
             return contenido
         else:
-            logger.error(f"Error HTTP {response.status_code}")
+            logger.error(f"Error HTTP {response.status_code}: {response.text[:300]}")
             return None
     except Exception as e:
-        logger.error(f"Error: {e}")
+        logger.error(f"Error llamando DeepSeek: {e}")
         return None
 
 # ============================================================
-# EXTRACCIÓN DE SECCIONES - VERSIÓN CORREGIDA
-# ============================================================
-def extraer_seccion(contenido, nombre):
-    """Extrae una sección del contenido - VERSIÓN CORREGIDA"""
-    
-    if not contenido:
-        return ""
-    
-    # Limpiar caracteres basura
-    contenido = contenido.encode('utf-8', 'ignore').decode('utf-8')
-    contenido = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', contenido)
-    
-    # Buscar el título en diferentes formatos
-    patrones_titulo = [
-        rf'\*\*{nombre}\*\*:?',
-        rf'\*\*{nombre}\*\*',
-        rf'### {nombre}',
-        rf'#{nombre}#',
-        rf'{nombre}',
-    ]
-    
-    for patron_titulo in patrones_titulo:
-        patron_seccion = rf'{patron_titulo}\s*(.*?)(?=\n\s*\*\*[A-ZÁÉÍÓÚÜÑ]|\n\s*\d+\.\s*\*\*|\Z)'
-        match = re.search(patron_seccion, contenido, re.DOTALL | re.IGNORECASE)
-        if match:
-            texto = match.group(1).strip()
-            if len(texto) > 100:
-                texto = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', texto)
-                texto = texto.replace('\n', '<br/>')
-                return texto
-    
-    # Búsqueda más simple
-    idx = contenido.upper().find(nombre.upper())
-    if idx != -1:
-        siguiente_match = re.search(r'\n\s*\*\*[A-ZÁÉÍÓÚÜÑ]|\n\s*\d+\.\s*\*\*', contenido[idx+len(nombre):])
-        if siguiente_match:
-            texto = contenido[idx+len(nombre):idx+len(nombre)+siguiente_match.start()].strip()
-        else:
-            texto = contenido[idx+len(nombre):].strip()
-        
-        if len(texto) > 100:
-            texto = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', texto)
-            texto = texto.replace('\n', '<br/>')
-            return texto
-    
-    return ""
-
-# ============================================================
-# GENERAR INFORME COMPLETO
+# GENERAR INFORME - RESPUESTA EN JSON DIRECTO
 # ============================================================
 def generar_informe_completo(tema, info_extra, tipo_informe, norma, nivel):
-    """Genera el informe y extrae todas las secciones"""
-    
-    prompt = f"""Genera un informe académico profesional de tipo {tipo_informe} sobre: "{tema}"
-Nivel educativo: {nivel}
+    """
+    Le pedimos a DeepSeek que responda ÚNICAMENTE en JSON.
+    Esto elimina por completo el problema de parsear texto con regex.
+    """
 
-Información adicional: {info_extra if info_extra else 'No hay información adicional'}
+    prompt = f"""Genera un informe académico profesional de tipo "{tipo_informe}" sobre el siguiente tema:
+TEMA: "{tema}"
+NIVEL EDUCATIVO: {nivel}
+INFORMACIÓN ADICIONAL: {info_extra if info_extra else 'Ninguna'}
+NORMA DE CITACIÓN: {norma}
 
-⚠️ INSTRUCCIONES ESTRICTAS:
-1. Cada sección DEBE tener el título en **negritas** como se muestra abajo
-2. Después de cada título, escribe mínimo 3 párrafos completos
-3. NO te saltes ninguna sección
-4. NO uses caracteres especiales extraños
+INSTRUCCIÓN CRÍTICA: Responde ÚNICAMENTE con un objeto JSON válido, sin ningún texto antes ni después, sin bloques de código markdown, sin backticks. Solo el JSON puro.
 
-**INTRODUCCIÓN**
-[Escribe aquí 3-4 párrafos completos sobre el contexto, problema y justificación]
+El JSON debe tener exactamente esta estructura:
+{{
+  "introduccion": "Aquí escribe 4 párrafos completos sobre el contexto, problema y justificación del tema. Cada párrafo separado por doble salto de línea.",
+  "objetivos": "Objetivo General: [escribe aquí].\\n\\nObjetivos Específicos:\\n1. [objetivo 1]\\n2. [objetivo 2]\\n3. [objetivo 3]\\n4. [objetivo 4]\\n5. [objetivo 5]",
+  "marco_teorico": "Aquí escribe 4 párrafos completos con conceptos clave, antecedentes teóricos y definiciones relevantes.",
+  "metodologia": "Aquí escribe 4 párrafos completos describiendo el tipo de investigación, población, técnicas de recolección de datos y procedimiento.",
+  "desarrollo": "Aquí escribe 4 párrafos completos con resultados, análisis detallado y hallazgos principales.",
+  "conclusiones": "1. [conclusión detallada 1]\\n2. [conclusión detallada 2]\\n3. [conclusión detallada 3]\\n4. [conclusión detallada 4]\\n5. [conclusión detallada 5]",
+  "recomendaciones": "1. [recomendación detallada 1]\\n2. [recomendación detallada 2]\\n3. [recomendación detallada 3]\\n4. [recomendación detallada 4]",
+  "referencias": "- [Referencia 1 en formato {norma}]\\n- [Referencia 2 en formato {norma}]\\n- [Referencia 3 en formato {norma}]\\n- [Referencia 4 en formato {norma}]\\n- [Referencia 5 en formato {norma}]\\n- [Referencia 6 en formato {norma}]"
+}}
 
-**OBJETIVOS**
-- Objetivo General: [escribe aquí]
-- Objetivos Específicos:
-  1. [escribe aquí]
-  2. [escribe aquí]
-  3. [escribe aquí]
-  4. [escribe aquí]
-  5. [escribe aquí]
+Cada sección debe tener contenido sustancial y académico. No uses caracteres especiales problemáticos."""
 
-**MARCO TEÓRICO**
-[Escribe aquí 3-4 párrafos completos con conceptos clave, antecedentes y definiciones]
+    system_prompt = (
+        "Eres un asistente académico profesional experto en redacción de informes. "
+        "DEBES responder ÚNICAMENTE con JSON válido, sin texto adicional, sin markdown, sin backticks. "
+        "Solo el objeto JSON puro y válido."
+    )
 
-**METODOLOGÍA**
-[Escribe aquí 3-4 párrafos completos describiendo tipo de investigación, población, técnicas y procedimiento]
+    contenido = llamar_deepseek(prompt, system_prompt=system_prompt, max_tokens=8000)
 
-**DESARROLLO**
-[Escribe aquí 3-4 párrafos completos con resultados, análisis y hallazgos]
-
-**CONCLUSIONES**
-1. [conclusión 1]
-2. [conclusión 2]
-3. [conclusión 3]
-4. [conclusión 4]
-5. [conclusión 5]
-
-**RECOMENDACIONES**
-1. [recomendación 1]
-2. [recomendación 2]
-3. [recomendación 3]
-4. [recomendación 4]
-
-**REFERENCIAS**
-- [Referencia 1 en formato {norma}]
-- [Referencia 2 en formato {norma}]
-- [Referencia 3 en formato {norma}]
-- [Referencia 4 en formato {norma}]
-- [Referencia 5 en formato {norma}]
-- [Referencia 6 en formato {norma}]
-
-¡ESCRIBE CONTENIDO SUSTANCIAL EN CADA SECCIÓN! Mínimo 3 párrafos por sección.
-"""
-    
-    contenido = llamar_deepseek(prompt)
-    
     if not contenido:
+        logger.error("DeepSeek no devolvió contenido")
         return None
-    
-    secciones = {
-        'introduccion': extraer_seccion(contenido, 'INTRODUCCIÓN'),
-        'objetivos': extraer_seccion(contenido, 'OBJETIVOS'),
-        'marco_teorico': extraer_seccion(contenido, 'MARCO TEÓRICO'),
-        'metodologia': extraer_seccion(contenido, 'METODOLOGÍA'),
-        'desarrollo': extraer_seccion(contenido, 'DESARROLLO'),
-        'conclusiones': extraer_seccion(contenido, 'CONCLUSIONES'),
-        'recomendaciones': extraer_seccion(contenido, 'RECOMENDACIONES'),
-        'referencias': extraer_seccion(contenido, 'REFERENCIAS')
-    }
-    
-    # Log para depuración
-    for key, value in secciones.items():
-        status = "✅" if value and len(value) > 100 else "❌"
-        logger.info(f"{status} {key}: {len(value) if value else 0} caracteres")
-    
+
+    # Limpiar posibles backticks o etiquetas markdown que DeepSeek añada
+    contenido_limpio = contenido.strip()
+    contenido_limpio = re.sub(r'^```(?:json)?\s*', '', contenido_limpio)
+    contenido_limpio = re.sub(r'\s*```$', '', contenido_limpio)
+    contenido_limpio = contenido_limpio.strip()
+
+    # Intentar parsear el JSON
+    try:
+        secciones = json.loads(contenido_limpio)
+        logger.info("JSON parseado correctamente")
+    except json.JSONDecodeError as e:
+        logger.warning(f"Error parseando JSON: {e}. Intentando extracción parcial...")
+        # Plan B: buscar el JSON dentro del texto
+        match = re.search(r'\{[\s\S]*\}', contenido_limpio)
+        if match:
+            try:
+                secciones = json.loads(match.group(0))
+                logger.info("JSON extraído con regex y parseado correctamente")
+            except Exception as e2:
+                logger.error(f"Plan B también falló: {e2}")
+                logger.error(f"Contenido recibido (primeros 500 chars): {contenido_limpio[:500]}")
+                return None
+        else:
+            logger.error("No se encontró JSON en la respuesta")
+            return None
+
+    # Validar que tenga las claves esperadas
+    claves_esperadas = ['introduccion', 'objetivos', 'marco_teorico', 'metodologia',
+                        'desarrollo', 'conclusiones', 'recomendaciones', 'referencias']
+
+    for clave in claves_esperadas:
+        if clave not in secciones:
+            secciones[clave] = ""
+            logger.warning(f"Clave faltante en JSON: {clave}")
+
+    # Log de estado de cada sección
+    for clave in claves_esperadas:
+        valor = secciones.get(clave, "")
+        status = "OK" if valor and len(valor) > 50 else "VACIO"
+        logger.info(f"[{status}] {clave}: {len(valor) if valor else 0} caracteres")
+
+    # Convertir saltos de línea a <br/> para PDF/HTML
+    for clave in claves_esperadas:
+        if secciones.get(clave):
+            secciones[clave] = secciones[clave].replace('\n', '<br/>')
+
     return secciones
 
 # ============================================================
@@ -206,26 +168,57 @@ def generar_pdf(datos_usuario, secciones):
     ciudad = datos_usuario.get('ciudad', '')
     fecha = datos_usuario.get('fecha', datetime.now().strftime('%d/%m/%Y'))
     norma = datos_usuario.get('norma', 'APA 7')
-    
+
     filename = f"informe_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}.pdf"
     filepath = os.path.join('informes_generados', filename)
-    
+
     styles = getSampleStyleSheet()
-    
-    styles.add(ParagraphStyle(name='TextoJustificado', parent=styles['Normal'], alignment=TA_JUSTIFY, fontSize=11, fontName='Times-Roman', spaceAfter=12, leading=16))
-    styles.add(ParagraphStyle(name='Titulo1', parent=styles['Heading1'], fontSize=16, fontName='Helvetica-Bold', textColor=colors.HexColor('#1a365d'), spaceBefore=24, spaceAfter=12))
-    styles.add(ParagraphStyle(name='TituloPortada', parent=styles['Title'], fontSize=24, alignment=TA_CENTER, textColor=colors.HexColor('#1a365d')))
-    styles.add(ParagraphStyle(name='TextoCentrado', parent=styles['Normal'], alignment=TA_CENTER, fontSize=12))
-    
-    doc = SimpleDocTemplate(filepath, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=72)
+
+    styles.add(ParagraphStyle(
+        name='TextoJustificado',
+        parent=styles['Normal'],
+        alignment=TA_JUSTIFY,
+        fontSize=11,
+        fontName='Times-Roman',
+        spaceAfter=12,
+        leading=16
+    ))
+    styles.add(ParagraphStyle(
+        name='Titulo1',
+        parent=styles['Heading1'],
+        fontSize=16,
+        fontName='Helvetica-Bold',
+        textColor=colors.HexColor('#1a365d'),
+        spaceBefore=24,
+        spaceAfter=12
+    ))
+    styles.add(ParagraphStyle(
+        name='TituloPortada',
+        parent=styles['Title'],
+        fontSize=24,
+        alignment=TA_CENTER,
+        textColor=colors.HexColor('#1a365d')
+    ))
+    styles.add(ParagraphStyle(
+        name='TextoCentrado',
+        parent=styles['Normal'],
+        alignment=TA_CENTER,
+        fontSize=12
+    ))
+
+    doc = SimpleDocTemplate(
+        filepath,
+        rightMargin=72, leftMargin=72,
+        topMargin=72, bottomMargin=72
+    )
     story = []
-    
+
     # Portada
-    story.append(Spacer(1, 2.0*inch))
+    story.append(Spacer(1, 2.0 * inch))
     story.append(Paragraph("INFORME ACADÉMICO", styles['TituloPortada']))
-    story.append(Spacer(1, 0.3*inch))
+    story.append(Spacer(1, 0.3 * inch))
     story.append(Paragraph(tema.upper(), styles['TextoCentrado']))
-    story.append(Spacer(1, 1.5*inch))
+    story.append(Spacer(1, 1.5 * inch))
     story.append(Paragraph(f"<b>Presentado por:</b> {nombre}", styles['TextoCentrado']))
     if asignatura:
         story.append(Paragraph(f"<b>Asignatura:</b> {asignatura}", styles['TextoCentrado']))
@@ -238,15 +231,19 @@ def generar_pdf(datos_usuario, secciones):
     story.append(Paragraph(f"<b>Fecha:</b> {fecha}", styles['TextoCentrado']))
     story.append(Paragraph(f"<b>Norma:</b> {norma}", styles['TextoCentrado']))
     story.append(PageBreak())
-    
+
     # Índice
     story.append(Paragraph("ÍNDICE", styles['Titulo1']))
-    story.append(Spacer(1, 0.2*inch))
-    for idx in ["1. INTRODUCCIÓN", "2. OBJETIVOS", "3. MARCO TEÓRICO", "4. METODOLOGÍA", "5. DESARROLLO", "6. CONCLUSIONES", "7. RECOMENDACIONES", "8. REFERENCIAS"]:
+    story.append(Spacer(1, 0.2 * inch))
+    for idx in [
+        "1. INTRODUCCIÓN", "2. OBJETIVOS", "3. MARCO TEÓRICO",
+        "4. METODOLOGÍA", "5. DESARROLLO", "6. CONCLUSIONES",
+        "7. RECOMENDACIONES", "8. REFERENCIAS"
+    ]:
         story.append(Paragraph(f"• {idx}", styles['TextoJustificado']))
-        story.append(Spacer(1, 0.1*inch))
+        story.append(Spacer(1, 0.1 * inch))
     story.append(PageBreak())
-    
+
     # Secciones
     secciones_orden = [
         ("1. INTRODUCCIÓN", 'introduccion'),
@@ -258,17 +255,24 @@ def generar_pdf(datos_usuario, secciones):
         ("7. RECOMENDACIONES", 'recomendaciones'),
         ("8. REFERENCIAS", 'referencias')
     ]
-    
+
     for titulo, clave in secciones_orden:
         story.append(Paragraph(titulo, styles['Titulo1']))
-        story.append(Spacer(1, 0.2*inch))
+        story.append(Spacer(1, 0.2 * inch))
         contenido = secciones.get(clave, '')
-        if contenido and len(contenido) > 100:
-            story.append(Paragraph(contenido, styles['TextoJustificado']))
+        if contenido and len(contenido) > 20:
+            # Limpiar etiquetas HTML problemáticas para ReportLab
+            contenido_limpio = contenido.replace('<br/>', '<br/>').replace('&', '&amp;')
+            try:
+                story.append(Paragraph(contenido_limpio, styles['TextoJustificado']))
+            except Exception as e:
+                logger.warning(f"Error renderizando sección {clave}: {e}")
+                contenido_texto = re.sub(r'<[^>]+>', ' ', contenido)
+                story.append(Paragraph(contenido_texto, styles['TextoJustificado']))
         else:
-            story.append(Paragraph("No se pudo generar esta sección.", styles['TextoJustificado']))
+            story.append(Paragraph("Sección no disponible.", styles['TextoJustificado']))
         story.append(PageBreak())
-    
+
     doc.build(story)
     return filename, filepath
 
@@ -284,7 +288,7 @@ def generar_word(datos_usuario, secciones):
     ciudad = datos_usuario.get('ciudad', '')
     fecha = datos_usuario.get('fecha', datetime.now().strftime('%d/%m/%Y'))
     norma = datos_usuario.get('norma', 'APA 7')
-    
+
     doc = Document()
     doc.add_heading('INFORME ACADÉMICO', 0)
     doc.add_heading(tema, level=1)
@@ -296,28 +300,36 @@ def generar_word(datos_usuario, secciones):
     doc.add_paragraph(f"Fecha: {fecha}")
     doc.add_paragraph(f"Norma: {norma}")
     doc.add_page_break()
-    
+
     doc.add_heading('ÍNDICE', level=2)
-    for titulo in ['INTRODUCCIÓN', 'OBJETIVOS', 'MARCO TEÓRICO', 'METODOLOGÍA', 'DESARROLLO', 'CONCLUSIONES', 'RECOMENDACIONES', 'REFERENCIAS']:
+    for titulo in ['INTRODUCCIÓN', 'OBJETIVOS', 'MARCO TEÓRICO', 'METODOLOGÍA',
+                   'DESARROLLO', 'CONCLUSIONES', 'RECOMENDACIONES', 'REFERENCIAS']:
         doc.add_paragraph(f"• {titulo}")
     doc.add_page_break()
-    
+
     secciones_orden = [
-        ("INTRODUCCIÓN", 'introduccion'), ("OBJETIVOS", 'objetivos'),
-        ("MARCO TEÓRICO", 'marco_teorico'), ("METODOLOGÍA", 'metodologia'),
-        ("DESARROLLO", 'desarrollo'), ("CONCLUSIONES", 'conclusiones'),
-        ("RECOMENDACIONES", 'recomendaciones'), ("REFERENCIAS", 'referencias')
+        ("INTRODUCCIÓN", 'introduccion'),
+        ("OBJETIVOS", 'objetivos'),
+        ("MARCO TEÓRICO", 'marco_teorico'),
+        ("METODOLOGÍA", 'metodologia'),
+        ("DESARROLLO", 'desarrollo'),
+        ("CONCLUSIONES", 'conclusiones'),
+        ("RECOMENDACIONES", 'recomendaciones'),
+        ("REFERENCIAS", 'referencias')
     ]
-    
+
     for titulo, clave in secciones_orden:
         doc.add_heading(titulo, level=2)
         contenido = secciones.get(clave, '')
         if contenido:
-            doc.add_paragraph(contenido.replace('<br/>', '\n').replace('<b>', '').replace('</b>', ''))
+            # Limpiar etiquetas HTML para el Word
+            contenido_limpio = contenido.replace('<br/>', '\n').replace('<b>', '').replace('</b>', '')
+            contenido_limpio = re.sub(r'<[^>]+>', '', contenido_limpio)
+            doc.add_paragraph(contenido_limpio)
         else:
-            doc.add_paragraph("No se pudo generar esta sección.")
+            doc.add_paragraph("Sección no disponible.")
         doc.add_page_break()
-    
+
     buffer = BytesIO()
     doc.save(buffer)
     buffer.seek(0)
@@ -336,7 +348,6 @@ def generar():
         data = request.json
         tema = data.get('tema', '').strip()
         nivel = data.get('nivel', 'universitario')
-        modo = data.get('modo', 'rapido')
         tipo_informe = data.get('tipo_informe', 'academico')
         norma = data.get('norma', 'APA 7')
         nombre = data.get('nombre', 'Estudiante')
@@ -345,23 +356,23 @@ def generar():
         institucion = data.get('institucion', '')
         ciudad = data.get('ciudad', '')
         texto_usuario = data.get('texto_usuario', '')
-        
+
         autores = data.get('autores', [])
         if autores:
             nombre_principal = autores[0].get('nombre', nombre)
         else:
             nombre_principal = nombre
-        
+
         if not tema:
             return jsonify({'success': False, 'error': 'El tema es requerido'}), 400
-        
-        logger.info(f"📨 Generando informe - Tema: {tema[:50]}...")
-        
+
+        logger.info(f"Generando informe - Tema: {tema[:50]}...")
+
         secciones = generar_informe_completo(tema, texto_usuario, tipo_informe, norma, nivel)
-        
+
         if not secciones:
-            return jsonify({'success': False, 'error': 'No se pudo generar el informe'}), 500
-        
+            return jsonify({'success': False, 'error': 'No se pudo generar el informe. Verifica la API key de DeepSeek.'}), 500
+
         datos_usuario = {
             'nombre': nombre_principal,
             'tema': tema,
@@ -372,30 +383,44 @@ def generar():
             'fecha': datetime.now().strftime('%Y-%m-%d'),
             'norma': norma
         }
-        
+
         return jsonify({'success': True, 'secciones': secciones, 'datos_usuario': datos_usuario})
+
     except Exception as e:
-        logger.error(f"Error: {e}")
+        logger.error(f"Error en /generar: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/exportar-pdf', methods=['POST'])
 def exportar_pdf():
-    data = request.json
-    filename, filepath = generar_pdf(data['datos_usuario'], data['secciones'])
-    return send_file(filepath, as_attachment=True, download_name=filename)
+    try:
+        data = request.json
+        filename, filepath = generar_pdf(data['datos_usuario'], data['secciones'])
+        return send_file(filepath, as_attachment=True, download_name=filename)
+    except Exception as e:
+        logger.error(f"Error exportando PDF: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/exportar-word', methods=['POST'])
 def exportar_word():
-    data = request.json
-    buffer = generar_word(data['datos_usuario'], data['secciones'])
-    return send_file(buffer, as_attachment=True, download_name=f"informe_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx")
+    try:
+        data = request.json
+        buffer = generar_word(data['datos_usuario'], data['secciones'])
+        return send_file(
+            buffer,
+            as_attachment=True,
+            download_name=f"informe_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx",
+            mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        )
+    except Exception as e:
+        logger.error(f"Error exportando Word: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/preview', methods=['POST'])
 def preview():
     try:
         data = request.json
         tema = data.get('tema', '')
-        prompt = f"Genera un breve resumen sobre: {tema} en 300 palabras"
+        prompt = f"Genera un breve resumen académico sobre: {tema} en 300 palabras."
         contenido = llamar_deepseek(prompt)
         if contenido:
             return jsonify({'success': True, 'contenido': contenido[:1000]})
@@ -405,7 +430,10 @@ def preview():
 
 @app.route('/health')
 def health():
-    return jsonify({'status': 'healthy', 'api_configured': bool(DEEPSEEK_API_KEY)})
+    return jsonify({
+        'status': 'healthy',
+        'api_configured': bool(DEEPSEEK_API_KEY)
+    })
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
