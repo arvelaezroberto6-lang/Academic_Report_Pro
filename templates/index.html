@@ -274,7 +274,7 @@ let normaActual = 'APA 7';
 let refsModo = 'auto';
 let seccionesGeneradas = {};
 let datosUsuario = {};
-let informesUsados = parseInt(localStorage.getItem('informesUsados') || '0');
+let informesUsados = 0; // Sin límite de informes
 
 // Modo
 document.querySelectorAll('#modoTabs .mode-tab').forEach(btn => {
@@ -351,7 +351,7 @@ function actualizarProgreso(paso, mensaje, porcentaje) {
 document.getElementById('generarBtn').onclick = async () => {
   const tema = document.getElementById('tema').value.trim();
   if (!tema) { Swal.fire('Error', 'Escribe el tema del informe', 'error'); return; }
-  if (informesUsados >= 3) { Swal.fire('Límite alcanzado', 'Usaste tus 3 informes gratis. Mejora tu plan.', 'warning'); return; }
+
   
   const autores = getAutores();
   const nombrePrincipal = document.getElementById('nombre').value.trim() || (autores[0]?.nombre || 'Estudiante');
@@ -385,8 +385,7 @@ document.getElementById('generarBtn').onclick = async () => {
     if (data.success) {
       seccionesGeneradas = data.secciones;
       datosUsuario = data.datos_usuario;
-      informesUsados++;
-      localStorage.setItem('informesUsados', informesUsados);
+
       actualizarProgreso(4, '¡Informe listo!', 100);
       setTimeout(() => {
         document.getElementById('progressContainer').style.display = 'none';
