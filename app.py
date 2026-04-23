@@ -28,7 +28,7 @@ DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
 DEEPSEEK_URL = "https://api.deepseek.com/v1/chat/completions"
 
 logger.info("=" * 60)
-logger.info("🚀 ACADEMIC REPORT PRO - VERSIÓN 2.0 MEJORADA")
+logger.info("🚀 ACADEMIC REPORT PRO - VERSIÓN 3.1")
 logger.info(f"🔑 API Key configurada: {'SÍ ✅' if DEEPSEEK_API_KEY else 'NO ❌'}")
 logger.info("=" * 60)
 
@@ -40,94 +40,70 @@ NORMAS_INSTRUCCIONES = {
 NORMA APA 7ª EDICIÓN — Aplica estas reglas ESTRICTAMENTE:
 - En texto: (Apellido, año) o Apellido (año) señaló que...
 - Hasta 2 autores: cita ambos siempre. 3 o más: primer apellido + et al.
-- Referencias al final: Apellido, I. (año). Título en cursiva sin capitalizar excepto primera palabra. Editorial. DOI o URL si aplica.
-- Artículos: Apellido, I. (año). Título del artículo. Nombre de Revista en Cursiva, volumen(número), páginas. https://doi.org/...
-- DOI obligatorio cuando esté disponible.
+- Referencias al final: Apellido, I. (año). Título en cursiva. Editorial. DOI.
+- Artículos: Apellido, I. (año). Título del artículo. Revista, volumen(número), páginas. DOI.
 """,
     'APA 6': """
 NORMA APA 6ª EDICIÓN — Aplica estas reglas ESTRICTAMENTE:
 - En texto: (Apellido, año, p. XX) para citas directas.
-- 3-5 autores: primera vez todos; luego primer autor et al. 6+: et al. siempre.
-- Referencias: Apellido, I. (año). Título del libro en cursiva. Ciudad, País: Editorial.
-- Artículos: Apellido, I. (año). Título artículo. Nombre Revista en Cursiva, volumen(número), pp. XX-XX. doi:XXXXXXX
-- Recuperado de URL (sin punto final en URL).
+- 3-5 autores: primera vez todos; luego et al.
+- Referencias: Apellido, I. (año). Título del libro. Ciudad: Editorial.
 """,
     'ICONTEC': """
-NORMA ICONTEC (NTC 5613) — Aplica estas reglas ESTRICTAMENTE:
-- En texto: notas al pie numeradas superíndice (¹, ², ³...) O sistema autor-año según la variante.
-- Referencias al final en ORDEN DE APARICIÓN (no alfabético).
-- Formato libro: APELLIDO, Nombre. Título en cursiva. Número de edición. Ciudad: Editorial, año. Páginas.
-- Artículos: APELLIDO, Nombre. Título artículo. En: Nombre de la Revista. Ciudad. Vol. X, No. X (mes, año); p. XX-XX.
-- Mayúsculas solo en apellido del autor principal.
-- Citar páginas específicas cuando aplique (p. o pp.).
+NORMA ICONTEC — Aplica estas reglas ESTRICTAMENTE:
+- En texto: notas al pie numeradas o autor-año.
+- Referencias en ORDEN DE APARICIÓN.
+- Libro: APELLIDO, Nombre. Título. Edición. Ciudad: Editorial, año.
+- APELLIDO en MAYÚSCULAS.
 """,
     'IEEE': """
 NORMA IEEE — Aplica estas reglas ESTRICTAMENTE:
-- En texto: números entre corchetes [1], [2], [3] en orden de aparición.
-- Múltiples fuentes: [1], [2] o rango [1]–[3].
-- Referencias numeradas en orden de aparición, NO alfabético.
-- Artículos: [1] I. Apellido y N. Apellido, "Título del artículo," Nombre Revista en Abbrev. Cursiva, vol. X, no. X, pp. XX–XX, Mes año, doi: XX.XXXX/XXXXX.
-- Libros: [2] I. Apellido, Título del Libro en Cursiva, Xth ed. Ciudad, País: Editorial, año, pp. XX–XX.
-- Conferencias: [3] I. Apellido, "Título," en Proc. Nombre Conferencia, Ciudad, año, pp. XX–XX.
+- En texto: números entre corchetes [1] en orden de aparición.
+- Referencias numeradas en orden de aparición.
+- Artículos: [1] I. Apellido, "Título," Revista, vol. X, no. X, pp. XX-XX, año.
 """,
     'Vancouver': """
-NORMA VANCOUVER — Aplica estas reglas ESTRICTAMENTE (usada en ciencias de la salud):
-- En texto: números superíndice o entre paréntesis en orden de aparición (1), (2)...
-- Referencias numeradas consecutivamente según aparición en el texto.
-- Artículos: Apellido AB, Apellido CD. Título del artículo. Abrev Revista. año;volumen(número):páginas.
-- Libros: Apellido AB. Título del libro. Xth ed. Ciudad: Editorial; año.
-- Capítulos: Apellido AB. Título capítulo. En: Apellido AB, editor. Título libro. Ciudad: Editorial; año. p. XX-XX.
-- Hasta 6 autores: listar todos. Más de 6: primeros 6 + et al.
+NORMA VANCOUVER — Aplica estas reglas ESTRICTAMENTE:
+- En texto: números superíndice en orden de aparición.
+- Referencias numeradas consecutivamente.
+- Artículos: Apellido AB. Título. Revista. año;volumen(número):páginas.
 """,
     'Chicago': """
-NORMA CHICAGO 17ª EDICIÓN (autor-fecha) — Aplica estas reglas ESTRICTAMENTE:
-- En texto: (Apellido año, página) — sin coma entre autor y año.
-- Bibliografía final en orden ALFABÉTICO.
-- Libros: Apellido, Nombre. Año. Título en Cursiva. Ciudad: Editorial.
-- Artículos: Apellido, Nombre. Año. "Título del artículo." Nombre Revista en Cursiva número, no. X: páginas. DOI o URL.
-- Capítulos: Apellido, Nombre. Año. "Título capítulo." En Título del libro, editado por Nombre Apellido, XX-XX. Ciudad: Editorial.
-- Fuentes en línea: incluir fecha de acceso si no hay fecha de publicación.
+NORMA CHICAGO — Aplica estas reglas ESTRICTAMENTE:
+- En texto: (Apellido año, página).
+- Bibliografía en orden ALFABÉTICO.
+- Libros: Apellido, Nombre. Año. Título. Ciudad: Editorial.
 """,
     'MLA': """
-NORMA MLA 9ª EDICIÓN — Aplica estas reglas ESTRICTAMENTE:
-- En texto: (Apellido número de página) sin coma entre apellido y página.
-- Bibliografía final llamada "Works Cited" en orden ALFABÉTICO.
-- Libros: Apellido, Nombre. Título del Libro en Cursiva. Editorial, año.
-- Artículos: Apellido, Nombre. "Título del artículo." Nombre Revista en Cursiva, vol. X, no. X, año, pp. XX-XX.
-- Web: Apellido, Nombre. "Título de la página." Nombre del Sitio en Cursiva, fecha publicación, URL. Accedido día mes año.
-- Si hay DOI, usar en lugar de URL.
+NORMA MLA — Aplica estas reglas ESTRICTAMENTE:
+- En texto: (Apellido página).
+- Works Cited en orden ALFABÉTICO.
+- Libros: Apellido, Nombre. Título. Editorial, año.
 """,
     'Harvard': """
 NORMA HARVARD — Aplica estas reglas ESTRICTAMENTE:
-- En texto: (Apellido año) o (Apellido año, p. XX) para citas directas.
-- 3+ autores en texto: Apellido et al. año.
-- Referencias al final en orden ALFABÉTICO.
-- Libros: Apellido, I. (año) Título en cursiva, Xth edn. Ciudad: Editorial.
-- Artículos: Apellido, I. (año) 'Título artículo', Nombre Revista en Cursiva, vol. X, no. X, pp. XX-XX.
-- Capítulos: Apellido, I. (año) 'Título capítulo', en Apellido (ed.) Título libro en cursiva. Ciudad: Editorial, pp. XX-XX.
+- En texto: (Apellido año) o (Apellido año, p. XX).
+- Referencias alfabéticas.
+- Libros: Apellido, I. (año) Título. Ciudad: Editorial.
 """
 }
 
-# ============================================================
-# INSTRUCCIONES ESPECÍFICAS POR TIPO DE INFORME
-# ============================================================
 TIPOS_INSTRUCCIONES = {
-    'academico': "Informe académico estándar con rigor teórico, citas bibliográficas y análisis crítico.",
-    'laboratorio': "Informe de laboratorio/práctica: incluye hipótesis, materiales, procedimiento experimental, resultados con datos/tablas, análisis de error y discusión científica.",
-    'ejecutivo': "Informe ejecutivo empresarial: lenguaje claro y conciso, enfocado en KPIs, decisiones estratégicas, análisis costo-beneficio, recomendaciones accionables para tomadores de decisiones.",
-    'tesis': "Tesis académica de alto rigor: argumentación profunda, revisión exhaustiva de literatura, marco metodológico robusto, contribución original al conocimiento, lenguaje formal universitario avanzado.",
-    'pasantia': "Informe de pasantía/práctica profesional: describe la empresa/organización, actividades realizadas, competencias desarrolladas, aprendizajes obtenidos y evaluación de la experiencia.",
-    'proyecto': "Informe de proyecto: incluye cronograma, recursos, entregables, gestión de riesgos, estado de avance y análisis de cumplimiento de objetivos."
+    'academico': "Informe académico estándar con rigor teórico y análisis crítico.",
+    'laboratorio': "Informe de laboratorio: hipótesis, materiales, procedimiento, resultados, discusión.",
+    'ejecutivo': "Informe ejecutivo: KPIs, análisis estratégico, recomendaciones.",
+    'tesis': "Tesis académica: argumentación profunda, revisión de literatura, metodología robusta.",
+    'pasantia': "Informe de pasantía: descripción de actividades, competencias, aprendizajes.",
+    'proyecto': "Informe de proyecto: cronograma, recursos, entregables, riesgos."
 }
 
 # ============================================================
 # FUNCIÓN PARA LLAMAR A DEEPSEEK
 # ============================================================
 def llamar_deepseek(prompt, system_prompt=None, max_tokens=3000):
-    headers = {
-        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-        "Content-Type": "application/json"
-    }
+    if not DEEPSEEK_API_KEY:
+        return None
+    headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type": "application/json"}
     messages = []
     if system_prompt:
         messages.append({"role": "system", "content": system_prompt})
@@ -141,23 +117,18 @@ def llamar_deepseek(prompt, system_prompt=None, max_tokens=3000):
     try:
         response = requests.post(DEEPSEEK_URL, headers=headers, json=data, timeout=120)
         if response.status_code == 200:
-            resultado = response.json()
-            contenido = resultado['choices'][0]['message']['content']
+            contenido = response.json()['choices'][0]['message']['content']
             contenido = contenido.encode('utf-8', 'ignore').decode('utf-8')
-            logger.info(f"✅ Contenido recibido: {len(contenido)} caracteres")
             return contenido
-        else:
-            logger.error(f"Error HTTP {response.status_code}: {response.text[:200]}")
-            return None
+        return None
     except Exception as e:
-        logger.error(f"Error llamando DeepSeek: {e}")
+        logger.error(f"Error: {e}")
         return None
 
 # ============================================================
-# FUNCIÓN PARA LIMPIAR TEXTO PARA PDF (sin HTML tags)
+# LIMPIEZA DE TEXTO
 # ============================================================
 def limpiar_para_pdf(texto):
-    """Convierte el texto a formato seguro para ReportLab — sin <br/> ni tags HTML"""
     if not texto:
         return ""
     texto = texto.replace('<br/>', '\n').replace('<br>', '\n')
@@ -166,11 +137,7 @@ def limpiar_para_pdf(texto):
     texto = re.sub(r'\n{3,}', '\n\n', texto)
     return texto.strip()
 
-# ============================================================
-# FUNCIÓN PARA LIMPIAR TEXTO PARA WORD
-# ============================================================
 def limpiar_para_word(texto):
-    """Convierte el texto a formato limpio para python-docx"""
     if not texto:
         return ""
     texto = texto.replace('<br/>', '\n').replace('<br>', '\n')
@@ -179,145 +146,95 @@ def limpiar_para_word(texto):
     return texto.strip()
 
 # ============================================================
-# PROMPTS DEDICADOS POR SECCIÓN — CON SOPORTE DE NORMA Y TIPO
+# PROMPTS POR SECCIÓN
 # ============================================================
 def build_prompt(seccion, tema, info, tipo, norma, nivel, refs_manuales=''):
     instruccion_norma = NORMAS_INSTRUCCIONES.get(norma, NORMAS_INSTRUCCIONES['APA 7'])
     instruccion_tipo = TIPOS_INSTRUCCIONES.get(tipo, TIPOS_INSTRUCCIONES['academico'])
-
-    base = f"""Tipo de informe: {instruccion_tipo}
-Nivel educativo: {nivel}.
-Norma bibliográfica activa: {norma}.
+    
+    base = f"""Tipo: {instruccion_tipo}
+Nivel: {nivel}
+Norma: {norma}
 {instruccion_norma}
 """
-
     if seccion == 'introduccion':
-        return base + f"""Escribe ÚNICAMENTE la sección de INTRODUCCIÓN para el informe sobre: "{tema}".
-Información adicional del autor: {info or 'Ninguna'}.
-
-Requisitos:
-- Mínimo 4 párrafos bien desarrollados
-- Contexto general del tema, justificación, planteamiento del problema, estructura del informe
-- Redacción formal y académica acorde al nivel {nivel}
-- Incluye al menos 2 citas en el cuerpo del texto usando el formato {norma}
-- NO incluyas el título, solo el contenido puro"""
-
+        return base + f"""Escribe la INTRODUCCIÓN para: "{tema}".
+Información adicional: {info or 'Ninguna'}
+Mínimo 4 párrafos. Incluye contexto, justificación, problema y estructura.
+Incluye al menos 2 citas en formato {norma}.
+NO incluyas el título."""
+    
     elif seccion == 'objetivos':
-        return base + f"""Escribe ÚNICAMENTE la sección de OBJETIVOS para el informe sobre: "{tema}".
-
-Formato EXACTO que debes seguir:
+        return base + f"""Escribe los OBJETIVOS para: "{tema}".
+Formato:
 OBJETIVO GENERAL:
-[Un objetivo general claro y medible que abarque todo el informe, en infinitivo]
+[Un objetivo general]
 
 OBJETIVOS ESPECÍFICOS:
-1. [Objetivo específico 1 — verbo en infinitivo + acción concreta + resultado esperado]
-2. [Objetivo específico 2]
-3. [Objetivo específico 3]
-4. [Objetivo específico 4]
-5. [Objetivo específico 5]
-
-Verbos sugeridos: Analizar, Identificar, Evaluar, Determinar, Describir, Comparar, Proponer, Establecer."""
-
+1. [objetivo 1]
+2. [objetivo 2]
+3. [objetivo 3]
+4. [objetivo 4]
+5. [objetivo 5]"""
+    
     elif seccion == 'marco_teorico':
-        return base + f"""Escribe ÚNICAMENTE el MARCO TEÓRICO para el informe sobre: "{tema}".
-Información adicional: {info or 'Ninguna'}.
-
-Requisitos:
-- Mínimo 5 párrafos completos
-- Antecedentes históricos, definiciones clave, teorías y modelos relevantes, estado actual del conocimiento
-- Incluye al menos 4 citas bibliográficas en el cuerpo usando formato {norma} estrictamente
-- Vocabulario especializado, redacción formal"""
-
+        return base + f"""Escribe el MARCO TEÓRICO para: "{tema}".
+Información: {info or 'Ninguna'}
+Mínimo 5 párrafos. Incluye antecedentes, definiciones, teorías.
+Incluye al menos 4 citas en formato {norma}."""
+    
     elif seccion == 'metodologia':
-        return base + f"""Escribe ÚNICAMENTE la METODOLOGÍA para el informe de tipo "{tipo}" sobre: "{tema}".
-
-Requisitos:
-- Mínimo 4 párrafos
-- Tipo y enfoque de investigación, población/muestra (si aplica), técnicas e instrumentos, procedimiento de análisis, consideraciones éticas
-- Si es laboratorio: incluir materiales, procedimiento paso a paso, variables
-- Si es ejecutivo: incluir fuentes de datos, métricas e indicadores usados
-- Justifica cada decisión metodológica"""
-
+        return base + f"""Escribe la METODOLOGÍA para informe tipo "{tipo}" sobre: "{tema}".
+Mínimo 4 párrafos. Incluye tipo de investigación, población, técnicas, procedimiento."""
+    
     elif seccion == 'desarrollo':
-        return base + f"""Escribe ÚNICAMENTE el DESARROLLO para el informe de tipo "{tipo}" sobre: "{tema}".
-Información adicional: {info or 'Ninguna'}.
-
-Requisitos:
-- Mínimo 6 párrafos — es la sección más extensa
-- Presentación de resultados/hallazgos, análisis detallado, discusión crítica, comparación con teoría
-- Incluir datos concretos, ejemplos reales, comparaciones
-- Al menos 3 citas en texto con formato {norma}
-- Si es laboratorio: resultados con datos y análisis de error
-- Si es ejecutivo: KPIs, métricas, análisis estratégico"""
-
+        return base + f"""Escribe el DESARROLLO para: "{tema}".
+Información: {info or 'Ninguna'}
+Mínimo 6 párrafos. Incluye resultados, análisis, discusión.
+Incluye al menos 3 citas en formato {norma}."""
+    
     elif seccion == 'conclusiones':
-        return base + f"""Escribe ÚNICAMENTE las CONCLUSIONES para el informe sobre: "{tema}".
-
+        return base + f"""Escribe las CONCLUSIONES para: "{tema}".
 Formato:
-1. [Conclusión 1: responde directamente al objetivo general — mínimo 3 oraciones]
-2. [Conclusión 2: hallazgo más importante del desarrollo — mínimo 3 oraciones]
-3. [Conclusión 3: implicaciones prácticas o teóricas — mínimo 3 oraciones]
-4. [Conclusión 4: limitaciones encontradas — mínimo 2 oraciones]
-5. [Conclusión 5: perspectivas futuras o reflexión final — mínimo 3 oraciones]
-
-Cada conclusión debe ser un párrafo sustancial. Conecta con los objetivos planteados."""
-
+1. [conclusión 1]
+2. [conclusión 2]
+3. [conclusión 3]
+4. [conclusión 4]
+5. [conclusión 5]"""
+    
     elif seccion == 'recomendaciones':
-        return base + f"""Escribe ÚNICAMENTE las RECOMENDACIONES para el informe de tipo "{tipo}" sobre: "{tema}".
-
+        return base + f"""Escribe las RECOMENDACIONES para informe tipo "{tipo}" sobre: "{tema}".
 Formato:
-1. [Recomendación 1: dirigida a quién + acción concreta + justificación — 3 oraciones]
-2. [Recomendación 2]
-3. [Recomendación 3]
-4. [Recomendación 4]
-5. [Recomendación 5: para futuras investigaciones — 3 oraciones]
-
-Deben ser prácticas, específicas, medibles y justificadas según el análisis del informe."""
-
+1. [recomendación 1]
+2. [recomendación 2]
+3. [recomendación 3]
+4. [recomendación 4]
+5. [recomendación 5]"""
+    
     elif seccion == 'referencias':
-        refs_extra = f"\nAdemás incluye o adapta estas referencias que el autor proporcionó:\n{refs_manuales}" if refs_manuales else ""
-        return base + f"""Genera ÚNICAMENTE la lista de REFERENCIAS BIBLIOGRÁFICAS para el informe sobre: "{tema}".
-Norma: {norma}.
+        refs_extra = f"\nReferencias del autor:\n{refs_manuales}" if refs_manuales else ""
+        return base + f"""Genera 8-10 referencias para: "{tema}".
+Norma: {norma}
 {refs_extra}
-
-Requisitos ESTRICTOS:
-- Genera entre 8 y 10 referencias reales y académicas sobre este tema
-- APLICA el formato {norma} con absoluta precisión según las instrucciones de norma anteriores
-- Incluir: libros, artículos de revista científica, reportes de organismos (ONU, UNESCO, CEPAL, etc.), fuentes web académicas
-- Años: preferiblemente 2015-2024
-- Ordenar según lo indique la norma {norma} (alfabético o por aparición)
-- Autores, títulos, editoriales y DOIs académicos y plausibles
-
-Escribe solo la lista, sin título de sección."""
-
+Formato estricto {norma}. Solo la lista, sin título."""
     return ""
 
 # ============================================================
-# GENERAR UNA SECCIÓN INDIVIDUAL
+# GENERAR SECCIÓN
 # ============================================================
 def generar_seccion(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_manuales=''):
     prompt = build_prompt(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_manuales)
     if not prompt:
         return None
-
-    system_prompt = (
-        f"Eres un experto en redacción académica universitaria en español con especialización en normas bibliográficas ({norma}). "
-        "Escribes contenido sustancial, formal y bien estructurado con vocabulario académico apropiado. "
-        f"Aplicas la norma {norma} con absoluta precisión en citas y referencias. "
-        "Respondes SOLO con el contenido solicitado, sin títulos de sección, sin preámbulos, sin '**', sin comentarios adicionales."
-    )
-
+    system_prompt = f"Experto en redacción académica en español. Especialista en norma {norma}. Responde SOLO con el contenido solicitado, sin títulos ni comentarios."
     contenido = llamar_deepseek(prompt, system_prompt=system_prompt, max_tokens=3000)
-
-    if not contenido:
-        return None
-
-    contenido = contenido.strip()
-    logger.info(f"Sección '{seccion}' generada: {len(contenido)} caracteres")
+    if contenido:
+        contenido = contenido.strip()
+        logger.info(f"Sección '{seccion}' generada: {len(contenido)} caracteres")
     return contenido
 
 # ============================================================
-# GENERAR INFORME COMPLETO (fallback)
+# GENERAR INFORME COMPLETO
 # ============================================================
 def generar_informe_completo(tema, info_extra, tipo_informe, norma, nivel):
     secciones = {}
@@ -329,7 +246,7 @@ def generar_informe_completo(tema, info_extra, tipo_informe, norma, nivel):
     return secciones
 
 # ============================================================
-# GENERAR PDF — CORREGIDO (sin <br/> en ReportLab)
+# GENERAR PDF
 # ============================================================
 def generar_pdf(datos_usuario, secciones):
     nombre = datos_usuario.get('nombre', 'Estudiante')
@@ -346,81 +263,22 @@ def generar_pdf(datos_usuario, secciones):
     filepath = os.path.join('informes_generados', filename)
 
     styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(name='TextoJustificado', parent=styles['Normal'], alignment=TA_JUSTIFY, fontSize=11, fontName='Times-Roman', spaceAfter=10, leading=18, firstLineIndent=18))
+    styles.add(ParagraphStyle(name='Titulo1', parent=styles['Heading1'], fontSize=15, fontName='Helvetica-Bold', textColor=colors.HexColor('#1a365d'), spaceBefore=20, spaceAfter=10))
+    styles.add(ParagraphStyle(name='TituloPortada', parent=styles['Title'], fontSize=22, alignment=TA_CENTER, textColor=colors.HexColor('#1a365d'), fontName='Helvetica-Bold', spaceAfter=12))
+    styles.add(ParagraphStyle(name='SubtituloPortada', parent=styles['Normal'], fontSize=14, alignment=TA_CENTER, textColor=colors.HexColor('#2d4a7a'), fontName='Helvetica-Bold', spaceAfter=8))
+    styles.add(ParagraphStyle(name='TextoCentrado', parent=styles['Normal'], alignment=TA_CENTER, fontSize=11, fontName='Helvetica', spaceAfter=6))
+    styles.add(ParagraphStyle(name='TextoLista', parent=styles['Normal'], alignment=TA_LEFT, fontSize=11, fontName='Times-Roman', spaceAfter=6, leftIndent=20, leading=16))
 
-    styles.add(ParagraphStyle(
-        name='TextoJustificado',
-        parent=styles['Normal'],
-        alignment=TA_JUSTIFY,
-        fontSize=11,
-        fontName='Times-Roman',
-        spaceAfter=10,
-        leading=18,
-        firstLineIndent=18
-    ))
-    styles.add(ParagraphStyle(
-        name='Titulo1',
-        parent=styles['Heading1'],
-        fontSize=15,
-        fontName='Helvetica-Bold',
-        textColor=colors.HexColor('#1a365d'),
-        spaceBefore=20,
-        spaceAfter=10,
-        alignment=TA_LEFT
-    ))
-    styles.add(ParagraphStyle(
-        name='TituloPortada',
-        parent=styles['Title'],
-        fontSize=22,
-        alignment=TA_CENTER,
-        textColor=colors.HexColor('#1a365d'),
-        fontName='Helvetica-Bold',
-        spaceAfter=12
-    ))
-    styles.add(ParagraphStyle(
-        name='SubtituloPortada',
-        parent=styles['Normal'],
-        fontSize=14,
-        alignment=TA_CENTER,
-        textColor=colors.HexColor('#2d4a7a'),
-        fontName='Helvetica-Bold',
-        spaceAfter=8
-    ))
-    styles.add(ParagraphStyle(
-        name='TextoCentrado',
-        parent=styles['Normal'],
-        alignment=TA_CENTER,
-        fontSize=11,
-        fontName='Helvetica',
-        spaceAfter=6
-    ))
-    styles.add(ParagraphStyle(
-        name='TextoLista',
-        parent=styles['Normal'],
-        alignment=TA_LEFT,
-        fontSize=11,
-        fontName='Times-Roman',
-        spaceAfter=6,
-        leftIndent=20,
-        leading=16
-    ))
-
-    doc = SimpleDocTemplate(
-        filepath,
-        pagesize=A4,
-        rightMargin=2.5*cm,
-        leftMargin=2.5*cm,
-        topMargin=2.5*cm,
-        bottomMargin=2.5*cm
-    )
+    doc = SimpleDocTemplate(filepath, pagesize=A4, rightMargin=2.5*cm, leftMargin=2.5*cm, topMargin=2.5*cm, bottomMargin=2.5*cm)
     story = []
 
-    # PORTADA
+    # Portada
     story.append(Spacer(1, 2.0*inch))
     story.append(Paragraph("INFORME ACADÉMICO", styles['TituloPortada']))
     story.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor('#1a365d'), spaceAfter=12))
     story.append(Paragraph(tema.upper(), styles['SubtituloPortada']))
     story.append(Spacer(1, 1.2*inch))
-
     story.append(Paragraph(f"<b>Presentado por:</b> {nombre}", styles['TextoCentrado']))
     for autor in autores_extra:
         if autor.get('nombre'):
@@ -440,45 +298,29 @@ def generar_pdf(datos_usuario, secciones):
     story.append(Paragraph(f"<b>Norma bibliográfica:</b> {norma}", styles['TextoCentrado']))
     story.append(PageBreak())
 
-    # ÍNDICE
+    # Índice
     story.append(Paragraph("ÍNDICE", styles['Titulo1']))
     story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#cccccc'), spaceAfter=8))
-    for idx in [
-        "1. Introducción",
-        "2. Objetivos",
-        "3. Marco Teórico",
-        "4. Metodología",
-        "5. Desarrollo",
-        "6. Conclusiones",
-        "7. Recomendaciones",
-        "8. Referencias Bibliográficas"
-    ]:
+    for idx in ["1. Introducción", "2. Objetivos", "3. Marco Teórico", "4. Metodología", "5. Desarrollo", "6. Conclusiones", "7. Recomendaciones", "8. Referencias"]:
         story.append(Paragraph(f"{'&nbsp;' * 4}{idx}", styles['TextoLista']))
     story.append(PageBreak())
 
-    # SECCIONES
+    # Secciones
     secciones_orden = [
-        ("1. INTRODUCCIÓN", 'introduccion'),
-        ("2. OBJETIVOS", 'objetivos'),
-        ("3. MARCO TEÓRICO", 'marco_teorico'),
-        ("4. METODOLOGÍA", 'metodologia'),
-        ("5. DESARROLLO", 'desarrollo'),
-        ("6. CONCLUSIONES", 'conclusiones'),
-        ("7. RECOMENDACIONES", 'recomendaciones'),
-        ("8. REFERENCIAS BIBLIOGRÁFICAS", 'referencias')
+        ("1. INTRODUCCIÓN", 'introduccion'), ("2. OBJETIVOS", 'objetivos'),
+        ("3. MARCO TEÓRICO", 'marco_teorico'), ("4. METODOLOGÍA", 'metodologia'),
+        ("5. DESARROLLO", 'desarrollo'), ("6. CONCLUSIONES", 'conclusiones'),
+        ("7. RECOMENDACIONES", 'recomendaciones'), ("8. REFERENCIAS", 'referencias')
     ]
-
     for titulo, clave in secciones_orden:
         story.append(Paragraph(titulo, styles['Titulo1']))
         story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#e0e0e0'), spaceAfter=8))
         contenido_raw = secciones.get(clave, '')
         contenido = limpiar_para_pdf(contenido_raw)
-
         if contenido and len(contenido) > 50:
             parrafos = re.split(r'\n{2,}', contenido)
             if len(parrafos) == 1:
                 parrafos = contenido.split('\n')
-
             for parrafo in parrafos:
                 parrafo = parrafo.strip()
                 if parrafo:
@@ -488,14 +330,13 @@ def generar_pdf(datos_usuario, secciones):
                         story.append(Paragraph(parrafo, styles['TextoJustificado']))
         else:
             story.append(Paragraph("Esta sección no pudo generarse correctamente.", styles['TextoJustificado']))
-
         story.append(PageBreak())
 
     doc.build(story)
     return filename, filepath
 
 # ============================================================
-# GENERAR WORD — MEJORADO
+# GENERAR WORD
 # ============================================================
 def generar_word(datos_usuario, secciones):
     nombre = datos_usuario.get('nombre', 'Estudiante')
@@ -509,23 +350,19 @@ def generar_word(datos_usuario, secciones):
     norma = datos_usuario.get('norma', 'APA 7')
 
     doc = Document()
-
-    from docx.oxml.ns import qn
-    from docx.oxml import OxmlElement
     section = doc.sections[0]
     section.top_margin = Cm(2.5)
     section.bottom_margin = Cm(2.5)
     section.left_margin = Cm(3.0)
     section.right_margin = Cm(2.5)
 
-    # PORTADA
+    # Portada
     portada = doc.add_paragraph()
     portada.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run = portada.add_run('\n\n\nINFORME ACADÉMICO')
     run.bold = True
     run.font.size = Pt(22)
     run.font.color.rgb = RGBColor(0x1a, 0x36, 0x5d)
-
     doc.add_paragraph()
     p_tema = doc.add_paragraph()
     p_tema.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -533,7 +370,6 @@ def generar_word(datos_usuario, secciones):
     r.bold = True
     r.font.size = Pt(14)
     r.font.color.rgb = RGBColor(0x2d, 0x4a, 0x7a)
-
     doc.add_paragraph()
     doc.add_paragraph()
 
@@ -559,50 +395,34 @@ def generar_word(datos_usuario, secciones):
     agregar_dato("Ciudad", ciudad)
     agregar_dato("Fecha", fecha)
     agregar_dato("Norma bibliográfica", norma)
-
     doc.add_page_break()
 
-    # ÍNDICE
+    # Índice
     h_idx = doc.add_heading('ÍNDICE', level=1)
     h_idx.runs[0].font.color.rgb = RGBColor(0x1a, 0x36, 0x5d)
-
-    indices = ['1. Introducción', '2. Objetivos', '3. Marco Teórico', '4. Metodología',
-               '5. Desarrollo', '6. Conclusiones', '7. Recomendaciones', '8. Referencias Bibliográficas']
-    for item in indices:
-        p = doc.add_paragraph(style='List Number')
-        p.text = ''
-        p.clear()
-        r = p.add_run(f"    {item}")
-        r.font.size = Pt(11)
-
+    for item in ['1. Introducción', '2. Objetivos', '3. Marco Teórico', '4. Metodología', '5. Desarrollo', '6. Conclusiones', '7. Recomendaciones', '8. Referencias']:
+        p = doc.add_paragraph()
+        p.add_run(f"    {item}")
     doc.add_page_break()
 
-    # SECCIONES
+    # Secciones
     secciones_orden = [
-        ("1. INTRODUCCIÓN", 'introduccion'),
-        ("2. OBJETIVOS", 'objetivos'),
-        ("3. MARCO TEÓRICO", 'marco_teorico'),
-        ("4. METODOLOGÍA", 'metodologia'),
-        ("5. DESARROLLO", 'desarrollo'),
-        ("6. CONCLUSIONES", 'conclusiones'),
-        ("7. RECOMENDACIONES", 'recomendaciones'),
-        ("8. REFERENCIAS BIBLIOGRÁFICAS", 'referencias')
+        ("1. INTRODUCCIÓN", 'introduccion'), ("2. OBJETIVOS", 'objetivos'),
+        ("3. MARCO TEÓRICO", 'marco_teorico'), ("4. METODOLOGÍA", 'metodologia'),
+        ("5. DESARROLLO", 'desarrollo'), ("6. CONCLUSIONES", 'conclusiones'),
+        ("7. RECOMENDACIONES", 'recomendaciones'), ("8. REFERENCIAS", 'referencias')
     ]
-
     for titulo_sec, clave in secciones_orden:
         h = doc.add_heading(titulo_sec, level=1)
         if h.runs:
             h.runs[0].font.color.rgb = RGBColor(0x1a, 0x36, 0x5d)
             h.runs[0].font.size = Pt(14)
-
         contenido_raw = secciones.get(clave, '')
         contenido = limpiar_para_word(contenido_raw)
-
         if contenido and len(contenido) > 50:
             parrafos = re.split(r'\n{2,}', contenido)
             if len(parrafos) == 1:
                 parrafos = contenido.split('\n')
-
             for parrafo in parrafos:
                 parrafo = parrafo.strip()
                 if not parrafo:
@@ -617,7 +437,6 @@ def generar_word(datos_usuario, secciones):
         else:
             p = doc.add_paragraph("Esta sección no pudo generarse correctamente.")
             p.runs[0].font.size = Pt(11)
-
         doc.add_page_break()
 
     buffer = BytesIO()
@@ -627,7 +446,7 @@ def generar_word(datos_usuario, secciones):
 
 
 # ============================================================
-# RUTAS DEL SITIO WEB (PÁGINAS)
+# RUTAS DEL SITIO WEB
 # ============================================================
 
 @app.route('/')
@@ -662,20 +481,13 @@ def generar_seccion_endpoint():
         norma = data.get('norma', 'APA 7')
         info = data.get('texto_usuario', '')
         refs_manuales = data.get('refs_manuales', '')
-
         if not seccion or not tema:
             return jsonify({'success': False, 'error': 'Faltan parámetros'}), 400
-
-        logger.info(f"Generando sección '{seccion}' | Norma: {norma} | Tipo: {tipo} | Tema: {tema[:40]}...")
         contenido = generar_seccion(seccion, tema, info, tipo, norma, nivel, refs_manuales)
-
         if contenido:
             return jsonify({'success': True, 'seccion': seccion, 'contenido': contenido})
-        else:
-            return jsonify({'success': False, 'error': f'No se pudo generar: {seccion}'}), 500
-
+        return jsonify({'success': False, 'error': f'No se pudo generar: {seccion}'}), 500
     except Exception as e:
-        logger.error(f"Error en /generar-seccion: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/exportar-pdf', methods=['POST'])
@@ -685,7 +497,6 @@ def exportar_pdf():
         filename, filepath = generar_pdf(data['datos_usuario'], data['secciones'])
         return send_file(filepath, as_attachment=True, download_name=filename, mimetype='application/pdf')
     except Exception as e:
-        logger.error(f"Error exportando PDF: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/exportar-word', methods=['POST'])
@@ -693,46 +504,13 @@ def exportar_word():
     try:
         data = request.json
         buffer = generar_word(data['datos_usuario'], data['secciones'])
-        nombre_archivo = f"informe_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx"
-        return send_file(
-            buffer,
-            as_attachment=True,
-            download_name=nombre_archivo,
-            mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-        )
-    except Exception as e:
-        logger.error(f"Error exportando Word: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/preview', methods=['POST'])
-def preview():
-    try:
-        data = request.json
-        tema = data.get('tema', '')
-        prompt = f"Genera un breve resumen académico sobre: {tema} en 300 palabras, con lenguaje formal."
-        contenido = llamar_deepseek(prompt)
-        if contenido:
-            return jsonify({'success': True, 'contenido': contenido[:1000]})
-        return jsonify({'success': False, 'error': 'No se pudo generar'}), 500
+        return send_file(buffer, as_attachment=True, download_name=f"informe_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx", mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/normas', methods=['GET'])
-def get_normas():
-    return jsonify({
-        'normas': list(NORMAS_INSTRUCCIONES.keys()),
-        'tipos': list(TIPOS_INSTRUCCIONES.keys())
-    })
 
 @app.route('/health')
 def health():
-    return jsonify({
-        'status': 'healthy',
-        'api_configured': bool(DEEPSEEK_API_KEY),
-        'normas_disponibles': list(NORMAS_INSTRUCCIONES.keys()),
-        'tipos_disponibles': list(TIPOS_INSTRUCCIONES.keys()),
-        'version': '2.0'
-    })
+    return jsonify({'status': 'healthy', 'api_configured': bool(DEEPSEEK_API_KEY), 'version': '3.1'})
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
