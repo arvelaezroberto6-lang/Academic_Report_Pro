@@ -5,83 +5,294 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Academic Report Pro{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         :root {
-            --bg:#080b12; --surface:#0d1117; --surface2:#111720;
-            --border:rgba(255,255,255,.07); --border2:rgba(255,255,255,.12);
-            --gold:#c9a84c; --gold2:#e8c96a; --gold-dim:rgba(201,168,76,.15);
-            --blue:#4f7cf7; --blue-dim:rgba(79,124,247,.12);
-            --text:#e8e6df; --text2:#8a8880; --text3:#4a4845;
-            --red:#e05c5c; --green:#56c489;
-            --radius:12px; --radius-lg:20px;
+            --bg: #07090f;
+            --surface: #0e1118;
+            --surface2: #141720;
+            --border: rgba(255,255,255,.06);
+            --border2: rgba(255,255,255,.11);
+            --gold: #d4a843;
+            --gold2: #f0c96a;
+            --gold-dim: rgba(212,168,67,.13);
+            --gold-glow: rgba(212,168,67,.25);
+            --text: #eae8e1;
+            --text2: #7a7870;
+            --text3: #3d3c38;
+            --red: #e05c5c;
+            --green: #52c48a;
+            --radius: 10px;
+            --radius-lg: 18px;
         }
-        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-        html{scroll-behavior:smooth;}
-        body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;cursor:none;}
-        
-        #cursor{position:fixed;z-index:9999;pointer-events:none;width:10px;height:10px;border-radius:50%;background:var(--gold);transform:translate(-50%,-50%);transition:width .2s,height .2s;mix-blend-mode:difference;}
-        #cursor-ring{position:fixed;z-index:9998;pointer-events:none;width:36px;height:36px;border-radius:50%;border:1px solid rgba(201,168,76,.4);transform:translate(-50%,-50%);transition:width .2s,height .2s;}
-        
-        body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");opacity:.6;}
-        body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse 80% 80% at 50% 0%,black 40%,transparent 100%);}
-        main{position:relative;z-index:1;}
-        
-        /* Navegación */
-        .navbar{position:sticky;top:0;z-index:100;display:flex;justify-content:center;gap:1.5rem;padding:1rem 2rem;background:rgba(8,11,18,.95);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);margin-bottom:2rem;}
-        .nav-link{color:var(--text2);text-decoration:none;font-weight:600;padding:0.5rem 1.2rem;border-radius:8px;transition:all .2s;}
-        .nav-link:hover{background:var(--gold-dim);color:var(--gold);}
-        .nav-link.active{background:var(--gold-dim);color:var(--gold);}
-        
-        .btn-gold{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.8rem;background:linear-gradient(135deg,var(--gold) 0%,#a8832a 100%);color:#000;font-weight:700;border:none;border-radius:var(--radius);cursor:pointer;transition:all .2s;}
-        .btn-gold:hover{transform:translateY(-2px);box-shadow:0 8px 36px rgba(201,168,76,.45);}
-        .btn-outline{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.8rem;background:transparent;color:var(--text);font-weight:600;border:1px solid var(--border2);border-radius:var(--radius);cursor:pointer;}
-        .btn-outline:hover{border-color:var(--gold);color:var(--gold);}
-        
-        .container{max-width:1200px;margin:0 auto;padding:0 1.5rem;}
-        .hero{min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4rem 2rem;}
-        .hero-title{font-family:'Cormorant Garamond',serif;font-size:clamp(3rem,8vw,5rem);font-weight:700;}
-        .hero-title em{background:linear-gradient(135deg,var(--gold) 0%,var(--gold2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-        
-        .card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:1.5rem;margin-bottom:1.2rem;transition:all .3s;}
-        .card:hover{border-color:rgba(201,168,76,.3);transform:translateY(-2px);}
-        
-        footer{text-align:center;padding:2rem;border-top:1px solid var(--border);font-size:.78rem;color:var(--text3);margin-top:2rem;}
-        .hidden{display:none;}
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Grain texture overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+            opacity: .5;
+        }
+
+        main { position: relative; z-index: 1; }
+
+        /* ── NAVBAR ── */
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            height: 60px;
+            background: rgba(7,9,15,.96);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            text-decoration: none;
+            color: var(--text);
+            font-family: 'Playfair Display', serif;
+            font-size: 1.05rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .nav-brand-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 7px;
+            background: linear-gradient(135deg, var(--gold) 0%, #8b6412 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: .2rem;
+        }
+
+        .nav-link {
+            color: var(--text2);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: .84rem;
+            padding: .45rem 1rem;
+            border-radius: 8px;
+            transition: all .18s;
+            white-space: nowrap;
+        }
+
+        .nav-link:hover { background: var(--gold-dim); color: var(--gold); }
+        .nav-link.active { background: var(--gold-dim); color: var(--gold); }
+
+        .nav-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+            padding: .45rem 1.2rem;
+            background: linear-gradient(135deg, var(--gold) 0%, #9a6e18 100%);
+            color: #000;
+            font-size: .82rem;
+            font-weight: 700;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all .18s;
+            flex-shrink: 0;
+        }
+        .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 6px 24px var(--gold-glow); }
+
+        /* Mobile hamburger */
+        .nav-hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+            padding: .5rem;
+            background: none;
+            border: none;
+        }
+        .nav-hamburger span {
+            display: block;
+            width: 22px;
+            height: 2px;
+            background: var(--text2);
+            border-radius: 2px;
+            transition: all .2s;
+        }
+
+        .nav-mobile {
+            display: none;
+            position: fixed;
+            top: 60px;
+            left: 0;
+            right: 0;
+            background: rgba(7,9,15,.98);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 1.5rem;
+            z-index: 99;
+            flex-direction: column;
+            gap: .3rem;
+        }
+        .nav-mobile.open { display: flex; }
+        .nav-mobile .nav-link {
+            padding: .75rem 1rem;
+            border-radius: 8px;
+            font-size: .9rem;
+        }
+        .nav-mobile .nav-cta {
+            margin-top: .5rem;
+            justify-content: center;
+            padding: .8rem;
+            font-size: .88rem;
+        }
+
+        @media (max-width: 680px) {
+            .nav-links, .nav-cta { display: none; }
+            .nav-hamburger { display: flex; }
+            .navbar { padding: 0 1.2rem; }
+        }
+
+        /* ── BUTTONS ── */
+        .btn-gold {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            padding: .8rem 2rem;
+            background: linear-gradient(135deg, var(--gold) 0%, #9a6e18 100%);
+            color: #000;
+            font-weight: 700;
+            font-size: .88rem;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            text-decoration: none;
+            transition: all .2s;
+        }
+        .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 8px 36px var(--gold-glow); }
+
+        .btn-outline {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            padding: .8rem 2rem;
+            background: transparent;
+            color: var(--text);
+            font-weight: 600;
+            font-size: .88rem;
+            border: 1px solid var(--border2);
+            border-radius: var(--radius);
+            cursor: pointer;
+            text-decoration: none;
+            transition: all .2s;
+        }
+        .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+
+        /* ── CARDS ── */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            margin-bottom: 1.2rem;
+            transition: border-color .25s, transform .25s;
+        }
+        .card:hover { border-color: rgba(212,168,67,.25); transform: translateY(-2px); }
+
+        /* ── LAYOUT ── */
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
+
+        /* ── FOOTER ── */
+        footer {
+            text-align: center;
+            padding: 2.5rem 1.5rem;
+            border-top: 1px solid var(--border);
+            font-size: .76rem;
+            color: var(--text3);
+            margin-top: 4rem;
+            letter-spacing: .02em;
+        }
+        footer strong { color: var(--text2); }
+
+        .hidden { display: none !important; }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <div id="cursor"></div>
-    <div id="cursor-ring"></div>
-    
-    <!-- MENÚ DE NAVEGACIÓN -->
-    <div class="navbar">
-        <a href="/" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">🏠 Inicio</a>
-        <a href="/generar" class="nav-link {% if request.endpoint == 'generar_page' %}active{% endif %}">📝 Generar</a>
-        <a href="/mis-informes" class="nav-link {% if request.endpoint == 'mis_informes' %}active{% endif %}">📁 Mis Informes</a>
-        <a href="/perfil" class="nav-link {% if request.endpoint == 'perfil' %}active{% endif %}">👤 Perfil</a>
+    <nav class="navbar">
+        <a href="/" class="nav-brand">
+            <div class="nav-brand-icon">📄</div>
+            Academic Report Pro
+        </a>
+
+        <div class="nav-links">
+            <a href="/" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">Inicio</a>
+            <a href="/generar" class="nav-link {% if request.endpoint == 'generar_page' %}active{% endif %}">Generador</a>
+            <a href="/mis-informes" class="nav-link {% if request.endpoint == 'mis_informes' %}active{% endif %}">Mis informes</a>
+            <a href="/perfil" class="nav-link {% if request.endpoint == 'perfil' %}active{% endif %}">Perfil</a>
+        </div>
+
+        <a href="/generar" class="nav-cta" {% if request.endpoint == 'generar_page' %}style="display:none;"{% endif %}>
+            ✦ Crear informe
+        </a>
+
+        <button class="nav-hamburger" onclick="toggleMobileNav()" aria-label="Menú">
+            <span></span><span></span><span></span>
+        </button>
+    </nav>
+
+    <div class="nav-mobile" id="navMobile">
+        <a href="/" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" onclick="closeMobileNav()">🏠 Inicio</a>
+        <a href="/generar" class="nav-link {% if request.endpoint == 'generar_page' %}active{% endif %}" onclick="closeMobileNav()">📝 Generador</a>
+        <a href="/mis-informes" class="nav-link {% if request.endpoint == 'mis_informes' %}active{% endif %}" onclick="closeMobileNav()">📁 Mis informes</a>
+        <a href="/perfil" class="nav-link {% if request.endpoint == 'perfil' %}active{% endif %}" onclick="closeMobileNav()">👤 Perfil</a>
+        <a href="/generar" class="nav-cta" onclick="closeMobileNav()">✦ Crear informe ahora</a>
     </div>
-    
+
     <main>
         {% block content %}{% endblock %}
     </main>
-    
+
     <footer>
-        <strong>Academic Report Pro v3.1</strong> · 8 normas · 6 tipos · PDF + Word · Referencias reales (CrossRef/OpenAlex)
+        <strong>Academic Report Pro v3.2</strong> &nbsp;·&nbsp; 8 normas &nbsp;·&nbsp; 6 tipos de informe &nbsp;·&nbsp; PDF + Word &nbsp;·&nbsp; Referencias reales (CrossRef / OpenAlex)
     </footer>
-    
+
     <script>
-        const cur=document.getElementById('cursor'),curR=document.getElementById('cursor-ring');
-        let mx=0,my=0,rx=0,ry=0;
-        document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px';});
-        (function anim(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;curR.style.left=rx+'px';curR.style.top=ry+'px';requestAnimationFrame(anim);})();
-        
-        document.querySelectorAll('a,button,.chip,.tipo-card,.mode-tab,.editor-tab').forEach(el=>{
-            if(!el) return;
-            el.addEventListener('mouseenter',()=>{cur.style.width='16px';cur.style.height='16px';curR.style.width='52px';curR.style.height='52px';});
-            el.addEventListener('mouseleave',()=>{cur.style.width='10px';cur.style.height='10px';curR.style.width='36px';curR.style.height='36px';});
+        function toggleMobileNav() {
+            document.getElementById('navMobile').classList.toggle('open');
+        }
+        function closeMobileNav() {
+            document.getElementById('navMobile').classList.remove('open');
+        }
+        // Close on outside click
+        document.addEventListener('click', (e) => {
+            const nav = document.getElementById('navMobile');
+            const btn = document.querySelector('.nav-hamburger');
+            if (nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) {
+                nav.classList.remove('open');
+            }
         });
     </script>
     {% block extra_js %}{% endblock %}
