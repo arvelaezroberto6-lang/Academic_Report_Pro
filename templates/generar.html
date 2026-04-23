@@ -26,49 +26,34 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;bac
 body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse 80% 80% at 50% 0%,black 40%,transparent 100%);}
 main{position:relative;z-index:1;}
 
-nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:.9rem 2.5rem;background:rgba(8,11,18,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
+/* NAV */
+nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:.9rem 2.5rem;background:rgba(8,11,18,.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
 .nav-logo{display:flex;align-items:center;gap:.7rem;font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:700;color:var(--text);text-decoration:none;}
 .nav-logo-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--gold) 0%,#8b6914 100%);display:flex;align-items:center;justify-content:center;font-size:14px;}
+.nav-links{display:flex;align-items:center;gap:.4rem;}
+.nav-link{color:var(--text2);text-decoration:none;font-weight:600;padding:.4rem .9rem;border-radius:8px;font-size:.82rem;transition:all .2s;}
+.nav-link:hover{background:var(--gold-dim);color:var(--gold);}
+.nav-link.active{background:var(--gold-dim);color:var(--gold);}
 .nav-badge{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--gold);background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);padding:.2rem .7rem;border-radius:100px;}
 .btn-gold{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.8rem;background:linear-gradient(135deg,var(--gold) 0%,#a8832a 100%);color:#000;font-family:'Syne',sans-serif;font-size:.88rem;font-weight:700;border:none;border-radius:var(--radius);cursor:pointer;transition:all .2s;}
 .btn-gold:hover{transform:translateY(-2px);box-shadow:0 8px 36px rgba(201,168,76,.45);}
 .btn-outline{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.8rem;background:transparent;color:var(--text);font-family:'Syne',sans-serif;font-size:.88rem;font-weight:600;border:1px solid var(--border2);border-radius:var(--radius);cursor:pointer;transition:all .2s;}
 .btn-outline:hover{border-color:var(--gold);color:var(--gold);}
 
-
-  <!-- MENÚ DE NAVEGACIÓN -->
-<div style="position: sticky; top: 0; z-index: 100; display: flex; justify-content: center; gap: 1.5rem; padding: 1rem 2rem; background: rgba(8,11,18,0.95); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 2rem;">
-    <a href="/" style="color: #e8e6df; text-decoration: none; font-weight: 600; padding: 0.5rem 1.2rem; border-radius: 8px; transition: all 0.2s;" 
-       onmouseover="this.style.background='rgba(201,168,76,0.2)'; this.style.color='#c9a84c'" 
-       onmouseout="this.style.background='transparent'; this.style.color='#e8e6df'">🏠 Inicio</a>
-    
-    <a href="/generar" style="color: #c9a84c; text-decoration: none; font-weight: 600; padding: 0.5rem 1.2rem; border-radius: 8px; background: rgba(201,168,76,0.15);" 
-       onmouseover="this.style.background='rgba(201,168,76,0.3)'" 
-       onmouseout="this.style.background='rgba(201,168,76,0.15)'">📝 Generar</a>
-    
-    <a href="/mis-informes" style="color: #e8e6df; text-decoration: none; font-weight: 600; padding: 0.5rem 1.2rem; border-radius: 8px; transition: all 0.2s;" 
-       onmouseover="this.style.background='rgba(201,168,76,0.2)'; this.style.color='#c9a84c'" 
-       onmouseout="this.style.background='transparent'; this.style.color='#e8e6df'">📁 Mis Informes</a>
-    
-    <a href="/perfil" style="color: #e8e6df; text-decoration: none; font-weight: 600; padding: 0.5rem 1.2rem; border-radius: 8px; transition: all 0.2s;" 
-       onmouseover="this.style.background='rgba(201,168,76,0.2)'; this.style.color='#c9a84c'" 
-       onmouseout="this.style.background='transparent'; this.style.color='#e8e6df'">👤 Perfil</a>
-</div>
-
 /* HERO */
-.hero{min-height:80vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7rem 2rem 4rem;text-align:center;position:relative;}
+.hero{min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:5rem 2rem 3rem;text-align:center;position:relative;}
 .glow{position:absolute;border-radius:50%;pointer-events:none;}
 .g1{top:15%;left:50%;transform:translateX(-50%);width:600px;height:600px;background:radial-gradient(circle,rgba(201,168,76,.08) 0%,transparent 70%);}
 .hero-eyebrow{display:inline-flex;align-items:center;gap:.5rem;font-family:'JetBrains Mono',monospace;font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);background:var(--gold-dim);border:1px solid rgba(201,168,76,.25);padding:.4rem 1.1rem;border-radius:100px;margin-bottom:2rem;}
-.hero-title{font-family:'Cormorant Garamond',serif;font-size:clamp(3rem,8vw,6rem);font-weight:700;line-height:1.05;}
+.hero-title{font-family:'Cormorant Garamond',serif;font-size:clamp(2.5rem,7vw,5rem);font-weight:700;line-height:1.05;}
 .hero-title em{font-style:italic;background:linear-gradient(135deg,var(--gold) 0%,var(--gold2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-.hero-sub{font-size:1.05rem;color:var(--text2);max-width:520px;margin:1.5rem auto;}
+.hero-sub{font-size:1rem;color:var(--text2);max-width:520px;margin:1.5rem auto;}
 .hero-stats{display:flex;gap:3rem;justify-content:center;flex-wrap:wrap;margin-top:3rem;padding-top:2rem;border-top:1px solid var(--border);}
 .stat-num{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700;color:var(--gold);display:block;}
 .stat-lbl{font-size:.7rem;color:var(--text2);letter-spacing:.08em;text-transform:uppercase;}
 
 /* COMPARATIVA */
-.comparison{display:flex;justify-content:center;gap:1rem;margin:2rem auto;max-width:600px;}
+.comparison{display:flex;justify-content:center;gap:1rem;margin:2rem auto;max-width:560px;}
 .comp-card{flex:1;padding:1rem;border-radius:12px;text-align:center;}
 .comp-bad{background:rgba(224,92,92,.1);border:1px solid rgba(224,92,92,.3);}
 .comp-good{background:rgba(86,196,137,.1);border:1px solid rgba(86,196,137,.3);}
@@ -77,7 +62,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:cen
 .form-wrap{max-width:980px;margin:0 auto;padding:0 1.5rem 4rem;}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1.2rem;}
 .card-hd{display:flex;align-items:center;gap:.7rem;margin-bottom:1rem;}
-.card-ico{width:34px;height:34px;border-radius:9px;background:var(--gold-dim);border:1px solid rgba(201,168,76,.2);display:flex;align-items:center;justify-content:center;font-size:15px;}
+.card-ico{width:34px;height:34px;border-radius:9px;background:var(--gold-dim);border:1px solid rgba(201,168,76,.2);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
 .card-ttl{font-weight:700;font-size:.9rem;}
 .card-sub{font-size:.72rem;color:var(--text2);margin-top:.15rem;}
 .g2c{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
@@ -107,6 +92,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:cen
 input,select,textarea{width:100%;padding:.75rem;background:var(--bg);border:1px solid var(--border);border-radius:10px;font-family:'Syne',sans-serif;font-size:.88rem;color:var(--text);outline:none;transition:border-color .2s;}
 input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.5);}
 input::placeholder,textarea::placeholder{color:var(--text3);}
+select option{background:var(--surface);}
 
 /* BOTÓN GENERAR */
 .btn-gen{width:100%;padding:1.1rem;background:linear-gradient(135deg,var(--gold) 0%,#9a6e1a 100%);color:#000;border:none;border-radius:var(--radius);font-weight:800;cursor:pointer;margin-top:1rem;font-family:'Syne',sans-serif;font-size:1rem;letter-spacing:.03em;transition:all .2s;}
@@ -132,22 +118,29 @@ input::placeholder,textarea::placeholder{color:var(--text3);}
 .editor-actions{display:flex;gap:.8rem;margin-top:1rem;flex-wrap:wrap;}
 .editor-actions button{flex:1;min-width:140px;}
 
-/* TOOLTIP DE NORMA */
-.norma-tooltip{display:none;position:absolute;z-index:200;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:.8rem;font-size:.72rem;color:var(--text2);max-width:280px;line-height:1.5;font-family:'JetBrains Mono',monospace;}
-
-/* BADGE NUEVO */
+/* BADGE */
 .badge-new{display:inline-block;font-size:.55rem;background:var(--gold);color:#000;padding:.1rem .4rem;border-radius:4px;font-weight:800;margin-left:.3rem;vertical-align:middle;}
 
 /* REFS TABS */
 .ref-tab{flex:1;padding:.55rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:.78rem;font-weight:600;color:var(--text2);transition:all .2s;text-align:center;font-family:'Syne',sans-serif;}
 .ref-tab.active{background:var(--gold-dim);border-color:rgba(201,168,76,.4);color:var(--gold);}
+.ref-tab:hover:not(.active){border-color:var(--border2);color:var(--text);}
+
+/* AUTOR ROW */
+.autor-row{display:grid;grid-template-columns:1fr 1fr auto;gap:.5rem;margin-bottom:.5rem;align-items:center;}
+.autor-row .btn-remove{padding:.5rem .7rem;background:rgba(224,92,92,.1);border:1px solid rgba(224,92,92,.3);color:var(--red);border-radius:8px;cursor:pointer;font-size:.8rem;font-family:'Syne',sans-serif;}
+
+/* BADGE REFS REALES */
+.refs-badge{display:inline-flex;align-items:center;gap:.4rem;font-size:.65rem;background:rgba(86,196,137,.1);border:1px solid rgba(86,196,137,.3);color:var(--green);padding:.3rem .7rem;border-radius:6px;font-family:'JetBrains Mono',monospace;}
 
 footer{text-align:center;padding:2rem;border-top:1px solid var(--border);font-size:.78rem;color:var(--text3);}
 .hidden{display:none!important;}
 
-/* Autor row */
-.autor-row{display:grid;grid-template-columns:1fr 1fr auto;gap:.5rem;margin-bottom:.5rem;align-items:center;}
-.autor-row .btn-remove{padding:.5rem .7rem;background:rgba(224,92,92,.1);border:1px solid rgba(224,92,92,.3);color:var(--red);border-radius:8px;cursor:pointer;font-size:.8rem;font-family:'Syne',sans-serif;}
+@media(max-width:640px){
+  nav{padding:.7rem 1rem;}
+  .nav-links{gap:.2rem;}
+  .nav-link{padding:.3rem .6rem;font-size:.75rem;}
+}
 </style>
 </head>
 <body>
@@ -156,32 +149,34 @@ footer{text-align:center;padding:2rem;border-top:1px solid var(--border);font-si
 <div id="cursor-ring"></div>
 
 <nav>
-  <a href="#" class="nav-logo">
+  <a href="/" class="nav-logo">
     <div class="nav-logo-icon">📄</div>
     Academic Report Pro
   </a>
-  <div style="display:flex;align-items:center;gap:1rem;">
-    <span class="nav-badge">DeepSeek V3</span>
-    <span class="nav-badge" style="color:var(--green);border-color:rgba(86,196,137,.3);background:rgba(86,196,137,.1);">v2.0</span>
-    <a href="#generar" class="btn-gold" style="padding:.5rem 1.2rem;font-size:.8rem;">Generar informe ↓</a>
+  <div class="nav-links">
+    <a href="/" class="nav-link">🏠 Inicio</a>
+    <a href="/generar" class="nav-link active">📝 Generar</a>
+    <a href="/mis-informes" class="nav-link">📁 Mis Informes</a>
+    <a href="/perfil" class="nav-link">👤 Perfil</a>
+    <span class="nav-badge" style="margin-left:.5rem;">v3.2</span>
   </div>
 </nav>
 
 <main>
 <section class="hero" id="inicio">
   <div class="glow g1"></div>
-  <div class="hero-eyebrow">⚡ Más que IA - Informes estructurados listos para entregar</div>
+  <div class="hero-eyebrow">⚡ Referencias REALES de CrossRef y OpenAlex</div>
   <h1 class="hero-title">Informes académicos<br><em>de nivel profesional</em></h1>
-  <p class="hero-sub">Escribe un tema y la IA genera un informe completo con portada, índice, marco teórico, conclusiones y referencias — listo para editar y descargar en PDF o Word.</p>
+  <p class="hero-sub">Escribe un tema y la IA genera un informe completo con portada, índice, marco teórico, conclusiones y referencias verificadas — descarga en PDF o Word.</p>
 
   <div class="comparison">
     <div class="comp-card comp-bad">
-      <p style="color:var(--red);font-size:.8rem;">❌ Usar ChatGPT</p>
-      <p style="font-size:.7rem;color:var(--text2);">Texto plano sin estructura. Tienes que formatear todo manualmente.</p>
+      <p style="color:var(--red);font-size:.8rem;font-weight:700;">❌ Usar ChatGPT</p>
+      <p style="font-size:.7rem;color:var(--text2);margin-top:.4rem;">Texto plano sin estructura. Tienes que formatear todo manualmente.</p>
     </div>
     <div class="comp-card comp-good">
-      <p style="color:var(--green);font-size:.8rem;">✅ Academic Report Pro</p>
-      <p style="font-size:.7rem;color:var(--text2);">Informe listo con portada, índice, secciones y referencias correctas.</p>
+      <p style="color:var(--green);font-size:.8rem;font-weight:700;">✅ Academic Report Pro</p>
+      <p style="font-size:.7rem;color:var(--text2);margin-top:.4rem;">Informe listo con portada, índice, secciones y referencias. Solo descargas.</p>
     </div>
   </div>
 
@@ -196,11 +191,11 @@ footer{text-align:center;padding:2rem;border-top:1px solid var(--border);font-si
 <section class="form-wrap" id="generar">
   <div style="text-align:center;margin-bottom:2rem;">
     <span class="hero-eyebrow" style="display:inline-flex;">✨ EJEMPLO REAL</span>
-    <p style="color:var(--gold);font-size:.9rem;">"El impacto de las inteligencias artificiales en Colombia — Análisis completo con datos 2023-2024"</p>
+    <p style="color:var(--gold);font-size:.9rem;margin-top:.5rem;">"El impacto de las inteligencias artificiales en Colombia — Análisis completo con datos 2023-2024"</p>
     <div style="display:flex;gap:1rem;justify-content:center;margin-top:.5rem;flex-wrap:wrap;">
       <span style="font-size:.7rem;color:var(--text2);">📄 8 secciones completas</span>
-      <span style="font-size:.7rem;color:var(--text2);">📐 Norma aplicada correctamente</span>
       <span style="font-size:.7rem;color:var(--text2);">📚 12 referencias verificadas</span>
+      <span style="font-size:.7rem;color:var(--text2);">📐 Norma aplicada correctamente</span>
     </div>
   </div>
 
@@ -250,7 +245,7 @@ footer{text-align:center;padding:2rem;border-top:1px solid var(--border);font-si
     </div>
   </div>
 
-  <!-- NORMA DE CITACIÓN -->
+  <!-- NORMA -->
   <div class="card" style="margin-bottom:1.2rem;">
     <div class="card-hd"><div class="card-ico">📐</div><div><div class="card-ttl">Norma de citación</div><div class="card-sub">Aplicada correctamente en cuerpo del texto y referencias</div></div></div>
     <div class="chips" id="normaChips">
@@ -258,13 +253,13 @@ footer{text-align:center;padding:2rem;border-top:1px solid var(--border);font-si
       <div class="chip" data-norma="APA 6">APA 6</div>
       <div class="chip" data-norma="ICONTEC">ICONTEC</div>
       <div class="chip" data-norma="IEEE">IEEE</div>
-      <div class="chip" data-norma="Vancouver">Vancouver <span class="badge-new">NUEVO</span></div>
-      <div class="chip" data-norma="Chicago">Chicago <span class="badge-new">NUEVO</span></div>
-      <div class="chip" data-norma="MLA">MLA <span class="badge-new">NUEVO</span></div>
-      <div class="chip" data-norma="Harvard">Harvard <span class="badge-new">NUEVO</span></div>
+      <div class="chip" data-norma="Vancouver">Vancouver</div>
+      <div class="chip" data-norma="Chicago">Chicago</div>
+      <div class="chip" data-norma="MLA">MLA</div>
+      <div class="chip" data-norma="Harvard">Harvard</div>
     </div>
     <div class="norma-desc" id="normaDesc">
-      <strong>APA 7ª edición</strong> — Citas en texto: (Autor, año). Referencias con DOI. Más de 3 autores: et al. Orden alfabético.
+      <strong>APA 7ª edición</strong> — Citas en texto: (Autor, año). 3+ autores: et al. Referencias con DOI. Orden alfabético.
     </div>
   </div>
 
@@ -300,7 +295,13 @@ footer{text-align:center;padding:2rem;border-top:1px solid var(--border);font-si
 
   <!-- REFERENCIAS -->
   <div class="card" style="margin-bottom:1.2rem;">
-    <div class="card-hd"><div class="card-ico">📚</div><div><div class="card-ttl">Referencias bibliográficas</div><div class="card-sub">✅ Verificadas en CrossRef &amp; OpenAlex — sin inventadas</div></div></div>
+    <div class="card-hd">
+      <div class="card-ico">📚</div>
+      <div>
+        <div class="card-ttl">Referencias bibliográficas</div>
+        <div class="card-sub">✅ Verificadas en CrossRef &amp; OpenAlex — sin fuentes inventadas</div>
+      </div>
+    </div>
     <div style="display:flex;gap:.5rem;margin-bottom:1rem;">
       <button type="button" class="ref-tab active" data-refs="auto">🔬 Automático (CrossRef + OpenAlex)</button>
       <button type="button" class="ref-tab" data-refs="manual">✍️ Incluir mis referencias</button>
@@ -309,6 +310,9 @@ footer{text-align:center;padding:2rem;border-top:1px solid var(--border);font-si
       <label style="font-size:.75rem;color:var(--text2);display:block;margin-bottom:.4rem;">Tus referencias (una por línea). La IA las incluirá y complementará:</label>
       <textarea id="referenciasManual" rows="4" placeholder="Gaviria, C. (2023). Educación y tecnología en Colombia. Bogotá: Uniandes.&#10;Ministerio de Educación. (2022). Informe anual TIC..."></textarea>
     </div>
+    <p style="font-size:.68rem;color:var(--text3);margin-top:.6rem;">
+      💡 Modo automático: se buscan referencias reales al terminar de generar. También puedes actualizarlas desde el editor.
+    </p>
   </div>
 
   <!-- BOTÓN GENERAR -->
@@ -317,6 +321,7 @@ footer{text-align:center;padding:2rem;border-top:1px solid var(--border);font-si
   <!-- EDITOR -->
   <div id="editorPanel" class="card" style="margin-top:1.5rem;">
     <div class="card-hd"><div class="card-ico">✏️</div><div><div class="card-ttl">Editor de secciones</div><div class="card-sub">Edita el contenido directamente antes de descargar</div></div></div>
+    <div id="refsInfo" style="display:none;margin-bottom:.8rem;"></div>
     <div class="editor-tabs" id="editorTabs"></div>
     <textarea id="editorTexto" rows="16" spellcheck="false"></textarea>
     <div class="editor-actions">
@@ -331,171 +336,165 @@ footer{text-align:center;padding:2rem;border-top:1px solid var(--border);font-si
 </main>
 
 <footer>
-  <strong>Academic Report Pro v3.1</strong> · 8 normas · 6 tipos de informe · PDF + Word · Powered by DeepSeek V3
+  <strong>Academic Report Pro v3.2</strong> · 8 normas · 6 tipos · PDF + Word · Referencias reales (CrossRef/OpenAlex) · Powered by DeepSeek V3
 </footer>
 
 <script>
 // ========== CURSOR ==========
 const cur = document.getElementById('cursor'), curR = document.getElementById('cursor-ring');
 let mx = 0, my = 0, rx = 0, ry = 0;
-document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; cur.style.left = mx + 'px'; cur.style.top = my + 'px'; });
-(function anim() { rx += (mx - rx) * .12; ry += (my - ry) * .12; curR.style.left = rx + 'px'; curR.style.top = ry + 'px'; requestAnimationFrame(anim); })();
-document.querySelectorAll('button,.chip,.tipo-card,.mode-tab,.ref-tab,.editor-tab').forEach(el => {
-  el.addEventListener('mouseenter', () => { cur.style.width = '16px'; cur.style.height = '16px'; curR.style.width = '52px'; curR.style.height = '52px'; });
-  el.addEventListener('mouseleave', () => { cur.style.width = '10px'; cur.style.height = '10px'; curR.style.width = '36px'; curR.style.height = '36px'; });
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; cur.style.left = mx+'px'; cur.style.top = my+'px'; });
+(function anim(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;curR.style.left=rx+'px';curR.style.top=ry+'px';requestAnimationFrame(anim);})();
+document.querySelectorAll('button,.chip,.tipo-card,.mode-tab,.ref-tab,.editor-tab,a').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{cur.style.width='16px';cur.style.height='16px';curR.style.width='52px';curR.style.height='52px';});
+  el.addEventListener('mouseleave',()=>{cur.style.width='10px';cur.style.height='10px';curR.style.width='36px';curR.style.height='36px';});
 });
 
 // ========== ESTADO ==========
-let modo = 'rapido';
-let tipoActual = 'academico';
-let normaActual = 'APA 7';
-let refsModo = 'auto';
+let modo         = 'rapido';
+let tipoActual   = 'academico';
+let normaActual  = 'APA 7';
+let refsModo     = 'auto';
 let seccionesGeneradas = {};
 let datosUsuario = {};
 
-// ========== DESCRIPCIONES DE NORMAS ==========
+// ========== NORMAS ==========
 const NORMAS_DESC = {
-  'APA 7':    '<strong>APA 7ª edición</strong> — Citas en texto: (Autor, año). Más de 3 autores: et al. Referencias con DOI obligatorio. Orden alfabético.',
-  'APA 6':    '<strong>APA 6ª edición</strong> — Citas: (Autor, año, p. XX). 3-5 autores: todos la primera vez, luego et al. Referencias con "Recuperado de".',
-  'ICONTEC':  '<strong>ICONTEC (NTC 5613)</strong> — Citas con notas al pie numeradas o autor-año. Referencias en orden de aparición. Apellido en MAYÚSCULA.',
-  'IEEE':     '<strong>IEEE</strong> — Citas con números entre corchetes [1] en orden de aparición. Referencias numeradas, no alfabéticas. Estándar en ingeniería.',
-  'Vancouver':'<strong>Vancouver</strong> — Sistema numérico por orden de aparición. Usado en ciencias de la salud y medicina. Hasta 6 autores, luego et al.',
-  'Chicago':  '<strong>Chicago 17ª ed.</strong> — Sistema autor-fecha: (Apellido año, página). Bibliografía en orden alfabético. Muy usado en humanidades.',
-  'MLA':      '<strong>MLA 9ª edición</strong> — Citas: (Apellido página). "Works Cited" al final. Sin coma entre autor y número de página. Literatura y humanidades.',
-  'Harvard':  '<strong>Harvard</strong> — Citas: (Apellido año) o (Apellido año, p. XX). Referencias alfabéticas. Ampliamente usado en ciencias sociales y UK.'
+  'APA 7':    '<strong>APA 7ª edición</strong> — Citas: (Autor, año). 3+ autores: et al. DOI obligatorio. Orden alfabético.',
+  'APA 6':    '<strong>APA 6ª edición</strong> — Citas: (Autor, año, p. XX). 3-5 autores: todos primera vez, luego et al.',
+  'ICONTEC':  '<strong>ICONTEC (NTC 5613)</strong> — Notas al pie numeradas o autor-año. Referencias en ORDEN DE APARICIÓN.',
+  'IEEE':     '<strong>IEEE</strong> — Citas [1] en orden de aparición. Referencias numeradas. Estándar en ingeniería.',
+  'Vancouver':'<strong>Vancouver</strong> — Numérico por orden de aparición. Ciencias de la salud. Hasta 6 autores.',
+  'Chicago':  '<strong>Chicago 17ª ed.</strong> — (Apellido año, página). Bibliografía alfabética. Humanidades.',
+  'MLA':      '<strong>MLA 9ª edición</strong> — (Apellido página). Works Cited al final. Literatura y humanidades.',
+  'Harvard':  '<strong>Harvard</strong> — (Apellido año). Referencias alfabéticas. Ciencias sociales.'
 };
 
 // ========== MODO ==========
-document.querySelectorAll('#modoTabs .mode-tab').forEach(btn => {
-  btn.onclick = () => {
-    document.querySelectorAll('#modoTabs .mode-tab').forEach(b => b.classList.remove('active'));
+document.querySelectorAll('#modoTabs .mode-tab').forEach(btn=>{
+  btn.onclick=()=>{
+    document.querySelectorAll('#modoTabs .mode-tab').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
-    modo = btn.dataset.modo;
-    const wrap = document.getElementById('textoUsuarioWrap');
-    if (modo !== 'rapido') wrap.classList.remove('hidden');
+    modo=btn.dataset.modo;
+    const wrap=document.getElementById('textoUsuarioWrap');
+    if(modo!=='rapido') wrap.classList.remove('hidden');
     else wrap.classList.add('hidden');
-    const desc = {
-      rapido: 'Solo escribe el tema y la IA genera todo el informe automáticamente.',
-      automatico: 'Pega tus apuntes y la IA los organiza y desarrolla en un informe profesional.',
-      manual: 'Escribe información detallada y la IA la convierte en redacción académica formal.'
+    const descs={
+      rapido:'Solo escribe el tema y la IA genera todo el informe automáticamente.',
+      automatico:'Pega tus apuntes y la IA los organiza en un informe profesional.',
+      manual:'Escribe información detallada y la IA la convierte en redacción académica formal.'
     };
-    document.getElementById('modoDesc').innerText = desc[modo];
+    document.getElementById('modoDesc').innerText=descs[modo];
   };
 });
 
 // ========== TIPO ==========
-document.querySelectorAll('#tipoGrid .tipo-card').forEach(card => {
-  card.onclick = () => {
-    document.querySelectorAll('#tipoGrid .tipo-card').forEach(c => c.classList.remove('active'));
+document.querySelectorAll('#tipoGrid .tipo-card').forEach(card=>{
+  card.onclick=()=>{
+    document.querySelectorAll('#tipoGrid .tipo-card').forEach(c=>c.classList.remove('active'));
     card.classList.add('active');
-    tipoActual = card.dataset.tipo;
+    tipoActual=card.dataset.tipo;
   };
 });
 
 // ========== NORMA ==========
-document.querySelectorAll('#normaChips .chip').forEach(chip => {
-  chip.onclick = () => {
-    document.querySelectorAll('#normaChips .chip').forEach(c => c.classList.remove('active'));
+document.querySelectorAll('#normaChips .chip').forEach(chip=>{
+  chip.onclick=()=>{
+    document.querySelectorAll('#normaChips .chip').forEach(c=>c.classList.remove('active'));
     chip.classList.add('active');
-    normaActual = chip.dataset.norma;
-    document.getElementById('normaDesc').innerHTML = NORMAS_DESC[normaActual] || '';
+    normaActual=chip.dataset.norma;
+    document.getElementById('normaDesc').innerHTML=NORMAS_DESC[normaActual]||'';
   };
 });
 
 // ========== REFERENCIAS ==========
-document.querySelectorAll('.ref-tab').forEach(tab => {
-  tab.onclick = () => {
-    document.querySelectorAll('.ref-tab').forEach(t => t.classList.remove('active'));
+document.querySelectorAll('.ref-tab').forEach(tab=>{
+  tab.onclick=()=>{
+    document.querySelectorAll('.ref-tab').forEach(t=>t.classList.remove('active'));
     tab.classList.add('active');
-    refsModo = tab.dataset.refs;
-    document.getElementById('refsManualContainer').classList.toggle('hidden', refsModo !== 'manual');
+    refsModo=tab.dataset.refs;
+    document.getElementById('refsManualContainer').classList.toggle('hidden',refsModo!=='manual');
   };
 });
 
 // ========== AUTORES ==========
-function agregarAutor() {
-  const container = document.getElementById('autoresContainer');
-  const div = document.createElement('div');
-  div.className = 'autor-row';
-  div.innerHTML = `<input type="text" class="autor-nombre" placeholder="Nombre del coautor"><input type="text" class="autor-cargo" placeholder="Código / Cargo"><button class="btn-remove" onclick="this.parentElement.remove()">✕</button>`;
+function agregarAutor(){
+  const container=document.getElementById('autoresContainer');
+  const div=document.createElement('div');
+  div.className='autor-row';
+  div.innerHTML=`<input type="text" class="autor-nombre" placeholder="Nombre del coautor">
+    <input type="text" class="autor-cargo" placeholder="Código / Cargo">
+    <button class="btn-remove" onclick="this.parentElement.remove()">✕</button>`;
   container.appendChild(div);
 }
 
-function getAutores() {
-  const autores = [];
-  const nombres = document.querySelectorAll('.autor-nombre');
-  const cargos = document.querySelectorAll('.autor-cargo');
-  nombres.forEach((input, i) => {
-    if (input.value.trim()) {
-      autores.push({ nombre: input.value.trim(), cargo: cargos[i]?.value.trim() || '' });
-    }
+function getAutores(){
+  const autores=[];
+  const nombres=document.querySelectorAll('.autor-nombre');
+  const cargos=document.querySelectorAll('.autor-cargo');
+  nombres.forEach((input,i)=>{
+    if(input.value.trim()) autores.push({nombre:input.value.trim(),cargo:cargos[i]?.value.trim()||''});
   });
   return autores;
 }
 
-// ========== SECCIONES INFO ==========
-const SECCIONES_INFO = [
-  { clave: 'introduccion',    nombre: 'Introducción'    },
-  { clave: 'objetivos',       nombre: 'Objetivos'       },
-  { clave: 'marco_teorico',   nombre: 'Marco Teórico'   },
-  { clave: 'metodologia',     nombre: 'Metodología'     },
-  { clave: 'desarrollo',      nombre: 'Desarrollo'      },
-  { clave: 'conclusiones',    nombre: 'Conclusiones'    },
-  { clave: 'recomendaciones', nombre: 'Recomendaciones' },
-  { clave: 'referencias',     nombre: 'Referencias'     },
+// ========== SECCIONES ==========
+const SECCIONES_INFO=[
+  {clave:'introduccion',    nombre:'Introducción'},
+  {clave:'objetivos',       nombre:'Objetivos'},
+  {clave:'marco_teorico',   nombre:'Marco Teórico'},
+  {clave:'metodologia',     nombre:'Metodología'},
+  {clave:'desarrollo',      nombre:'Desarrollo'},
+  {clave:'conclusiones',    nombre:'Conclusiones'},
+  {clave:'recomendaciones', nombre:'Recomendaciones'},
+  {clave:'referencias',     nombre:'Referencias'},
 ];
 
-function iniciarIndicadores() {
-  const cont = document.getElementById('seccionesStatus');
-  cont.innerHTML = '';
-  SECCIONES_INFO.forEach(s => {
-    const chip = document.createElement('span');
-    chip.id = 'chip-' + s.clave;
-    chip.className = 'sec-chip';
-    chip.textContent = s.nombre;
+function iniciarIndicadores(){
+  const cont=document.getElementById('seccionesStatus');
+  cont.innerHTML='';
+  SECCIONES_INFO.forEach(s=>{
+    const chip=document.createElement('span');
+    chip.id='chip-'+s.clave;
+    chip.className='sec-chip';
+    chip.textContent=s.nombre;
     cont.appendChild(chip);
   });
 }
 
-function marcarChip(clave, estado) {
-  const chip = document.getElementById('chip-' + clave);
-  if (!chip) return;
-  const nombre = SECCIONES_INFO.find(s => s.clave === clave).nombre;
-  if (estado === 'generando') {
-    chip.style.background = 'var(--gold-dim)';
-    chip.style.borderColor = 'rgba(201,168,76,.5)';
-    chip.style.color = 'var(--gold)';
-    chip.textContent = '⏳ ' + nombre;
-  } else if (estado === 'ok') {
-    chip.style.background = 'rgba(86,196,137,.12)';
-    chip.style.borderColor = 'rgba(86,196,137,.4)';
-    chip.style.color = 'var(--green)';
-    chip.textContent = '✓ ' + nombre;
-  } else if (estado === 'error') {
-    chip.style.background = 'rgba(224,92,92,.12)';
-    chip.style.borderColor = 'rgba(224,92,92,.4)';
-    chip.style.color = 'var(--red)';
-    chip.textContent = '✕ ' + nombre;
-  }
+function marcarChip(clave,estado){
+  const chip=document.getElementById('chip-'+clave);
+  if(!chip) return;
+  const nombre=SECCIONES_INFO.find(s=>s.clave===clave).nombre;
+  const estilos={
+    generando:{bg:'var(--gold-dim)',bc:'rgba(201,168,76,.5)',color:'var(--gold)',icon:'⏳ '},
+    ok:       {bg:'rgba(86,196,137,.12)',bc:'rgba(86,196,137,.4)',color:'var(--green)',icon:'✓ '},
+    error:    {bg:'rgba(224,92,92,.12)',bc:'rgba(224,92,92,.4)',color:'var(--red)',icon:'✕ '},
+  };
+  const e=estilos[estado];
+  if(e){chip.style.background=e.bg;chip.style.borderColor=e.bc;chip.style.color=e.color;chip.textContent=e.icon+nombre;}
 }
 
 // ========== GENERAR INFORME ==========
 document.getElementById('generarBtn').onclick = async () => {
   const tema = document.getElementById('tema').value.trim();
-  if (!tema) { Swal.fire({ icon: 'warning', title: 'Falta el tema', text: 'Por favor escribe el tema del informe.', confirmButtonColor: '#c9a84c' }); return; }
+  if(!tema){
+    Swal.fire({icon:'warning',title:'Falta el tema',text:'Por favor escribe el tema del informe.',confirmButtonColor:'#c9a84c'});
+    return;
+  }
 
-  const autores = getAutores();
+  const autores       = getAutores();
   const nombrePrincipal = document.getElementById('nombre').value.trim() || (autores[0]?.nombre || 'Estudiante');
-  const refsManuales = refsModo === 'manual' ? (document.getElementById('referenciasManual').value.trim()) : '';
+  const refsManuales  = refsModo==='manual' ? document.getElementById('referenciasManual').value.trim() : '';
 
   const payload = {
     tema,
-    nivel: document.getElementById('nivel').value,
+    nivel:        document.getElementById('nivel').value,
     tipo_informe: tipoActual,
-    norma: normaActual,
-    texto_usuario: document.getElementById('textoUsuario').value,
+    norma:        normaActual,
+    texto_usuario: document.getElementById('textoUsuario')?.value || '',
     refs_manuales: refsManuales,
-    autores: [{ nombre: nombrePrincipal }, ...autores]
+    autores: [{nombre:nombrePrincipal}, ...autores]
   };
 
   const btn = document.getElementById('generarBtn');
@@ -509,244 +508,283 @@ document.getElementById('generarBtn').onclick = async () => {
   seccionesGeneradas = {};
   let errores = 0;
 
-  for (let i = 0; i < SECCIONES_INFO.length; i++) {
-    const { clave, nombre } = SECCIONES_INFO[i];
-    marcarChip(clave, 'generando');
-    document.getElementById('progressMessage').textContent = `Generando: ${nombre} (${i + 1} de ${SECCIONES_INFO.length})...`;
-    document.getElementById('progressCount').textContent = `${i + 1}/${SECCIONES_INFO.length}`;
-    document.getElementById('progressFill').style.width = ((i / SECCIONES_INFO.length) * 100) + '%';
+  for(let i=0; i<SECCIONES_INFO.length; i++){
+    const {clave, nombre} = SECCIONES_INFO[i];
+    marcarChip(clave,'generando');
+    document.getElementById('progressMessage').textContent = `Generando: ${nombre} (${i+1} de ${SECCIONES_INFO.length})...`;
+    document.getElementById('progressCount').textContent   = `${i+1}/${SECCIONES_INFO.length}`;
+    document.getElementById('progressFill').style.width   = ((i/SECCIONES_INFO.length)*100)+'%';
 
-    try {
-      const res = await fetch('/generar-seccion', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...payload, seccion: clave })
+    try{
+      // ⚠️ RUTA CORREGIDA: /api/generar-seccion
+      const res  = await fetch('/api/generar-seccion', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({...payload, seccion:clave})
       });
       const data = await res.json();
-      if (data.success && data.contenido) {
+      if(data.success && data.contenido){
         seccionesGeneradas[clave] = data.contenido;
-        marcarChip(clave, 'ok');
+        marcarChip(clave,'ok');
       } else {
-        seccionesGeneradas[clave] = '';
-        marcarChip(clave, 'error');
+        seccionesGeneradas[clave]='';
+        marcarChip(clave,'error');
         errores++;
       }
-    } catch (e) {
-      seccionesGeneradas[clave] = '';
-      marcarChip(clave, 'error');
+    } catch(e){
+      seccionesGeneradas[clave]='';
+      marcarChip(clave,'error');
       errores++;
     }
   }
 
   document.getElementById('progressFill').style.width = '100%';
   document.getElementById('progressCount').textContent = `${SECCIONES_INFO.length}/${SECCIONES_INFO.length}`;
-  document.getElementById('progressMessage').textContent = errores === 0
+  document.getElementById('progressMessage').textContent = errores===0
     ? '✅ ¡Informe completo generado!'
-    : `⚠️ Informe generado con ${errores} sección(es) con error. Puedes regenerarlas desde el editor.`;
+    : `⚠️ ${SECCIONES_INFO.length-errores} secciones OK, ${errores} con error. Puedes regenerarlas.`;
 
-  // CORRECCIÓN: Incluir autores_extra correctamente
   datosUsuario = {
     nombre: nombrePrincipal,
     autores_extra: autores,
     tema,
-    asignatura: document.getElementById('asignatura').value,
-    profesor: document.getElementById('profesor').value,
+    asignatura:  document.getElementById('asignatura').value,
+    profesor:    document.getElementById('profesor').value,
     institucion: document.getElementById('institucion').value,
-    ciudad: document.getElementById('ciudad').value,
-    fecha: document.getElementById('fecha').value || new Date().toLocaleDateString('es-CO'),
-    norma: normaActual
+    ciudad:      document.getElementById('ciudad').value,
+    fecha:       document.getElementById('fecha').value || new Date().toLocaleDateString('es-CO'),
+    norma:       normaActual
   };
 
-  setTimeout(() => {
-    document.getElementById('progressContainer').style.display = 'none';
-    mostrarEditor();
-  }, 1200);
-
-  if (errores === 0) {
-    Swal.fire({ icon: 'success', title: '¡Informe listo!', text: 'Todas las secciones generadas correctamente.', timer: 2500, showConfirmButton: false, confirmButtonColor: '#c9a84c' });
-  } else {
-    Swal.fire({ icon: 'warning', title: 'Casi listo', text: `${SECCIONES_INFO.length - errores} de ${SECCIONES_INFO.length} secciones generadas. Puedes regenerar las que fallaron.`, confirmButtonColor: '#c9a84c' });
+  // Si modo automático, buscar referencias reales al terminar
+  if(refsModo==='auto'){
+    try{
+      document.getElementById('progressMessage').textContent = '🔬 Buscando referencias reales en CrossRef...';
+      const refsRes  = await fetch('/api/referencias-reales',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({tema, norma:normaActual, refs_manuales:refsManuales})
+      });
+      const refsData = await refsRes.json();
+      if(refsData.success && refsData.contenido){
+        seccionesGeneradas['referencias'] = refsData.contenido;
+        marcarChip('referencias','ok');
+        // Guardar info para mostrar en editor
+        window._refsInfo = refsData;
+      }
+    } catch(e){
+      console.warn('Referencias reales fallaron, usando las de IA:', e);
+    }
   }
 
-  btn.disabled = false;
-  btn.innerHTML = '🚀 GENERAR INFORME COMPLETO';
+  setTimeout(()=>{
+    document.getElementById('progressContainer').style.display='none';
+    mostrarEditor();
+  },1200);
+
+  if(errores===0){
+    Swal.fire({icon:'success',title:'¡Informe listo!',text:'Todas las secciones generadas correctamente.',timer:2500,showConfirmButton:false});
+  } else {
+    Swal.fire({icon:'warning',title:'Casi listo',text:`${SECCIONES_INFO.length-errores} de ${SECCIONES_INFO.length} secciones generadas. Regenera las que fallaron.`,confirmButtonColor:'#c9a84c'});
+  }
+
+  btn.disabled=false;
+  btn.innerHTML='🚀 GENERAR INFORME COMPLETO';
 };
 
 // ========== MOSTRAR EDITOR ==========
-function mostrarEditor() {
+function mostrarEditor(){
   const tabsDiv = document.getElementById('editorTabs');
-  tabsDiv.innerHTML = '';
-  SECCIONES_INFO.forEach((s, i) => {
-    const btn = document.createElement('button');
-    btn.textContent = s.nombre;
-    btn.className = 'editor-tab' + (i === 0 ? ' active' : '');
-    btn.onclick = () => {
-      // Guardar cambios del tab actual antes de cambiar
-      const activo = document.querySelector('.editor-tab.active');
-      if (activo) {
-        const idxActivo = Array.from(document.querySelectorAll('.editor-tab')).indexOf(activo);
-        if (idxActivo >= 0) seccionesGeneradas[SECCIONES_INFO[idxActivo].clave] = document.getElementById('editorTexto').value;
+  tabsDiv.innerHTML='';
+  SECCIONES_INFO.forEach((s,i)=>{
+    const btn=document.createElement('button');
+    btn.textContent=s.nombre;
+    btn.className='editor-tab'+(i===0?' active':'');
+    btn.onclick=()=>{
+      const activo=document.querySelector('.editor-tab.active');
+      if(activo){
+        const idxActivo=Array.from(document.querySelectorAll('.editor-tab')).indexOf(activo);
+        if(idxActivo>=0) seccionesGeneradas[SECCIONES_INFO[idxActivo].clave]=document.getElementById('editorTexto').value;
       }
-      document.querySelectorAll('.editor-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.editor-tab').forEach(t=>t.classList.remove('active'));
       btn.classList.add('active');
-      document.getElementById('editorTexto').value = seccionesGeneradas[s.clave] || '';
+      document.getElementById('editorTexto').value=seccionesGeneradas[s.clave]||'';
+      // Mostrar/ocultar botón de referencias reales
+      const esRefs = s.clave==='referencias';
+      document.getElementById('buscarRefsRealesBtn').style.display=esRefs?'inline-flex':'none';
+      // Mostrar info de fuente si es referencias
+      const infoDiv=document.getElementById('refsInfo');
+      if(esRefs && window._refsInfo){
+        const fuente=window._refsInfo.fuente==='crossref_openalex'
+          ? `✅ ${window._refsInfo.total} referencias reales de CrossRef y OpenAlex`
+          : '⚠️ Referencias generadas por IA (CrossRef no devolvió resultados)';
+        infoDiv.innerHTML=`<span class="refs-badge">🔬 ${fuente}</span>`;
+        infoDiv.style.display='block';
+      } else {
+        infoDiv.style.display='none';
+      }
     };
     tabsDiv.appendChild(btn);
   });
-  document.getElementById('editorTexto').value = seccionesGeneradas.introduccion || '';
-  document.getElementById('editorPanel').style.display = 'block';
-  document.getElementById('editorPanel').scrollIntoView({ behavior: 'smooth' });
+
+  document.getElementById('editorTexto').value=seccionesGeneradas.introduccion||'';
+  document.getElementById('editorPanel').style.display='block';
+
+  // Mostrar info de referencias si las hay
+  if(window._refsInfo){
+    const infoDiv=document.getElementById('refsInfo');
+    const fuente=window._refsInfo.fuente==='crossref_openalex'
+      ? `✅ ${window._refsInfo.total} referencias reales de CrossRef y OpenAlex`
+      : '⚠️ Referencias generadas por IA (fallback)';
+    // Solo mostrar cuando se seleccione el tab de referencias
+    infoDiv.style.display='none';
+  }
+
+  document.getElementById('editorPanel').scrollIntoView({behavior:'smooth'});
 }
 
 // ========== REGENERAR SECCIÓN ==========
 document.getElementById('regenerarSeccionBtn').onclick = async () => {
-  const tabs = Array.from(document.querySelectorAll('.editor-tab'));
-  const indiceActivo = tabs.findIndex(t => t.classList.contains('active'));
-  if (indiceActivo === -1) return;
-  const { clave, nombre } = SECCIONES_INFO[indiceActivo];
-  const btn = document.getElementById('regenerarSeccionBtn');
-  btn.disabled = true;
-  btn.innerHTML = `⏳ Regenerando ${nombre}...`;
+  const tabs=Array.from(document.querySelectorAll('.editor-tab'));
+  const idxActivo=tabs.findIndex(t=>t.classList.contains('active'));
+  if(idxActivo===-1) return;
+  const {clave, nombre}=SECCIONES_INFO[idxActivo];
+  const btn=document.getElementById('regenerarSeccionBtn');
+  btn.disabled=true;
+  btn.innerHTML=`⏳ Regenerando ${nombre}...`;
 
-  const refsManuales = refsModo === 'manual' ? (document.getElementById('referenciasManual').value.trim()) : '';
+  const refsManuales=refsModo==='manual'?(document.getElementById('referenciasManual').value.trim()):'';
 
-  try {
-    const res = await fetch('/generar-seccion', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        seccion: clave,
-        tema: datosUsuario.tema,
-        nivel: document.getElementById('nivel').value,
-        tipo_informe: tipoActual,
-        norma: normaActual,
-        texto_usuario: document.getElementById('textoUsuario').value,
-        refs_manuales: refsManuales
+  try{
+    // ⚠️ RUTA CORREGIDA: /api/generar-seccion
+    const res=await fetch('/api/generar-seccion',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        seccion:clave,
+        tema:datosUsuario.tema,
+        nivel:document.getElementById('nivel').value,
+        tipo_informe:tipoActual,
+        norma:normaActual,
+        texto_usuario:document.getElementById('textoUsuario')?.value||'',
+        refs_manuales:refsManuales
       })
     });
-    const data = await res.json();
-    if (data.success && data.contenido) {
-      seccionesGeneradas[clave] = data.contenido;
-      document.getElementById('editorTexto').value = data.contenido;
-      Swal.fire({ icon: 'success', title: 'Sección regenerada', text: `${nombre} actualizada correctamente.`, timer: 1800, showConfirmButton: false });
+    const data=await res.json();
+    if(data.success && data.contenido){
+      seccionesGeneradas[clave]=data.contenido;
+      document.getElementById('editorTexto').value=data.contenido;
+      Swal.fire({icon:'success',title:'Sección regenerada',text:`${nombre} actualizada.`,timer:1800,showConfirmButton:false});
     } else {
-      throw new Error(data.error || 'Error desconocido');
+      throw new Error(data.error||'Error desconocido');
     }
-  } catch (e) {
-    Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo regenerar: ' + e.message, confirmButtonColor: '#c9a84c' });
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '🔄 Regenerar sección';
+  } catch(e){
+    Swal.fire({icon:'error',title:'Error',text:'No se pudo regenerar: '+e.message,confirmButtonColor:'#c9a84c'});
+  } finally{
+    btn.disabled=false;
+    btn.innerHTML='🔄 Regenerar sección';
   }
 };
 
-// ========== BUSCAR REFERENCIAS REALES ==========
+// ========== REFERENCIAS REALES ==========
 document.getElementById('buscarRefsRealesBtn').onclick = async () => {
-  const btn = document.getElementById('buscarRefsRealesBtn');
-  btn.disabled = true;
-  btn.innerHTML = '⏳ Buscando en CrossRef...';
+  const btn=document.getElementById('buscarRefsRealesBtn');
+  btn.disabled=true;
+  btn.innerHTML='⏳ Buscando en CrossRef y OpenAlex...';
 
-  const refsManuales = refsModo === 'manual' ? (document.getElementById('referenciasManual').value.trim()) : '';
+  const refsManuales=refsModo==='manual'?(document.getElementById('referenciasManual').value.trim()):'';
 
-  try {
-    const res = await fetch('/referencias-reales', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        tema: datosUsuario.tema,
-        norma: normaActual,
-        refs_manuales: refsManuales
+  try{
+    // ⚠️ RUTA CORREGIDA: /api/referencias-reales
+    const res=await fetch('/api/referencias-reales',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        tema:datosUsuario.tema,
+        norma:normaActual,
+        refs_manuales:refsManuales
       })
     });
-    const data = await res.json();
-    if (data.success && data.contenido) {
-      seccionesGeneradas['referencias'] = data.contenido;
-      // Si el tab de referencias está activo, actualizar el textarea
-      const tabs = Array.from(document.querySelectorAll('.editor-tab'));
-      const tabRefs = tabs.find(t => t.textContent.trim() === 'Referencias');
-      if (tabRefs && tabRefs.classList.contains('active')) {
-        document.getElementById('editorTexto').value = data.contenido;
-      }
-      Swal.fire({ icon: 'success', title: '¡Referencias verificadas!', text: 'Se obtuvieron referencias reales de CrossRef y OpenAlex.', timer: 2500, showConfirmButton: false });
+    const data=await res.json();
+    if(data.success && data.contenido){
+      seccionesGeneradas['referencias']=data.contenido;
+      document.getElementById('editorTexto').value=data.contenido;
+      window._refsInfo=data;
+
+      const infoDiv=document.getElementById('refsInfo');
+      const fuente=data.fuente==='crossref_openalex'
+        ? `✅ ${data.total} referencias reales de CrossRef y OpenAlex`
+        : '⚠️ Referencias generadas por IA (CrossRef sin resultados para este tema)';
+      infoDiv.innerHTML=`<span class="refs-badge">🔬 ${fuente}</span>`;
+      infoDiv.style.display='block';
+
+      const msg=data.fuente==='crossref_openalex'
+        ? `Se obtuvieron ${data.total} referencias reales verificadas.`
+        : 'No se encontraron resultados en CrossRef. Se usó IA como fallback.';
+      Swal.fire({icon:'success',title:'Referencias actualizadas',text:msg,timer:3000,showConfirmButton:false});
     } else {
-      throw new Error(data.error || 'Error desconocido');
+      throw new Error(data.error||'Error desconocido');
     }
-  } catch (e) {
-    Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudieron obtener: ' + e.message, confirmButtonColor: '#c9a84c' });
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '🔬 Actualizar referencias reales';
+  } catch(e){
+    Swal.fire({icon:'error',title:'Error',text:'No se pudieron obtener: '+e.message,confirmButtonColor:'#c9a84c'});
+  } finally{
+    btn.disabled=false;
+    btn.innerHTML='🔬 Actualizar referencias reales';
   }
 };
 
-// Mostrar botón de referencias reales cuando se selecciona el tab de Referencias
-document.addEventListener('click', (e) => {
-  if (e.target.classList.contains('editor-tab')) {
-    const esRefs = e.target.textContent.trim() === 'Referencias';
-    document.getElementById('buscarRefsRealesBtn').style.display = esRefs ? 'inline-flex' : 'none';
-  }
-});
-
-// ========== EXPORTAR — GUARDAR EDICIONES PRIMERO ==========
-function getSeccionesConEdicion() {
-  const copia = { ...seccionesGeneradas };
-  const tabs = Array.from(document.querySelectorAll('.editor-tab'));
-  const indiceActivo = tabs.findIndex(t => t.classList.contains('active'));
-  if (indiceActivo !== -1) {
-    copia[SECCIONES_INFO[indiceActivo].clave] = document.getElementById('editorTexto').value;
-  }
+// ========== GUARDAR EDICIÓN ACTIVA ==========
+function getSeccionesConEdicion(){
+  const copia={...seccionesGeneradas};
+  const tabs=Array.from(document.querySelectorAll('.editor-tab'));
+  const idxActivo=tabs.findIndex(t=>t.classList.contains('active'));
+  if(idxActivo!==-1) copia[SECCIONES_INFO[idxActivo].clave]=document.getElementById('editorTexto').value;
   return copia;
 }
 
+// ========== EXPORTAR PDF ==========
 document.getElementById('exportarPDFBtn').onclick = async () => {
-  const btn = document.getElementById('exportarPDFBtn');
-  btn.disabled = true;
-  btn.innerHTML = '⏳ Generando PDF...';
-  try {
-    const res = await fetch('/exportar-pdf', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ secciones: getSeccionesConEdicion(), datos_usuario: datosUsuario })
+  const btn=document.getElementById('exportarPDFBtn');
+  btn.disabled=true; btn.innerHTML='⏳ Generando PDF...';
+  try{
+    const res=await fetch('/exportar-pdf',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({secciones:getSeccionesConEdicion(),datos_usuario:datosUsuario})
     });
-    if (!res.ok) throw new Error('Error del servidor');
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `informe_${Date.now()}.pdf`;
-    a.click();
+    if(!res.ok) throw new Error('Error del servidor');
+    const blob=await res.blob();
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download=`informe_${Date.now()}.pdf`; a.click();
     URL.revokeObjectURL(url);
-  } catch (e) {
-    Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo generar el PDF: ' + e.message, confirmButtonColor: '#c9a84c' });
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '📄 Descargar PDF';
+  } catch(e){
+    Swal.fire({icon:'error',title:'Error',text:'No se pudo generar el PDF: '+e.message,confirmButtonColor:'#c9a84c'});
+  } finally{
+    btn.disabled=false; btn.innerHTML='📄 Descargar PDF';
   }
 };
 
+// ========== EXPORTAR WORD ==========
 document.getElementById('exportarWordBtn').onclick = async () => {
-  const btn = document.getElementById('exportarWordBtn');
-  btn.disabled = true;
-  btn.innerHTML = '⏳ Generando Word...';
-  try {
-    const res = await fetch('/exportar-word', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ secciones: getSeccionesConEdicion(), datos_usuario: datosUsuario })
+  const btn=document.getElementById('exportarWordBtn');
+  btn.disabled=true; btn.innerHTML='⏳ Generando Word...';
+  try{
+    const res=await fetch('/exportar-word',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({secciones:getSeccionesConEdicion(),datos_usuario:datosUsuario})
     });
-    if (!res.ok) throw new Error('Error del servidor');
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `informe_${Date.now()}.docx`;
-    a.click();
+    if(!res.ok) throw new Error('Error del servidor');
+    const blob=await res.blob();
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download=`informe_${Date.now()}.docx`; a.click();
     URL.revokeObjectURL(url);
-  } catch (e) {
-    Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo generar el Word: ' + e.message, confirmButtonColor: '#c9a84c' });
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '📝 Descargar Word';
+  } catch(e){
+    Swal.fire({icon:'error',title:'Error',text:'No se pudo generar el Word: '+e.message,confirmButtonColor:'#c9a84c'});
+  } finally{
+    btn.disabled=false; btn.innerHTML='📝 Descargar Word';
   }
 };
 </script>
