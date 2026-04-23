@@ -8,28 +8,33 @@
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        /* ===== TU ESTILO COMPLETO AQUÍ ===== */
+        /* ===== TODOS TUS ESTILOS CSS AQUÍ ===== */
         :root {
             --bg:#080b12; --surface:#0d1117; --surface2:#111720;
             --border:rgba(255,255,255,.07); --border2:rgba(255,255,255,.12);
             --gold:#c9a84c; --gold2:#e8c96a; --gold-dim:rgba(201,168,76,.15);
             --text:#e8e6df; --text2:#8a8880; --text3:#4a4845;
             --red:#e05c5c; --green:#56c489;
+            --radius:12px; --radius-lg:20px;
         }
         *{margin:0;padding:0;box-sizing:border-box;}
         body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);cursor:none;}
+        
+        /* Cursor */
         #cursor{position:fixed;width:10px;height:10px;border-radius:50%;background:var(--gold);pointer-events:none;z-index:9999;transform:translate(-50%,-50%);mix-blend-mode:difference;}
         #cursor-ring{position:fixed;width:36px;height:36px;border-radius:50%;border:1px solid rgba(201,168,76,.4);pointer-events:none;z-index:9998;transform:translate(-50%,-50%);}
         
-        /* NAVEGACIÓN */
+        /* Navegación */
         nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:.9rem 2.5rem;background:rgba(8,11,18,.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
         .nav-logo{display:flex;align-items:center;gap:.7rem;font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:700;color:var(--text);text-decoration:none;}
         .nav-logo-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--gold) 0%,#8b6914 100%);display:flex;align-items:center;justify-content:center;}
         .nav-links{display:flex;gap:2rem;}
+        @media(max-width:768px){.nav-links{display:none;}}
         .nav-link{color:var(--text2);text-decoration:none;font-size:.85rem;font-weight:600;transition:color .2s;}
         .nav-link:hover{color:var(--gold);}
         .nav-link.active{color:var(--gold);}
         
+        /* Botones */
         .btn-gold{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.8rem;background:linear-gradient(135deg,var(--gold) 0%,#a8832a 100%);color:#000;font-weight:700;border:none;border-radius:12px;cursor:pointer;transition:all .2s;}
         .btn-gold:hover{transform:translateY(-2px);box-shadow:0 8px 36px rgba(201,168,76,.45);}
         .btn-outline{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.8rem;background:transparent;color:var(--text);font-weight:600;border:1px solid var(--border2);border-radius:12px;cursor:pointer;}
@@ -43,6 +48,7 @@
         .card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:1.5rem;margin-bottom:1.2rem;}
         
         footer{text-align:center;padding:2rem;border-top:1px solid var(--border);font-size:.78rem;color:var(--text3);}
+        .hidden{display:none;}
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -69,11 +75,10 @@
     </main>
     
     <footer>
-        <strong>Academic Report Pro</strong> · Generador de informes con IA · 8 normas · 6 tipos · PDF + Word
+        <strong>Academic Report Pro v3.1</strong> · 8 normas · 6 tipos · PDF + Word · Referencias reales (CrossRef/OpenAlex)
     </footer>
     
     <script>
-        // Cursor
         const cur=document.getElementById('cursor'),curR=document.getElementById('cursor-ring');
         let mx=0,my=0,rx=0,ry=0;
         document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px';});
