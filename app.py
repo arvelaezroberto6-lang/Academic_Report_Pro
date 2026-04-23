@@ -31,7 +31,7 @@ DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
 DEEPSEEK_URL     = "https://api.deepseek.com/v1/chat/completions"
 
 logger.info("=" * 60)
-logger.info("🚀 ACADEMIC REPORT PRO - VERSIÓN 3.2")
+logger.info("🚀 ACADEMIC REPORT PRO - VERSIÓN 3.3")
 logger.info(f"🔑 API Key: {'SÍ ✅' if DEEPSEEK_API_KEY else 'NO ❌'}")
 logger.info("=" * 60)
 
@@ -117,8 +117,29 @@ def limpiar_para_word(texto):
     return texto.strip()
 
 # ============================================================
-# PROMPTS POR SECCIÓN
+# PROMPTS POR SECCIÓN  (v3.3 — mejorado con recomendaciones)
 # ============================================================
+# Contexto colombiano inyectado en todas las secciones relevantes
+_CONTEXTO_COLOMBIA = """
+CONTEXTO COLOMBIANO OBLIGATORIO:
+- Cuando sea pertinente al tema, menciona entidades reales de Colombia:
+  Ministerio de Tecnologías de la Información y las Comunicaciones (MinTIC),
+  Departamento Administrativo Nacional de Estadística (DANE),
+  Comisión de Regulación de Comunicaciones (CRC), Colciencias/MinCiencias,
+  SENA, DNP, Superintendencia de Industria y Comercio, etc.
+- Cita datos estadísticos reales o verosímiles de Colombia (porcentajes, cifras sectoriales).
+- Menciona empresas, sectores o casos reales del país cuando sea aplicable.
+- Aterriza los conceptos globales al contexto nacional colombiano.
+"""
+
+_ESTILO_NATURAL = """
+ESTILO DE REDACCIÓN:
+- Redacción académica pero con voz propia: mezcla de análisis técnico y reflexión del autor.
+- Evita frases vacías, genéricas o que suenen completamente automatizadas.
+- Usa variedad de estructuras sintácticas; no comiences todos los párrafos igual.
+- Incluye interpretaciones o valoraciones propias del autor en las secciones analíticas.
+"""
+
 def build_prompt(seccion, tema, info, tipo, norma, nivel, refs_manuales=''):
     instruccion_norma = NORMAS_INSTRUCCIONES.get(norma, NORMAS_INSTRUCCIONES['APA 7'])
     instruccion_tipo  = TIPOS_INSTRUCCIONES.get(tipo, TIPOS_INSTRUCCIONES['academico'])
@@ -127,66 +148,112 @@ def build_prompt(seccion, tema, info, tipo, norma, nivel, refs_manuales=''):
 Nivel educativo: {nivel}.
 Norma bibliográfica activa: {norma}.
 {instruccion_norma}
+{_CONTEXTO_COLOMBIA}
+{_ESTILO_NATURAL}
 """
     if seccion == 'introduccion':
         return base + f"""Escribe ÚNICAMENTE la INTRODUCCIÓN del informe sobre: "{tema}".
-Info adicional: {info or 'Ninguna'}.
-- Mínimo 4 párrafos: contexto, justificación, planteamiento del problema, estructura del informe.
-- Redacción formal y académica. Al menos 2 citas en formato {norma}.
-- NO incluyas el título, solo el contenido puro."""
+Info adicional del autor: {info or 'Ninguna'}.
+Estructura obligatoria (4-5 párrafos):
+1. Contexto general del tema con datos estadísticos concretos y referencia a Colombia.
+2. Justificación: por qué es relevante este tema en el panorama colombiano y latinoamericano.
+3. Planteamiento del problema: ¿cuál es la brecha, tensión o necesidad que aborda el informe?
+4. Alineación con los objetivos del informe: anuncia brevemente qué secciones siguen y qué aporta cada una.
+- Al menos 2 citas en formato {norma}. Referencias entre 2019 y 2025.
+- Menciona al menos una entidad colombiana relevante (MinTIC, DANE, CRC, etc.) si aplica al tema.
+- NO incluyas el título de la sección, solo el contenido puro."""
 
     elif seccion == 'objetivos':
         return base + f"""Escribe ÚNICAMENTE los OBJETIVOS del informe sobre: "{tema}".
+Usa este formato exacto:
+
 OBJETIVO GENERAL:
-[Un objetivo general claro y medible en infinitivo]
+[Un objetivo general claro, medible y redactado en infinitivo que capture la esencia del informe]
+
 OBJETIVOS ESPECÍFICOS:
-1. [Objetivo 1 — verbo en infinitivo + acción + resultado]
-2. [Objetivo 2]
-3. [Objetivo 3]
-4. [Objetivo 4]
-5. [Objetivo 5]"""
+1. [Verbo en infinitivo + acción concreta + resultado esperado — directamente vinculado al tema]
+2. [Verbo en infinitivo + acción concreta + resultado esperado]
+3. [Verbo en infinitivo + acción concreta + resultado esperado]
+4. [Verbo en infinitivo + acción concreta + resultado esperado]
+5. [Verbo en infinitivo + acción concreta + resultado esperado]
+
+Cada objetivo específico debe ser verificable y conectarse con una sección del informe (marco teórico, metodología, desarrollo, conclusiones o recomendaciones)."""
 
     elif seccion == 'marco_teorico':
         return base + f"""Escribe ÚNICAMENTE el MARCO TEÓRICO del informe sobre: "{tema}".
-Info adicional: {info or 'Ninguna'}.
-- Mínimo 5 párrafos: antecedentes, definiciones clave, teorías, estado del arte.
-- Al menos 4 citas en formato {norma}. Vocabulario especializado."""
+Info adicional del autor: {info or 'Ninguna'}.
+Estructura obligatoria (mínimo 5 párrafos):
+1. Antecedentes históricos o evolución del tema.
+2. Definiciones y conceptos clave con citas de autores reconocidos.
+3. Teorías o modelos teóricos principales que sustentan el informe.
+4. Estado del arte: investigaciones recientes (2020-2025) sobre el tema.
+5. Contexto colombiano: cómo se ha estudiado o implementado este tema en Colombia.
+- Al menos 5 citas en formato {norma} con años entre 2019 y 2025.
+- Incluye autores latinoamericanos o colombianos cuando existan."""
 
     elif seccion == 'metodologia':
         return base + f"""Escribe ÚNICAMENTE la METODOLOGÍA del informe de tipo "{tipo}" sobre: "{tema}".
-- Mínimo 4 párrafos: enfoque, tipo de investigación, técnicas, procedimiento, ética.
-- Si es laboratorio: materiales y procedimiento paso a paso.
-- Justifica cada decisión metodológica."""
+Info adicional del autor: {info or 'Ninguna'}.
+Estructura obligatoria (mínimo 4 párrafos):
+1. Enfoque investigativo (cuantitativo, cualitativo o mixto) con justificación del por qué.
+2. Tipo y alcance de la investigación (descriptivo, explicativo, correlacional, etc.).
+3. Técnicas e instrumentos: describe herramientas concretas, fuentes de información y cómo se usaron.
+   - IMPORTANTE: describe las herramientas de forma simple y creíble para el nivel {nivel}.
+   - Si se usaron herramientas digitales o software, explica exactamente el procedimiento paso a paso.
+4. Criterios éticos y limitaciones del estudio.
+{"5. Si aplica: materiales, equipos utilizados y procedimiento experimental detallado." if tipo == 'laboratorio' else ""}
+- Justifica cada decisión metodológica con argumentos académicos."""
 
     elif seccion == 'desarrollo':
         return base + f"""Escribe ÚNICAMENTE el DESARROLLO del informe de tipo "{tipo}" sobre: "{tema}".
-Info adicional: {info or 'Ninguna'}.
-- Mínimo 6 párrafos. Es la sección más extensa.
-- Resultados, análisis, discusión crítica, comparación con teoría.
-- Al menos 3 citas en formato {norma}."""
+Info adicional del autor: {info or 'Ninguna'}.
+Estructura obligatoria (mínimo 7 párrafos):
+1. Presentación de resultados principales con datos, cifras o ejemplos concretos.
+2. Para cumplir el Objetivo Específico 1 se realizó... [explícita vinculación con objetivos].
+3. Para cumplir el Objetivo Específico 2 se realizó... [análisis de segundo hallazgo].
+4. Comparación con el marco teórico: ¿los resultados confirman o contradicen la teoría?
+5. Análisis del contexto colombiano: aplica los resultados a la realidad de Colombia.
+   - Menciona datos del DANE, MinTIC, CRC u otras entidades si aplican al tema.
+   - Nombra empresas, sectores o casos reales del país.
+6. Tablas o datos estructurados: incluye al menos UNA tabla con datos relevantes en formato de texto:
+   Tabla 1. [Nombre de la tabla]
+   | Categoría | Valor | Año | Fuente |
+   | ... | ... | ... | ... |
+7. Análisis crítico y opinión del autor: ¿qué implican estos resultados? ¿qué limitaciones existen?
+- Al menos 4 citas en formato {norma}. Fuentes entre 2019 y 2025."""
 
     elif seccion == 'conclusiones':
         return base + f"""Escribe ÚNICAMENTE las CONCLUSIONES del informe sobre: "{tema}".
-1. [Conclusión 1: responde al objetivo general — mínimo 3 oraciones]
-2. [Conclusión 2: hallazgo más importante]
-3. [Conclusión 3: implicaciones prácticas]
-4. [Conclusión 4: limitaciones]
-5. [Conclusión 5: perspectivas futuras]"""
+Usa este formato (5 conclusiones numeradas):
+1. [Responde directamente al objetivo general — mínimo 3-4 oraciones explicando si se cumplió y por qué]
+2. [Hallazgo más importante del desarrollo: dato clave o resultado central]
+3. [Implicaciones prácticas para Colombia: qué debería cambiar o mejorar en el país]
+4. [Limitaciones del estudio: qué no pudo resolverse y por qué]
+5. [Perspectivas futuras: líneas de investigación o acciones recomendadas a futuro]
+- Incluye al menos 1 opinión o interpretación propia del autor en las conclusiones.
+- Usa un tono reflexivo y personal, no únicamente descriptivo."""
 
     elif seccion == 'recomendaciones':
         return base + f"""Escribe ÚNICAMENTE las RECOMENDACIONES del informe de tipo "{tipo}" sobre: "{tema}".
-1. [Recomendación 1: dirigida a quién + acción + justificación — 3 oraciones]
-2. [Recomendación 2]
-3. [Recomendación 3]
-4. [Recomendación 4]
-5. [Recomendación 5: para futuras investigaciones]"""
+Usa este formato (5 recomendaciones numeradas):
+1. [Dirigida al Ministerio o entidad pública colombiana relevante: acción concreta + justificación — 3 oraciones]
+2. [Dirigida a empresas del sector privado en Colombia: acción específica + beneficio esperado]
+3. [Dirigida a instituciones educativas o de investigación: formación, programas o estudios sugeridos]
+4. [Dirigida a profesionales o practicantes del área: cambio de práctica o habilidad a desarrollar]
+5. [Para futuras investigaciones: pregunta de investigación abierta o metodología a explorar]
+- Cada recomendación debe ser accionable, dirigida a un actor específico y justificada."""
 
     elif seccion == 'referencias':
         refs_extra = f"\nIncluye o adapta estas referencias del autor:\n{refs_manuales}" if refs_manuales else ""
         return base + f"""Genera ÚNICAMENTE la lista de REFERENCIAS BIBLIOGRÁFICAS sobre: "{tema}".
 {refs_extra}
-- Entre 8 y 10 referencias académicas reales (libros, artículos, reportes).
-- Aplica formato {norma} con precisión. Años 2015-2024. Sin título de sección."""
+Criterios obligatorios:
+- Entre 10 y 12 referencias académicas (artículos, libros, informes técnicos, reportes institucionales).
+- TODAS las referencias deben ser de años 2019-2025.
+- Al menos 3 referencias deben provenir de entidades o autores colombianos o latinoamericanos
+  (DANE, MinTIC, Colciencias, CEPAL, revistas colombianas indexadas, etc.).
+- Al menos 4 referencias deben ser artículos de revista académica con DOI.
+- Aplica formato {norma} con precisión. Sin título de sección ni preámbulo."""
 
     return ""
 
@@ -199,9 +266,14 @@ def generar_seccion(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_
         return None
 
     system_prompt = (
-        f"Eres un experto en redacción académica universitaria en español con especialización en norma {norma}. "
-        "Escribes contenido sustancial, formal y bien estructurado. "
-        "Respondes SOLO con el contenido solicitado, sin títulos, sin preámbulos, sin '**', sin markdown."
+        f"Eres un experto en redacción académica universitaria en español con especialización en norma {norma} "
+        "y profundo conocimiento del contexto colombiano y latinoamericano. "
+        "Escribes contenido sustancial, formal y bien estructurado, con voz propia y análisis crítico. "
+        "Cuando aplique al tema, incluyes datos reales de Colombia, referencias a entidades como MinTIC, DANE, "
+        "CRC, Colciencias o similares, y mencionas casos o ejemplos concretos del país. "
+        "Usas referencias de años 2019-2025. Incluyes tablas de datos cuando el contenido lo amerita. "
+        "Balanceas el análisis técnico con interpretaciones propias del autor. "
+        "Respondes SOLO con el contenido solicitado, sin títulos de sección, sin preámbulos, sin '**', sin markdown."
     )
 
     contenido = llamar_deepseek(prompt, system_prompt=system_prompt, max_tokens=3000)
@@ -680,7 +752,7 @@ def health():
         'api_configured':      bool(DEEPSEEK_API_KEY),
         'normas_disponibles':  list(NORMAS_INSTRUCCIONES.keys()),
         'tipos_disponibles':   list(TIPOS_INSTRUCCIONES.keys()),
-        'version':             '3.2'
+        'version':             '3.3'
     })
 
 
