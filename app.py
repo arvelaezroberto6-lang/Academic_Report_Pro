@@ -160,13 +160,9 @@ def limpiar_para_pdf(texto):
     """Convierte el texto a formato seguro para ReportLab — sin <br/> ni tags HTML"""
     if not texto:
         return ""
-    # Reemplazar saltos de línea reales
     texto = texto.replace('<br/>', '\n').replace('<br>', '\n')
-    # Eliminar cualquier otro tag HTML que pueda existir
     texto = re.sub(r'<[^>]+>', '', texto)
-    # Decodificar entidades HTML
     texto = html.unescape(texto)
-    # Limpiar espacios múltiples
     texto = re.sub(r'\n{3,}', '\n\n', texto)
     return texto.strip()
 
@@ -317,7 +313,6 @@ def generar_seccion(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_
         return None
 
     contenido = contenido.strip()
-    # Guardar con \n para preservar párrafos — el frontend maneja la visualización
     logger.info(f"Sección '{seccion}' generada: {len(contenido)} caracteres")
     return contenido
 
@@ -352,7 +347,6 @@ def generar_pdf(datos_usuario, secciones):
 
     styles = getSampleStyleSheet()
 
-    # Estilos personalizados
     styles.add(ParagraphStyle(
         name='TextoJustificado',
         parent=styles['Normal'],
@@ -420,7 +414,7 @@ def generar_pdf(datos_usuario, secciones):
     )
     story = []
 
-    # ── PORTADA ──
+    # PORTADA
     story.append(Spacer(1, 2.0*inch))
     story.append(Paragraph("INFORME ACADÉMICO", styles['TituloPortada']))
     story.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor('#1a365d'), spaceAfter=12))
@@ -446,7 +440,7 @@ def generar_pdf(datos_usuario, secciones):
     story.append(Paragraph(f"<b>Norma bibliográfica:</b> {norma}", styles['TextoCentrado']))
     story.append(PageBreak())
 
-    # ── ÍNDICE ──
+    # ÍNDICE
     story.append(Paragraph("ÍNDICE", styles['Titulo1']))
     story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#cccccc'), spaceAfter=8))
     for idx in [
@@ -462,7 +456,7 @@ def generar_pdf(datos_usuario, secciones):
         story.append(Paragraph(f"{'&nbsp;' * 4}{idx}", styles['TextoLista']))
     story.append(PageBreak())
 
-    # ── SECCIONES ──
+    # SECCIONES
     secciones_orden = [
         ("1. INTRODUCCIÓN", 'introduccion'),
         ("2. OBJETIVOS", 'objetivos'),
@@ -481,16 +475,13 @@ def generar_pdf(datos_usuario, secciones):
         contenido = limpiar_para_pdf(contenido_raw)
 
         if contenido and len(contenido) > 50:
-            # Dividir en párrafos por líneas dobles o saltos simples
             parrafos = re.split(r'\n{2,}', contenido)
             if len(parrafos) == 1:
-                # Si no hay párrafos múltiples, dividir por líneas simples
                 parrafos = contenido.split('\n')
 
             for parrafo in parrafos:
                 parrafo = parrafo.strip()
                 if parrafo:
-                    # Detectar si es una lista numerada o con viñeta
                     if re.match(r'^(\d+\.|•|-|\*)\s', parrafo):
                         story.append(Paragraph(parrafo, styles['TextoLista']))
                     else:
@@ -519,7 +510,6 @@ def generar_word(datos_usuario, secciones):
 
     doc = Document()
 
-    # Configurar márgenes
     from docx.oxml.ns import qn
     from docx.oxml import OxmlElement
     section = doc.sections[0]
@@ -528,7 +518,7 @@ def generar_word(datos_usuario, secciones):
     section.left_margin = Cm(3.0)
     section.right_margin = Cm(2.5)
 
-    # ── PORTADA ──
+    # PORTADA
     portada = doc.add_paragraph()
     portada.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run = portada.add_run('\n\n\nINFORME ACADÉMICO')
@@ -572,7 +562,7 @@ def generar_word(datos_usuario, secciones):
 
     doc.add_page_break()
 
-    # ── ÍNDICE ──
+    # ÍNDICE
     h_idx = doc.add_heading('ÍNDICE', level=1)
     h_idx.runs[0].font.color.rgb = RGBColor(0x1a, 0x36, 0x5d)
 
@@ -587,7 +577,7 @@ def generar_word(datos_usuario, secciones):
 
     doc.add_page_break()
 
-    # ── SECCIONES ──
+    # SECCIONES
     secciones_orden = [
         ("1. INTRODUCCIÓN", 'introduccion'),
         ("2. OBJETIVOS", 'objetivos'),
@@ -634,9 +624,10 @@ def generar_word(datos_usuario, secciones):
     doc.save(buffer)
     buffer.seek(0)
     return buffer
-    
+
+
 # ============================================================
-# RUTAS DEL SITIO WEB
+# RUTAS DEL SITIO WEB (PÁGINAS)
 # ============================================================
 
 @app.route('/')
@@ -655,61 +646,10 @@ def mis_informes():
 def perfil():
     return render_template('perfil.html')
 
-@app.route('/generar-seccion', methods=['POST'])
-def generar_seccion_endpoint():
-    # ... tu código existente ...
-
 
 # ============================================================
 # RUTAS DE LA API
 # ============================================================
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@app.route('/generar', methods=['POST'])
-def generar():
-    try:
-        data = request.json
-        tema = data.get('tema', '').strip()
-        nivel = data.get('nivel', 'universitario')
-        tipo_informe = data.get('tipo_informe', 'academico')
-        norma = data.get('norma', 'APA 7')
-        nombre = data.get('nombre', 'Estudiante')
-        asignatura = data.get('asignatura', '')
-        profesor = data.get('profesor', '')
-        institucion = data.get('institucion', '')
-        ciudad = data.get('ciudad', '')
-        texto_usuario = data.get('texto_usuario', '')
-
-        autores = data.get('autores', [])
-        nombre_principal = autores[0].get('nombre', nombre) if autores else nombre
-
-        if not tema:
-            return jsonify({'success': False, 'error': 'El tema es requerido'}), 400
-
-        logger.info(f"📨 Generando informe completo — Tema: {tema[:50]}...")
-        secciones = generar_informe_completo(tema, texto_usuario, tipo_informe, norma, nivel)
-
-        if not secciones:
-            return jsonify({'success': False, 'error': 'No se pudo generar el informe'}), 500
-
-        datos_usuario = {
-            'nombre': nombre_principal,
-            'autores_extra': autores[1:] if len(autores) > 1 else [],
-            'tema': tema,
-            'asignatura': asignatura,
-            'profesor': profesor,
-            'institucion': institucion,
-            'ciudad': ciudad,
-            'fecha': datetime.now().strftime('%d/%m/%Y'),
-            'norma': norma
-        }
-
-        return jsonify({'success': True, 'secciones': secciones, 'datos_usuario': datos_usuario})
-    except Exception as e:
-        logger.error(f"Error en /generar: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/generar-seccion', methods=['POST'])
 def generar_seccion_endpoint():
@@ -779,7 +719,6 @@ def preview():
 
 @app.route('/normas', methods=['GET'])
 def get_normas():
-    """Retorna la lista de normas disponibles y sus descripciones"""
     return jsonify({
         'normas': list(NORMAS_INSTRUCCIONES.keys()),
         'tipos': list(TIPOS_INSTRUCCIONES.keys())
