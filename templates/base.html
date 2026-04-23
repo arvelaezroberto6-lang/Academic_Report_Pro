@@ -8,46 +8,46 @@
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        /* ===== TODOS TUS ESTILOS CSS AQUÍ ===== */
         :root {
             --bg:#080b12; --surface:#0d1117; --surface2:#111720;
             --border:rgba(255,255,255,.07); --border2:rgba(255,255,255,.12);
             --gold:#c9a84c; --gold2:#e8c96a; --gold-dim:rgba(201,168,76,.15);
+            --blue:#4f7cf7; --blue-dim:rgba(79,124,247,.12);
             --text:#e8e6df; --text2:#8a8880; --text3:#4a4845;
             --red:#e05c5c; --green:#56c489;
             --radius:12px; --radius-lg:20px;
         }
-        *{margin:0;padding:0;box-sizing:border-box;}
-        body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);cursor:none;}
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+        html{scroll-behavior:smooth;}
+        body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;cursor:none;}
         
-        /* Cursor */
-        #cursor{position:fixed;width:10px;height:10px;border-radius:50%;background:var(--gold);pointer-events:none;z-index:9999;transform:translate(-50%,-50%);mix-blend-mode:difference;}
-        #cursor-ring{position:fixed;width:36px;height:36px;border-radius:50%;border:1px solid rgba(201,168,76,.4);pointer-events:none;z-index:9998;transform:translate(-50%,-50%);}
+        #cursor{position:fixed;z-index:9999;pointer-events:none;width:10px;height:10px;border-radius:50%;background:var(--gold);transform:translate(-50%,-50%);transition:width .2s,height .2s;mix-blend-mode:difference;}
+        #cursor-ring{position:fixed;z-index:9998;pointer-events:none;width:36px;height:36px;border-radius:50%;border:1px solid rgba(201,168,76,.4);transform:translate(-50%,-50%);transition:width .2s,height .2s;}
+        
+        body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");opacity:.6;}
+        body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse 80% 80% at 50% 0%,black 40%,transparent 100%);}
+        main{position:relative;z-index:1;}
         
         /* Navegación */
-        nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:.9rem 2.5rem;background:rgba(8,11,18,.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
-        .nav-logo{display:flex;align-items:center;gap:.7rem;font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:700;color:var(--text);text-decoration:none;}
-        .nav-logo-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--gold) 0%,#8b6914 100%);display:flex;align-items:center;justify-content:center;}
-        .nav-links{display:flex;gap:2rem;}
-        @media(max-width:768px){.nav-links{display:none;}}
-        .nav-link{color:var(--text2);text-decoration:none;font-size:.85rem;font-weight:600;transition:color .2s;}
-        .nav-link:hover{color:var(--gold);}
-        .nav-link.active{color:var(--gold);}
+        .navbar{position:sticky;top:0;z-index:100;display:flex;justify-content:center;gap:1.5rem;padding:1rem 2rem;background:rgba(8,11,18,.95);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);margin-bottom:2rem;}
+        .nav-link{color:var(--text2);text-decoration:none;font-weight:600;padding:0.5rem 1.2rem;border-radius:8px;transition:all .2s;}
+        .nav-link:hover{background:var(--gold-dim);color:var(--gold);}
+        .nav-link.active{background:var(--gold-dim);color:var(--gold);}
         
-        /* Botones */
-        .btn-gold{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.8rem;background:linear-gradient(135deg,var(--gold) 0%,#a8832a 100%);color:#000;font-weight:700;border:none;border-radius:12px;cursor:pointer;transition:all .2s;}
+        .btn-gold{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.8rem;background:linear-gradient(135deg,var(--gold) 0%,#a8832a 100%);color:#000;font-weight:700;border:none;border-radius:var(--radius);cursor:pointer;transition:all .2s;}
         .btn-gold:hover{transform:translateY(-2px);box-shadow:0 8px 36px rgba(201,168,76,.45);}
-        .btn-outline{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.8rem;background:transparent;color:var(--text);font-weight:600;border:1px solid var(--border2);border-radius:12px;cursor:pointer;}
+        .btn-outline{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.8rem;background:transparent;color:var(--text);font-weight:600;border:1px solid var(--border2);border-radius:var(--radius);cursor:pointer;}
         .btn-outline:hover{border-color:var(--gold);color:var(--gold);}
         
         .container{max-width:1200px;margin:0 auto;padding:0 1.5rem;}
-        .hero{min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8rem 2rem 4rem;}
+        .hero{min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4rem 2rem;}
         .hero-title{font-family:'Cormorant Garamond',serif;font-size:clamp(3rem,8vw,5rem);font-weight:700;}
         .hero-title em{background:linear-gradient(135deg,var(--gold) 0%,var(--gold2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
         
-        .card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:1.5rem;margin-bottom:1.2rem;}
+        .card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:1.5rem;margin-bottom:1.2rem;transition:all .3s;}
+        .card:hover{border-color:rgba(201,168,76,.3);transform:translateY(-2px);}
         
-        footer{text-align:center;padding:2rem;border-top:1px solid var(--border);font-size:.78rem;color:var(--text3);}
+        footer{text-align:center;padding:2rem;border-top:1px solid var(--border);font-size:.78rem;color:var(--text3);margin-top:2rem;}
         .hidden{display:none;}
     </style>
     {% block extra_css %}{% endblock %}
@@ -56,19 +56,13 @@
     <div id="cursor"></div>
     <div id="cursor-ring"></div>
     
-    <nav>
-        <a href="/" class="nav-logo">
-            <div class="nav-logo-icon">📄</div>
-            Academic Report Pro
-        </a>
-        <div class="nav-links">
-            <a href="/" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">Inicio</a>
-            <a href="/generar" class="nav-link {% if request.endpoint == 'generar_page' %}active{% endif %}">Generar</a>
-            <a href="/mis-informes" class="nav-link {% if request.endpoint == 'mis_informes' %}active{% endif %}">Mis Informes</a>
-            <a href="/perfil" class="nav-link {% if request.endpoint == 'perfil' %}active{% endif %}">Perfil</a>
-        </div>
-        <a href="/generar" class="btn-gold" style="padding:.5rem 1.2rem;font-size:.8rem;">Crear informe</a>
-    </nav>
+    <!-- MENÚ DE NAVEGACIÓN -->
+    <div class="navbar">
+        <a href="/" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">🏠 Inicio</a>
+        <a href="/generar" class="nav-link {% if request.endpoint == 'generar_page' %}active{% endif %}">📝 Generar</a>
+        <a href="/mis-informes" class="nav-link {% if request.endpoint == 'mis_informes' %}active{% endif %}">📁 Mis Informes</a>
+        <a href="/perfil" class="nav-link {% if request.endpoint == 'perfil' %}active{% endif %}">👤 Perfil</a>
+    </div>
     
     <main>
         {% block content %}{% endblock %}
@@ -84,7 +78,8 @@
         document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px';});
         (function anim(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;curR.style.left=rx+'px';curR.style.top=ry+'px';requestAnimationFrame(anim);})();
         
-        document.querySelectorAll('a,button').forEach(el=>{
+        document.querySelectorAll('a,button,.chip,.tipo-card,.mode-tab,.editor-tab').forEach(el=>{
+            if(!el) return;
             el.addEventListener('mouseenter',()=>{cur.style.width='16px';cur.style.height='16px';curR.style.width='52px';curR.style.height='52px';});
             el.addEventListener('mouseleave',()=>{cur.style.width='10px';cur.style.height='10px';curR.style.width='36px';curR.style.height='36px';});
         });
