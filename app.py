@@ -634,6 +634,31 @@ def generar_word(datos_usuario, secciones):
     doc.save(buffer)
     buffer.seek(0)
     return buffer
+    
+# ============================================================
+# RUTAS DEL SITIO WEB
+# ============================================================
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/generar')
+def generar_page():
+    return render_template('generar.html')
+
+@app.route('/mis-informes')
+def mis_informes():
+    return render_template('mis-informes.html')
+
+@app.route('/perfil')
+def perfil():
+    return render_template('perfil.html')
+
+@app.route('/generar-seccion', methods=['POST'])
+def generar_seccion_endpoint():
+    # ... tu código existente ...
+
 
 # ============================================================
 # RUTAS DE LA API
