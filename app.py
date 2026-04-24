@@ -2,12 +2,15 @@ from flask import Flask, render_template, request, jsonify, send_file
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import inch, cm
 from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER, TA_LEFT
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, HRFlowable
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, HRFlowable, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
+from reportlab.lib.units import cm as rl_cm
 from docx import Document
 from docx.shared import Pt, Cm, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml.ns import qn
+from docx.oxml import OxmlElement
 from io import BytesIO
 import os
 import uuid
@@ -133,6 +136,79 @@ def limpiar_para_word(texto):
     return texto.strip()
 
 # ============================================================
+# PARSEO DE TABLAS ESTRUCTURADAS
+# ============================================================
+def extraer_tablas(texto: str):
+    """
+    Detecta bloques ##TABLE## ... ##ENDTABLE## y también tablas markdown (| col | col |).
+    Devuelve lista de dicts: {titulo, cabeceras: [], filas: [[]], inicio, fin}
+    y el texto con los bloques reemplazados por marcadores únicos.
+    """
+    tablas = []
+
+    # ── Formato estructurado ##TABLE## ──
+    patron = re.compile(r'##TABLE##(.*?)##ENDTABLE##', re.DOTALL)
+    def reemplazar(m):
+        bloque = m.group(1).strip()
+        titulo = ""
+        cabeceras = []
+        filas = []
+        for linea in bloque.splitlines():
+            linea = linea.strip()
+            if linea.startswith("TITULO:"):
+                titulo = linea[7:].strip()
+            elif linea.startswith("CABECERAS:"):
+                cabeceras = [c.strip() for c in linea[10:].split("|")]
+            elif linea.startswith("FILA:"):
+                fila = [c.strip() for c in linea[5:].split("|")]
+                if fila:
+                    filas.append(fila)
+        if cabeceras and filas:
+            idx = len(tablas)
+            tablas.append({"titulo": titulo, "cabeceras": cabeceras, "filas": filas})
+            return f"__TABLA_{idx}__"
+        return bloque  # si malformado, dejar como texto
+    texto = patron.sub(reemplazar, texto)
+
+    # ── Formato markdown  | col | col | ──
+    lineas = texto.splitlines()
+    i = 0
+    nuevo_texto = []
+    while i < len(lineas):
+        linea = lineas[i].strip()
+        if linea.startswith("|") and linea.endswith("|") and linea.count("|") >= 3:
+            # Detectar bloque de tabla
+            bloque_md = []
+            while i < len(lineas) and lineas[i].strip().startswith("|"):
+                bloque_md.append(lineas[i].strip())
+                i += 1
+            # Filtrar separadores (|---|---|)
+            filas_md = [l for l in bloque_md if not re.match(r'^\|[-:\s|]+\|$', l)]
+            parsed = [[c.strip() for c in f.strip("|").split("|")] for f in filas_md]
+            if len(parsed) >= 2:
+                # Buscar si hay un titulo antes
+                titulo_md = ""
+                if nuevo_texto:
+                    ultima = nuevo_texto[-1].strip()
+                    if ultima.lower().startswith("tabla") and len(ultima) < 120:
+                        titulo_md = nuevo_texto.pop()
+                idx = len(tablas)
+                tablas.append({
+                    "titulo": titulo_md,
+                    "cabeceras": parsed[0],
+                    "filas": parsed[1:]
+                })
+                nuevo_texto.append(f"__TABLA_{idx}__")
+            else:
+                nuevo_texto.extend(bloque_md)
+            continue
+        nuevo_texto.append(lineas[i])
+        i += 1
+    texto = "\n".join(nuevo_texto)
+    return texto, tablas
+
+
+# ============================================================
 # PROMPTS POR SECCIÓN  (v3.3 — mejorado con recomendaciones)
 # ============================================================
 # Contexto colombiano inyectado en todas las secciones relevantes
@@ -231,12 +307,20 @@ Estructura obligatoria (mínimo 7 párrafos):
 5. Análisis del contexto colombiano: aplica los resultados a la realidad de Colombia.
    - Menciona datos del DANE, MinTIC, CRC u otras entidades si aplican al tema.
    - Nombra empresas, sectores o casos reales del país.
-6. Tablas o datos estructurados: incluye al menos UNA tabla con datos relevantes en formato de texto:
-   Tabla 1. [Nombre de la tabla]
-   | Categoría | Valor | Año | Fuente |
-   | ... | ... | ... | ... |
+6. Tablas o datos estructurados: incluye al menos UNA tabla con datos relevantes.
+   FORMATO OBLIGATORIO DE TABLA (usa EXACTAMENTE este formato con ##TABLE## y ##ENDTABLE##):
+   ##TABLE##
+   TITULO: [Nombre descriptivo de la tabla]
+   CABECERAS: Categoría | Valor | Año | Fuente
+   FILA: [dato] | [dato] | [año] | [fuente]
+   FILA: [dato] | [dato] | [año] | [fuente]
+   FILA: [dato] | [dato] | [año] | [fuente]
+   FILA: [dato] | [dato] | [año] | [fuente]
+   FILA: [dato] | [dato] | [año] | [fuente]
+   ##ENDTABLE##
+   NO uses markdown (| col | col |) para la tabla. Usa SOLO el formato ##TABLE## indicado arriba.
 7. Análisis crítico y opinión del autor: ¿qué implican estos resultados? ¿qué limitaciones existen?
-- Al menos 4 citas en formato {norma}. Fuentes entre 2019 y 2025."""
+- Al menos 4 citas en formato {norma}. Fuentes entre 2021 y 2025."""
 
     elif seccion == 'conclusiones':
         return base + f"""Escribe ÚNICAMENTE las CONCLUSIONES del informe sobre: "{tema}".
@@ -263,13 +347,20 @@ Usa este formato (5 recomendaciones numeradas):
         refs_extra = f"\nIncluye o adapta estas referencias del autor:\n{refs_manuales}" if refs_manuales else ""
         return base + f"""Genera ÚNICAMENTE la lista de REFERENCIAS BIBLIOGRÁFICAS sobre: "{tema}".
 {refs_extra}
-Criterios obligatorios:
-- Entre 10 y 12 referencias académicas (artículos, libros, informes técnicos, reportes institucionales).
-- TODAS las referencias deben ser de años 2019-2025.
-- Al menos 3 referencias deben provenir de entidades o autores colombianos o latinoamericanos
-  (DANE, MinTIC, Colciencias, CEPAL, revistas colombianas indexadas, etc.).
-- Al menos 4 referencias deben ser artículos de revista académica con DOI.
-- Aplica formato {norma} con precisión. Sin título de sección ni preámbulo."""
+CRITERIOS OBLIGATORIOS — cumple TODOS:
+1. Entre 10 y 12 referencias. TODAS de años 2021-2025 (nada antes del 2021).
+2. COHERENCIA obligatoria: las referencias deben corresponder a las fuentes que se citan en el desarrollo.
+   Si el desarrollo menciona DANE, MinTIC, CRC, Colciencias, CEPAL u otras entidades reales de Colombia,
+   DEBES incluir la referencia formal de esos documentos institucionales.
+3. Al menos 3 referencias de entidades colombianas formalizadas:
+   - Ejemplo DANE: DANE. (2023). Encuesta de Tecnologías de la Información y las Comunicaciones. Bogotá: DANE. https://www.dane.gov.co
+   - Ejemplo MinTIC: MinTIC. (2023). Hoja de Ruta de Inteligencia Artificial de Colombia. Bogotá: Ministerio de TIC. https://mintic.gov.co
+   - Ejemplo CRC: CRC. (2024). Regulación de plataformas digitales e inteligencia artificial. Bogotá: CRC. https://crcom.gov.co
+4. Al menos 4 artículos de revista académica con DOI real y verificable.
+2. Al menos 1 referencia de un organismo internacional (CEPAL, BID, UNESCO, OCDE) sobre el tema.
+3. NO incluyas referencias sobre temas ajenos (cambio climático, enseñanza de idiomas, arte, etc.)
+   a menos que tengan relación directa con el tema del informe.
+4. Aplica formato {norma} con precisión. Sin título de sección ni preámbulo."""
 
     return ""
 
@@ -463,16 +554,65 @@ def generar_pdf(datos_usuario, secciones):
         contenido = limpiar_para_pdf(contenido_raw)
 
         if contenido and len(contenido) > 50:
-            parrafos = re.split(r'\n{2,}', contenido)
+            contenido_proc, tablas = extraer_tablas(contenido)
+            parrafos = re.split(r'\n{2,}', contenido_proc)
             if len(parrafos) == 1:
-                parrafos = contenido.split('\n')
+                parrafos = contenido_proc.split('\n')
             for p in parrafos:
                 p = p.strip()
-                if p:
-                    if re.match(r'^(\d+\.|•|-|\*)\s', p):
-                        story.append(Paragraph(p, styles['TextoLista']))
-                    else:
-                        story.append(Paragraph(p, styles['TextoJustificado']))
+                if not p:
+                    continue
+                # Detectar marcador de tabla
+                m_tabla = re.match(r'^__TABLA_(\d+)__$', p)
+                if m_tabla and tablas:
+                    idx_t = int(m_tabla.group(1))
+                    if idx_t < len(tablas):
+                        t = tablas[idx_t]
+                        if t.get("titulo"):
+                            story.append(Spacer(1, 6))
+                            story.append(Paragraph(
+                                f"<i>{t['titulo']}</i>",
+                                ParagraphStyle('TituloTabla', parent=styles['Normal'],
+                                    fontSize=9, fontName='Helvetica-Bold',
+                                    textColor=colors.HexColor('#1a365d'),
+                                    spaceAfter=4, spaceBefore=10)
+                            ))
+                        # Construir datos de tabla
+                        cabeceras = t.get("cabeceras", [])
+                        filas     = t.get("filas", [])
+                        # Normalizar ancho de columnas
+                        n_cols = max(len(cabeceras), max((len(f) for f in filas), default=0))
+                        if n_cols == 0:
+                            continue
+                        def normalizar(fila, n):
+                            return fila[:n] + [''] * max(0, n - len(fila))
+                        data = [normalizar(cabeceras, n_cols)] + [normalizar(f, n_cols) for f in filas]
+                        col_w = (15.5 / n_cols)  # cm, A4 ancho útil ~15.5cm
+                        tbl = Table(data, colWidths=[col_w * rl_cm] * n_cols, repeatRows=1)
+                        tbl.setStyle(TableStyle([
+                            ('BACKGROUND',   (0,0), (-1,0), colors.HexColor('#1a365d')),
+                            ('TEXTCOLOR',    (0,0), (-1,0), colors.white),
+                            ('FONTNAME',     (0,0), (-1,0), 'Helvetica-Bold'),
+                            ('FONTSIZE',     (0,0), (-1,0), 8.5),
+                            ('ALIGN',        (0,0), (-1,-1), 'CENTER'),
+                            ('VALIGN',       (0,0), (-1,-1), 'MIDDLE'),
+                            ('FONTNAME',     (0,1), (-1,-1), 'Times-Roman'),
+                            ('FONTSIZE',     (0,1), (-1,-1), 8.5),
+                            ('ROWBACKGROUNDS',(0,1),(-1,-1),[colors.HexColor('#f5f7fa'), colors.white]),
+                            ('GRID',         (0,0), (-1,-1), 0.5, colors.HexColor('#cccccc')),
+                            ('TOPPADDING',   (0,0), (-1,-1), 5),
+                            ('BOTTOMPADDING',(0,0), (-1,-1), 5),
+                            ('LEFTPADDING',  (0,0), (-1,-1), 6),
+                            ('RIGHTPADDING', (0,0), (-1,-1), 6),
+                            ('BOX',          (0,0), (-1,-1), 1, colors.HexColor('#1a365d')),
+                        ]))
+                        story.append(tbl)
+                        story.append(Spacer(1, 10))
+                    continue
+                if re.match(r'^(\d+\.|•|-|\*)\s', p):
+                    story.append(Paragraph(p, styles['TextoLista']))
+                else:
+                    story.append(Paragraph(p, styles['TextoJustificado']))
         else:
             story.append(Paragraph("Esta sección no pudo generarse.", styles['TextoJustificado']))
 
@@ -579,12 +719,76 @@ def generar_word(datos_usuario, secciones):
         contenido = limpiar_para_word(contenido_raw)
 
         if contenido and len(contenido) > 50:
-            parrafos = re.split(r'\n{2,}', contenido)
+            contenido_proc, tablas = extraer_tablas(contenido)
+            parrafos = re.split(r'\n{2,}', contenido_proc)
             if len(parrafos) == 1:
-                parrafos = contenido.split('\n')
+                parrafos = contenido_proc.split('\n')
             for parrafo in parrafos:
                 parrafo = parrafo.strip()
                 if not parrafo:
+                    continue
+                # Detectar marcador de tabla
+                m_tabla = re.match(r'^__TABLA_(\d+)__$', parrafo)
+                if m_tabla and tablas:
+                    idx_t = int(m_tabla.group(1))
+                    if idx_t < len(tablas):
+                        t = tablas[idx_t]
+                        if t.get("titulo"):
+                            p_titulo = doc.add_paragraph()
+                            r_titulo = p_titulo.add_run(t["titulo"])
+                            r_titulo.bold = True
+                            r_titulo.italic = True
+                            r_titulo.font.size = Pt(10)
+                            r_titulo.font.name = 'Times New Roman'
+                            r_titulo.font.color.rgb = RGBColor(0x1a, 0x36, 0x5d)
+                        cabeceras = t.get("cabeceras", [])
+                        filas     = t.get("filas", [])
+                        n_cols = max(len(cabeceras), max((len(f) for f in filas), default=0))
+                        if n_cols == 0:
+                            continue
+                        def normalizar(fila, n):
+                            return fila[:n] + [''] * max(0, n - len(fila))
+                        tbl = doc.add_table(rows=1 + len(filas), cols=n_cols)
+                        tbl.style = 'Table Grid'
+                        # Cabecera
+                        hdr_cells = tbl.rows[0].cells
+                        for j, cab in enumerate(normalizar(cabeceras, n_cols)):
+                            cell = hdr_cells[j]
+                            cell.text = cab
+                            run = cell.paragraphs[0].runs[0] if cell.paragraphs[0].runs else cell.paragraphs[0].add_run(cab)
+                            run.bold = True
+                            run.font.size = Pt(9)
+                            run.font.name = 'Calibri'
+                            run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+                            # Color de fondo cabecera
+                            tc = cell._tc
+                            tcPr = tc.get_or_add_tcPr()
+                            shd = OxmlElement('w:shd')
+                            shd.set(qn('w:val'), 'clear')
+                            shd.set(qn('w:color'), 'auto')
+                            shd.set(qn('w:fill'), '1a365d')
+                            tcPr.append(shd)
+                            cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+                        # Filas de datos
+                        for i_f, fila in enumerate(filas):
+                            row_cells = tbl.rows[i_f + 1].cells
+                            bg_color = 'EEF2F7' if i_f % 2 == 0 else 'FFFFFF'
+                            for j, val in enumerate(normalizar(fila, n_cols)):
+                                cell = row_cells[j]
+                                cell.text = val
+                                run = cell.paragraphs[0].runs[0] if cell.paragraphs[0].runs else cell.paragraphs[0].add_run(val)
+                                run.font.size = Pt(9)
+                                run.font.name = 'Calibri'
+                                # Color alterno
+                                tc = cell._tc
+                                tcPr = tc.get_or_add_tcPr()
+                                shd = OxmlElement('w:shd')
+                                shd.set(qn('w:val'), 'clear')
+                                shd.set(qn('w:color'), 'auto')
+                                shd.set(qn('w:fill'), bg_color)
+                                tcPr.append(shd)
+                                cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+                        doc.add_paragraph()
                     continue
                 p = doc.add_paragraph()
                 p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
