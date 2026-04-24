@@ -16,6 +16,8 @@ import requests as http_requests
 import logging
 import re
 import html
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # ── Importar módulo de referencias reales ──────────────────────
 from referencias_reales import buscar_referencias_reales, formatear_referencias
@@ -69,7 +71,7 @@ TIPOS_INSTRUCCIONES = {
 # ============================================================
 # DEEPSEEK
 # ============================================================
-def llamar_deepseek(prompt, system_prompt=None, max_tokens=3000):
+def llamar_deepseek(prompt, system_prompt=None, max_tokens=3000, reintentos=3):
     headers = {
         "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
         "Content-Type": "application/json"
@@ -84,17 +86,31 @@ def llamar_deepseek(prompt, system_prompt=None, max_tokens=3000):
         "max_tokens":  max_tokens,
         "temperature": 0.7
     }
-    try:
-        response = http_requests.post(DEEPSEEK_URL, headers=headers, json=data, timeout=120)
-        if response.status_code == 200:
-            contenido = response.json()['choices'][0]['message']['content']
-            return contenido.encode('utf-8', 'ignore').decode('utf-8')
-        else:
-            logger.error(f"DeepSeek HTTP {response.status_code}: {response.text[:200]}")
-            return None
-    except Exception as e:
-        logger.error(f"Error DeepSeek: {e}")
-        return None
+    for intento in range(1, reintentos + 1):
+        try:
+            response = http_requests.post(DEEPSEEK_URL, headers=headers, json=data, timeout=150)
+            if response.status_code == 200:
+                contenido = response.json()['choices'][0]['message']['content']
+                return contenido.encode('utf-8', 'ignore').decode('utf-8')
+            elif response.status_code in (429, 503, 502):
+                wait = 5 * intento
+                logger.warning(f"DeepSeek HTTP {response.status_code} — reintento {intento}/{reintentos} en {wait}s")
+                time.sleep(wait)
+            else:
+                logger.error(f"DeepSeek HTTP {response.status_code}: {response.text[:200]}")
+                return None
+        except http_requests.exceptions.Timeout:
+            wait = 8 * intento
+            logger.warning(f"Timeout DeepSeek — reintento {intento}/{reintentos} en {wait}s")
+            time.sleep(wait)
+        except Exception as e:
+            logger.error(f"Error DeepSeek: {e}")
+            if intento < reintentos:
+                time.sleep(5 * intento)
+            else:
+                return None
+    logger.error(f"DeepSeek falló después de {reintentos} reintentos")
+    return None
 
 # ============================================================
 # LIMPIEZA DE TEXTO
@@ -283,12 +299,29 @@ def generar_seccion(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_
     return contenido
 
 def generar_informe_completo(tema, info_extra, tipo_informe, norma, nivel):
-    secciones = {}
+    """
+    Genera las 8 secciones en paralelo (hasta 4 simultáneas) para reducir
+    tiempos de espera y minimizar fallos por timeout secuencial.
+    """
     claves = ['introduccion', 'objetivos', 'marco_teorico', 'metodologia',
               'desarrollo', 'conclusiones', 'recomendaciones', 'referencias']
-    for clave in claves:
+    secciones = {c: '' for c in claves}
+
+    def _generar(clave):
         resultado = generar_seccion(clave, tema, info_extra, tipo_informe, norma, nivel)
-        secciones[clave] = resultado or ''
+        return clave, resultado or ''
+
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futuros = {executor.submit(_generar, c): c for c in claves}
+        for futuro in as_completed(futuros):
+            try:
+                clave, contenido = futuro.result()
+                secciones[clave] = contenido
+                logger.info(f"✅ Sección '{clave}' completada ({len(contenido)} chars)")
+            except Exception as e:
+                clave = futuros[futuro]
+                logger.error(f"❌ Error en sección '{clave}': {e}")
+
     return secciones
 
 # ============================================================
@@ -758,4 +791,4 @@ def health():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host='0.0.0.0', port=port, debug=False)s
