@@ -414,6 +414,31 @@ def _autores_vancouver(autores: list) -> str:
     return ", ".join(partes)
 
 
+def _sentence_case(titulo: str) -> str:
+    """
+    APA 7 requiere sentence case en títulos de artículos:
+    solo primera letra en mayúscula y nombres propios.
+    Preserva mayúsculas después de ':' (subtítulos).
+    """
+    if not titulo:
+        return titulo
+    # Capitalizar después de ': ' para subtítulos
+    partes = re.split(r'(:\s+)', titulo)
+    resultado = []
+    for i, parte in enumerate(partes):
+        if re.match(r':\s+', parte):
+            resultado.append(parte)
+        elif i == 0 or (i > 0 and re.match(r':\s+', partes[i-1])):
+            # Primera letra mayúscula, resto minúscula (excepto siglas de 2+ mayúsculas)
+            if len(parte) > 1:
+                resultado.append(parte[0].upper() + parte[1:].lower())
+            else:
+                resultado.append(parte.upper())
+        else:
+            resultado.append(parte)
+    return "".join(resultado)
+
+
 def formatear_referencia(ref: dict, norma: str, indice: int = 1) -> str:
     tipo    = ref.get("tipo", "articulo")
     titulo  = ref.get("titulo", "Sin título")
@@ -431,9 +456,11 @@ def formatear_referencia(ref: dict, norma: str, indice: int = 1) -> str:
     if norma in ("APA 7", "APA 6"):
         aut_str = _autores_apa(autores)
         if tipo == "articulo":
-            partes = [f"{aut_str} ({anio}). {titulo}."]
+            # APA 7: título en sentence case (sin cursiva), revista en cursiva
+            titulo_fmt = _sentence_case(titulo)
+            partes = [f"{aut_str} ({anio}). {titulo_fmt}."]
             if revista:
-                rev_part = f" {revista}"
+                rev_part = f" {revista}"  # revista en cursiva (se aplica en PDF/Word)
                 if vol:
                     rev_part += f", {vol}"
                     if num:
@@ -445,7 +472,8 @@ def formatear_referencia(ref: dict, norma: str, indice: int = 1) -> str:
                 partes.append(f" {doi_url}")
             return "".join(partes)
         else:
-            linea = f"{aut_str} ({anio}). {titulo}."
+            titulo_fmt = _sentence_case(titulo)
+            linea = f"{aut_str} ({anio}). {titulo_fmt}."
             if ed:
                 linea += f" {ed}."
             if doi_url:
@@ -535,7 +563,8 @@ def formatear_referencia(ref: dict, norma: str, indice: int = 1) -> str:
     elif norma == "Chicago":
         aut_str = _autores_apa(autores)
         if tipo == "articulo":
-            linea = f'{aut_str} {anio}. "{titulo}."'
+            titulo_fmt = _sentence_case(titulo)
+            linea = f'{aut_str} {anio}. "{titulo_fmt}."'
             if revista:
                 linea += f" {revista}"
                 if vol:
@@ -550,7 +579,8 @@ def formatear_referencia(ref: dict, norma: str, indice: int = 1) -> str:
                 linea += f" {doi_url}."
             return linea
         else:
-            linea = f"{aut_str} {anio}. {titulo}."
+            titulo_fmt = _sentence_case(titulo)
+            linea = f"{aut_str} {anio}. {titulo_fmt}."
             if ed:
                 linea += f" {ed}."
             if doi_url:
