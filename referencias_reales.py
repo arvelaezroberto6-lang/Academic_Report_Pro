@@ -22,7 +22,7 @@ CONTACT_EMAIL = "academicreportpro@gmail.com"
 # ──────────────────────────────────────────────────────────────
 # CROSSREF
 # ──────────────────────────────────────────────────────────────
-def buscar_crossref(query: str, cantidad: int = 6, desde_anio: int = 2015) -> list:
+def buscar_crossref(query: str, cantidad: int = 6, desde_anio: int = 2021) -> list:
     params = {
         "query":   query,
         "rows":    min(cantidad * 3, 30),
@@ -94,7 +94,7 @@ def buscar_crossref(query: str, cantidad: int = 6, desde_anio: int = 2015) -> li
 # OPENALEX
 # ──────────────────────────────────────────────────────────────
 def buscar_openalex(query: str, cantidad: int = 6,
-                   tipos: list = None, desde_anio: int = 2015) -> list:
+                   tipos: list = None, desde_anio: int = 2021) -> list:
     if tipos is None:
         tipos = ["book", "dissertation", "report"]
 
@@ -188,12 +188,12 @@ def buscar_referencias_reales(tema: str, cantidad_total: int = 12) -> list:
     referencias = []
 
     # Artículos (CrossRef)
-    arts = buscar_crossref(tema, cantidad=6)
+    arts = buscar_crossref(tema, cantidad=6, desde_anio=2021)
     referencias.extend(arts)
     time.sleep(0.3)
 
     if len(arts) < 3:
-        arts_en = buscar_crossref(_traducir_query(tema), cantidad=5)
+        arts_en = buscar_crossref(_traducir_query(tema), cantidad=5, desde_anio=2021)
         dois_existentes = {r["doi"] for r in referencias if r.get("doi")}
         for a in arts_en:
             if a.get("doi") not in dois_existentes:
@@ -201,13 +201,13 @@ def buscar_referencias_reales(tema: str, cantidad_total: int = 12) -> list:
         time.sleep(0.3)
 
     # Libros/tesis (OpenAlex)
-    libros = buscar_openalex(tema, cantidad=4, tipos=["book", "dissertation"])
+    libros = buscar_openalex(tema, cantidad=4, tipos=["book", "dissertation"], desde_anio=2021)
     referencias.extend(libros)
     time.sleep(0.3)
 
     # Si pocos libros, buscar en inglés
     if len(libros) < 2:
-        libros_en = buscar_openalex(_traducir_query(tema), cantidad=3, tipos=["book"])
+        libros_en = buscar_openalex(_traducir_query(tema), cantidad=3, tipos=["book"], desde_anio=2021)
         titulos_existentes = {r["titulo"].lower()[:40] for r in referencias}
         for l in libros_en:
             if l["titulo"].lower()[:40] not in titulos_existentes:
@@ -215,7 +215,7 @@ def buscar_referencias_reales(tema: str, cantidad_total: int = 12) -> list:
         time.sleep(0.3)
 
     # Reportes (OpenAlex)
-    reportes = buscar_openalex(tema, cantidad=3, tipos=["report"])
+    reportes = buscar_openalex(tema, cantidad=3, tipos=["report"], desde_anio=2021)
     referencias.extend(reportes)
     time.sleep(0.3)
 
@@ -227,6 +227,9 @@ def buscar_referencias_reales(tema: str, cantidad_total: int = 12) -> list:
         if clave not in vistos:
             vistos.add(clave)
             unicas.append(ref)
+
+    # Filtrar por relevancia temática ANTES de balancear
+    unicas = _filtrar_por_relevancia(unicas, tema, umbral=0.15)
 
     unicas = _balancear_tipos(unicas, cantidad_total)
     logger.info(f"Total referencias reales: {len(unicas)}")
@@ -287,6 +290,60 @@ def _balancear_tipos(refs: list, total: int) -> list:
             if pool and len(resultado) < total:
                 resultado.append(pool.pop(0))
     return resultado
+
+
+
+def _puntaje_relevancia(titulo: str, tema: str) -> float:
+    """
+    Puntúa qué tan relevante es un título respecto al tema buscado.
+    Devuelve 0.0 (irrelevante) a 1.0 (muy relevante).
+    """
+    titulo_lower = titulo.lower()
+    tema_lower   = tema.lower()
+
+    # Palabras clave del tema (ignorar stopwords)
+    stopwords = {"de", "del", "la", "el", "los", "las", "en", "y", "a", "para",
+                 "con", "por", "que", "una", "un", "su", "se", "es", "al"}
+    palabras_tema = [p for p in re.split(r'\W+', tema_lower) if p and p not in stopwords and len(p) > 2]
+
+    if not palabras_tema:
+        return 0.5  # sin info suficiente, aceptar
+
+    coincidencias = sum(1 for p in palabras_tema if p in titulo_lower)
+    score = coincidencias / len(palabras_tema)
+
+    # Bonus si coincide el tema completo o fragmentos de 2+ palabras
+    for i in range(len(palabras_tema) - 1):
+        bigram = palabras_tema[i] + " " + palabras_tema[i+1]
+        if bigram in titulo_lower:
+            score += 0.3
+
+    return min(score, 1.0)
+
+
+def _filtrar_por_relevancia(refs: list, tema: str, umbral: float = 0.15) -> list:
+    """
+    Descarta referencias cuyo título no tenga relación con el tema.
+    Ordena por relevancia descendente.
+    """
+    puntuadas = []
+    for ref in refs:
+        score = _puntaje_relevancia(ref.get("titulo", ""), tema)
+        puntuadas.append((score, ref))
+        logger.debug(f"  Relevancia {score:.2f} — {ref['titulo'][:60]}")
+
+    # Filtrar las que no llegan al umbral
+    relevantes = [(s, r) for s, r in puntuadas if s >= umbral]
+
+    # Si quedan menos de 5, bajar el umbral a la mitad para no quedarse sin refs
+    if len(relevantes) < 5:
+        umbral_bajo = umbral / 2
+        relevantes = [(s, r) for s, r in puntuadas if s >= umbral_bajo]
+        logger.warning(f"Pocas referencias relevantes, bajando umbral a {umbral_bajo:.2f}")
+
+    # Ordenar por score desc
+    relevantes.sort(key=lambda x: x[0], reverse=True)
+    return [r for _, r in relevantes]
 
 
 # ──────────────────────────────────────────────────────────────
