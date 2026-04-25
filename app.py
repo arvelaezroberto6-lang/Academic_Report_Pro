@@ -214,13 +214,13 @@ def extraer_tablas(texto: str):
 # Contexto colombiano inyectado en todas las secciones relevantes
 _CONTEXTO_COLOMBIA = """
 CONTEXTO COLOMBIANO OBLIGATORIO:
-- Cuando sea pertinente al tema, menciona entidades reales de Colombia:
-  Ministerio de Tecnologías de la Información y las Comunicaciones (MinTIC),
-  Departamento Administrativo Nacional de Estadística (DANE),
-  Comisión de Regulación de Comunicaciones (CRC), Colciencias/MinCiencias,
-  SENA, DNP, Superintendencia de Industria y Comercio, etc.
-- Cita datos estadísticos reales o verosímiles de Colombia (porcentajes, cifras sectoriales).
-- Menciona empresas, sectores o casos reales del país cuando sea aplicable.
+- Cuando sea pertinente, menciona entidades reales de Colombia:
+  MinTIC, DANE, CRC, MinCiencias, SENA, DNP, Superintendencia de Industria y Comercio, etc.
+- Usa cifras REALES y verificables de fuentes oficiales (DANE, MinTIC, CRC).
+  Si no tienes un dato exacto confirmado, usa rangos o expresiones como
+  "según estimaciones de..." o "alrededor del X%" en lugar de decimales precisos inventados.
+  NUNCA inventes cifras exactas con decimales (ej: 23,7%) si no están en una fuente real.
+- Menciona empresas, sectores o casos reales del país.
 - Aterriza los conceptos globales al contexto nacional colombiano.
 """
 
@@ -230,17 +230,6 @@ ESTILO DE REDACCIÓN:
 - Evita frases vacías, genéricas o que suenen completamente automatizadas.
 - Usa variedad de estructuras sintácticas; no comiences todos los párrafos igual.
 - Incluye interpretaciones o valoraciones propias del autor en las secciones analíticas.
-
-REGLAS OBLIGATORIAS PARA CIFRAS Y ESTADÍSTICAS:
-- NUNCA uses cifras ultraprecisas inventadas (como "23,7%" o "384 encuestados") sin que
-  provengan de las referencias reales que se te proporcionan.
-- Cuando cites estadísticas, SIEMPRE indica la fuente explícita: "según reporta X (año)",
-  "de acuerdo con Y", "datos de Z indican que...".
-- Si no tienes una cifra verificable, usa aproximaciones o rangos honestos:
-  "cerca del 25%", "entre el 10% y el 15%", "más de la mitad", etc.
-- NO atribuyas cifras específicas a entidades reales (DANE, MinTIC, CRC) a menos que
-  esas cifras aparezcan en las referencias reales que se te proporcionaron como contexto.
-- Es mejor ser honesto y aproximado que inventar una precisión falsa que el docente pueda refutar.
 """
 
 def build_prompt(seccion, tema, info, tipo, norma, nivel, refs_manuales=''):
@@ -255,21 +244,14 @@ Norma bibliográfica activa: {norma}.
 {_ESTILO_NATURAL}
 """
     if seccion == 'introduccion':
-        refs_context = f"""
-REFERENCIAS REALES DISPONIBLES — cita SOLO autores de esta lista en el texto, NO inventes otros:
-{refs_manuales}
-""" if refs_manuales else ""
         return base + f"""Escribe ÚNICAMENTE la INTRODUCCIÓN del informe sobre: "{tema}".
 Info adicional del autor: {info or 'Ninguna'}.
-{refs_context}
 Estructura obligatoria (4-5 párrafos):
-1. Contexto general del tema con datos aproximados o rangos (no cifras inventadas ultraprecisas)
-   y mención del contexto colombiano y latinoamericano.
+1. Contexto general del tema con datos estadísticos concretos y referencia a Colombia.
 2. Justificación: por qué es relevante este tema en el panorama colombiano y latinoamericano.
 3. Planteamiento del problema: ¿cuál es la brecha, tensión o necesidad que aborda el informe?
 4. Alineación con los objetivos del informe: anuncia brevemente qué secciones siguen y qué aporta cada una.
-- Al menos 2 citas en formato {norma} usando ÚNICAMENTE autores de las referencias reales disponibles arriba.
-  Si no hay referencias disponibles, usa citas plausibles con fecha entre 2019 y 2025.
+- Al menos 2 citas en formato {norma}. Referencias entre 2019 y 2025.
 - Menciona al menos una entidad colombiana relevante (MinTIC, DANE, CRC, etc.) si aplica al tema.
 - NO incluyas el título de la sección, solo el contenido puro."""
 
@@ -290,69 +272,51 @@ OBJETIVOS ESPECÍFICOS:
 Cada objetivo específico debe ser verificable y conectarse con una sección del informe (marco teórico, metodología, desarrollo, conclusiones o recomendaciones)."""
 
     elif seccion == 'marco_teorico':
-        refs_context = f"""
-REFERENCIAS REALES DISPONIBLES — estas son las fuentes que realmente existen en la bibliografía.
-Cita SOLO autores de esta lista en el texto. NO inventes autores o estudios que no estén aquí:
-{refs_manuales}
-""" if refs_manuales else ""
         return base + f"""Escribe ÚNICAMENTE el MARCO TEÓRICO del informe sobre: "{tema}".
 Info adicional del autor: {info or 'Ninguna'}.
-{refs_context}
 Estructura obligatoria (mínimo 5 párrafos):
 1. Antecedentes históricos o evolución del tema.
 2. Definiciones y conceptos clave con citas de autores reconocidos.
 3. Teorías o modelos teóricos principales que sustentan el informe.
 4. Estado del arte: investigaciones recientes (2020-2025) sobre el tema.
 5. Contexto colombiano: cómo se ha estudiado o implementado este tema en Colombia.
-- Al menos 5 citas en formato {norma}. ÚSALAS SOLO si el autor aparece en las referencias reales
-  disponibles arriba. Si no hay referencias disponibles, usa citas plausibles con años 2019-2025.
-- NO atribuyas afirmaciones específicas a autores o estudios que no puedas verificar.
-- Incluye autores latinoamericanos o colombianos cuando existan en las referencias."""
+- Al menos 5 citas en formato {norma} con años entre 2019 y 2025.
+- Incluye autores latinoamericanos o colombianos cuando existan."""
 
     elif seccion == 'metodologia':
         return base + f"""Escribe ÚNICAMENTE la METODOLOGÍA del informe de tipo "{tipo}" sobre: "{tema}".
 Info adicional del autor: {info or 'Ninguna'}.
+Nivel educativo real del autor: {nivel}. Adecua la complejidad metodológica a ese nivel.
 
-REGLA FUNDAMENTAL: A menos que el autor haya indicado explícitamente que realizó encuestas,
-entrevistas, experimentos o trabajo de campo, la metodología DEBE ser de REVISIÓN DOCUMENTAL
-Y ANÁLISIS DE FUENTES SECUNDARIAS. NO inventes instrumentos empíricos (encuestas con muestras
-específicas, entrevistas semiestructuradas, software de análisis cualitativo como Atlas.ti,
-NVivo, etc.) si el autor no los mencionó. Inventar trabajo de campo que no se realizó es una
-falta académica grave. Si el autor solo tiene información general, usa metodología documental.
+REGLA DE ORO — CREDIBILIDAD METODOLÓGICA:
+Este informe es un trabajo académico de consulta y análisis, NO una investigación de campo real.
+Por tanto, la metodología DEBE basarse en REVISIÓN DOCUMENTAL y ANÁLISIS DE FUENTES SECUNDARIAS.
+NO inventes encuestas, entrevistas, muestras de participantes ni trabajo de campo que el estudiante
+no realizó, porque un docente puede detectar esto fácilmente y bajar la nota.
 
-Estructura obligatoria (mínimo 4 párrafos):
-1. Enfoque: revisión bibliográfica sistemática o análisis documental de fuentes secundarias.
-   Justifica por qué este enfoque es apropiado para el tema y el nivel {nivel}.
-2. Tipo y alcance: descriptivo-analítico o exploratorio, basado en fuentes secundarias
-   (informes institucionales, estadísticas oficiales, artículos académicos indexados).
-3. Fuentes y criterios de selección: bases de datos consultadas (DANE, MinTIC, revistas
-   indexadas, repositorios), criterios de inclusión/exclusión (periodo, idioma, pertinencia).
-   Describe solo lo que un estudiante de nivel {nivel} podría haber realizado realmente.
-4. Limitaciones honestas: qué no cubre este estudio, por qué se usaron fuentes secundarias
-   y no primarias, y qué implicaciones tiene eso para las conclusiones.
-{"5. Si aplica: materiales, equipos utilizados y procedimiento experimental detallado." if tipo == 'laboratorio' else ""}
-- Justifica cada decisión con argumentos académicos honestos y alcanzables."""
+Estructura obligatoria (4 párrafos concisos y creíbles):
+1. Enfoque: cualitativo-documental o descriptivo, justificando por qué es adecuado para este tema.
+2. Tipo y alcance: investigación descriptiva basada en análisis de fuentes secundarias (informes
+   oficiales del DANE, MinTIC, CRC, artículos académicos, documentos de política pública).
+3. Proceso de recolección y análisis: describe cómo se seleccionaron, revisaron y contrastaron
+   las fuentes oficiales y académicas. Menciona 3-4 fuentes concretas reales (sin inventar muestra).
+4. Criterios éticos y limitaciones: uso honesto de fuentes, acceso limitado a datos primarios,
+   temporalidad de la información disponible.
+{"5. Si aplica: materiales o procedimientos del laboratorio." if tipo == 'laboratorio' else ""}
+- Tono honesto y académico. SIN cifras de muestra (384 encuestados, 12 entrevistas, etc.) a menos
+  que el autor haya indicado que realmente las realizó en la información adicional."""
 
     elif seccion == 'desarrollo':
-        refs_context = f"""
-REFERENCIAS REALES DISPONIBLES — estas son las ÚNICAS fuentes que existen en la bibliografía.
-Cita SOLO autores de esta lista. NO inventes cifras, estudios ni autores que no estén aquí.
-Si necesitas estadísticas y no las tienes verificadas, usa rangos o aproximaciones honestas:
-{refs_manuales}
-""" if refs_manuales else ""
         return base + f"""Escribe ÚNICAMENTE el DESARROLLO del informe de tipo "{tipo}" sobre: "{tema}".
 Info adicional del autor: {info or 'Ninguna'}.
-{refs_context}
 Estructura obligatoria (mínimo 7 párrafos):
-1. Presentación de hallazgos principales con datos aproximados o rangos (NUNCA cifras ultraprecisas
-   inventadas). Si citas una estadística, indica su fuente y usa lenguaje como "según reporta X",
-   "datos aproximados de Y indican", "de acuerdo con Z, cerca del N%".
+1. Presentación de resultados principales con datos, cifras o ejemplos concretos.
 2. Para cumplir el Objetivo Específico 1 se realizó... [explícita vinculación con objetivos].
 3. Para cumplir el Objetivo Específico 2 se realizó... [análisis de segundo hallazgo].
 4. Comparación con el marco teórico: ¿los resultados confirman o contradicen la teoría?
 5. Análisis del contexto colombiano: aplica los resultados a la realidad de Colombia.
-   - Menciona entidades como DANE, MinTIC, CRC solo para afirmaciones generales verificables.
-   - Nombra empresas, sectores o casos reales del país cuando sea pertinente.
+   - Menciona datos del DANE, MinTIC, CRC u otras entidades si aplican al tema.
+   - Nombra empresas, sectores o casos reales del país.
 6. Tablas o datos estructurados: incluye al menos UNA tabla con datos relevantes.
    FORMATO OBLIGATORIO DE TABLA (usa EXACTAMENTE este formato con ##TABLE## y ##ENDTABLE##):
    ##TABLE##
@@ -364,11 +328,9 @@ Estructura obligatoria (mínimo 7 párrafos):
    FILA: [dato] | [dato] | [año] | [fuente]
    FILA: [dato] | [dato] | [año] | [fuente]
    ##ENDTABLE##
-   En la tabla usa rangos o valores aproximados si no tienes datos exactos verificados.
    NO uses markdown (| col | col |) para la tabla. Usa SOLO el formato ##TABLE## indicado arriba.
 7. Análisis crítico y opinión del autor: ¿qué implican estos resultados? ¿qué limitaciones existen?
-- Al menos 4 citas en formato {norma} usando SOLO autores de las referencias reales disponibles.
-  Si no hay referencias disponibles, usa citas plausibles con años 2021-2025."""
+- Al menos 4 citas en formato {norma}. Fuentes entre 2021 y 2025."""
 
     elif seccion == 'conclusiones':
         return base + f"""Escribe ÚNICAMENTE las CONCLUSIONES del informe sobre: "{tema}".
@@ -395,20 +357,36 @@ Usa este formato (5 recomendaciones numeradas):
         refs_extra = f"\nIncluye o adapta estas referencias del autor:\n{refs_manuales}" if refs_manuales else ""
         return base + f"""Genera ÚNICAMENTE la lista de REFERENCIAS BIBLIOGRÁFICAS sobre: "{tema}".
 {refs_extra}
-CRITERIOS OBLIGATORIOS — cumple TODOS:
-1. Entre 10 y 12 referencias. TODAS de años 2021-2025 (nada antes del 2021).
-2. COHERENCIA obligatoria: las referencias deben corresponder a las fuentes que se citan en el desarrollo.
-   Si el desarrollo menciona DANE, MinTIC, CRC, Colciencias, CEPAL u otras entidades reales de Colombia,
-   DEBES incluir la referencia formal de esos documentos institucionales.
-3. Al menos 3 referencias de entidades colombianas formalizadas:
-   - Ejemplo DANE: DANE. (2023). Encuesta de Tecnologías de la Información y las Comunicaciones. Bogotá: DANE. https://www.dane.gov.co
-   - Ejemplo MinTIC: MinTIC. (2023). Hoja de Ruta de Inteligencia Artificial de Colombia. Bogotá: Ministerio de TIC. https://mintic.gov.co
-   - Ejemplo CRC: CRC. (2024). Regulación de plataformas digitales e inteligencia artificial. Bogotá: CRC. https://crcom.gov.co
-4. Al menos 4 artículos de revista académica con DOI real y verificable.
-2. Al menos 1 referencia de un organismo internacional (CEPAL, BID, UNESCO, OCDE) sobre el tema.
-3. NO incluyas referencias sobre temas ajenos (cambio climático, enseñanza de idiomas, arte, etc.)
-   a menos que tengan relación directa con el tema del informe.
-4. Aplica formato {norma} con precisión. Sin título de sección ni preámbulo."""
+CRITERIOS OBLIGATORIOS — cumple TODOS sin excepción:
+
+1. CANTIDAD Y FECHA: Entre 10 y 12 referencias. TODAS de años 2021-2025. Ninguna anterior a 2021.
+
+2. COHERENCIA: Las referencias deben corresponder EXACTAMENTE a las fuentes citadas en el informe.
+   Si el texto menciona DANE, MinTIC, CRC, SENA, DNP, MinCiencias u otras entidades colombianas,
+   su referencia DEBE aparecer en la lista. No puedes citar en texto algo que no está en referencias.
+
+3. ENTIDADES COLOMBIANAS (mínimo 3), con este formato APA 7 exacto:
+   DANE. (2023). Encuesta de Tecnologías de la Información y las Comunicaciones en hogares. Departamento Administrativo Nacional de Estadística. https://www.dane.gov.co
+   MinTIC. (2023). Política Nacional de Inteligencia Artificial: Hoja de ruta 2022-2026. Ministerio de TIC. https://mintic.gov.co
+   CRC. (2023). Informe de industria: Conectividad y telecomunicaciones en Colombia. Comisión de Regulación de Comunicaciones. https://www.crcom.gov.co
+
+4. ARTÍCULOS ACADÉMICOS (mínimo 4): con revista, volumen, número, páginas y DOI real.
+   Deben ser sobre el tema del informe, NO sobre temas ajenos como cambio climático o idiomas.
+
+5. ORGANISMO INTERNACIONAL (mínimo 1): CEPAL, BID, UNESCO, OCDE u otro, con URL oficial.
+
+6. FORMATO APA 7 ESTRICTO:
+   - Autores: Apellido, I. I. (para personas) o Sigla. (para entidades)
+   - Orden: alfabético por primer apellido o sigla
+   - Tildes y caracteres especiales correctos (Á, É, Í, Ó, Ú, Ñ)
+   - DOI en formato: https://doi.org/xxxxx
+   - Sin numeración de las referencias
+   - Sin negrita, sin subrayado
+   - Sangría francesa (el formato lo aplica el sistema al renderizar)
+
+7. NO incluyas referencias de temas NO relacionados con el informe.
+
+Sin título de sección, sin preámbulo, sin explicación. Solo las referencias."""
 
     return ""
 
@@ -424,9 +402,13 @@ def generar_seccion(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_
         f"Eres un experto en redacción académica universitaria en español con especialización en norma {norma} "
         "y profundo conocimiento del contexto colombiano y latinoamericano. "
         "Escribes contenido sustancial, formal y bien estructurado, con voz propia y análisis crítico. "
-        "Cuando aplique al tema, incluyes datos reales de Colombia, referencias a entidades como MinTIC, DANE, "
-        "CRC, Colciencias o similares, y mencionas casos o ejemplos concretos del país. "
-        "Usas referencias de años 2019-2025. Incluyes tablas de datos cuando el contenido lo amerita. "
+        "Cuando aplique al tema, incluyes datos de Colombia citando fuentes como MinTIC, DANE, CRC o MinCiencias. "
+        "IMPORTANTE SOBRE CIFRAS: usa solo datos que puedan venir de fuentes reales. Cuando no tengas "
+        "un dato exacto confirmado, usa rangos aproximados o expresiones como 'según estimaciones' o "
+        "'alrededor de'. NUNCA inventes porcentajes con decimales precisos (ej: 23,7%) sin fuente real. "
+        "Usas referencias de años 2021-2025. "
+        f"Para referencias en norma {norma}: aplica formato estrictamente correcto con tildes, "
+        "orden alfabético, DOI en https://doi.org/ y sin numeración. "
         "Balanceas el análisis técnico con interpretaciones propias del autor. "
         "Respondes SOLO con el contenido solicitado, sin títulos de sección, sin preámbulos, sin '**', sin markdown."
     )
@@ -439,45 +421,19 @@ def generar_seccion(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_
 
 def generar_informe_completo(tema, info_extra, tipo_informe, norma, nivel):
     """
-    Genera las 8 secciones del informe.
-    Primero obtiene referencias REALES de CrossRef/OpenAlex y las pasa como
-    contexto al marco teórico y al desarrollo, para que las citas en el texto
-    correspondan a fuentes que realmente existen en la bibliografía.
+    Genera las 8 secciones en paralelo (hasta 4 simultáneas) para reducir
+    tiempos de espera y minimizar fallos por timeout secuencial.
     """
     claves = ['introduccion', 'objetivos', 'marco_teorico', 'metodologia',
               'desarrollo', 'conclusiones', 'recomendaciones', 'referencias']
     secciones = {c: '' for c in claves}
 
-    # ── Paso 1: obtener referencias reales ANTES de generar el resto ──
-    logger.info("🔬 Obteniendo referencias reales para usar como contexto...")
-    try:
-        refs_reales = buscar_referencias_reales(tema, cantidad_total=12)
-        refs_texto  = formatear_referencias(refs_reales, norma) if refs_reales else ''
-        logger.info(f"✅ {len(refs_reales)} referencias reales obtenidas como contexto")
-    except Exception as e:
-        logger.warning(f"⚠️ No se pudieron obtener referencias reales: {e}")
-        refs_reales = []
-        refs_texto  = ''
-
-    # Si obtuvimos referencias reales, úsalas directamente en la sección de referencias
-    if refs_texto:
-        secciones['referencias'] = refs_texto
-
-    # ── Paso 2: generar secciones en paralelo ──
-    # marco_teorico y desarrollo reciben las refs reales como contexto obligatorio
-    SECCIONES_CON_REFS = {'marco_teorico', 'desarrollo', 'introduccion'}
-
     def _generar(clave):
-        # Inyectar referencias reales en las secciones que citan fuentes
-        contexto_refs = refs_texto if (clave in SECCIONES_CON_REFS and refs_texto) else ''
-        resultado = generar_seccion(clave, tema, info_extra, tipo_informe, norma, nivel, contexto_refs)
+        resultado = generar_seccion(clave, tema, info_extra, tipo_informe, norma, nivel)
         return clave, resultado or ''
 
-    # No regenerar 'referencias' si ya las tenemos de la API real
-    claves_a_generar = [c for c in claves if c != 'referencias' or not refs_texto]
-
     with ThreadPoolExecutor(max_workers=4) as executor:
-        futuros = {executor.submit(_generar, c): c for c in claves_a_generar}
+        futuros = {executor.submit(_generar, c): c for c in claves}
         for futuro in as_completed(futuros):
             try:
                 clave, contenido = futuro.result()
@@ -563,6 +519,17 @@ def generar_pdf(datos_usuario, secciones):
         spaceAfter=6,
         leftIndent=20,
         leading=16
+    ))
+    styles.add(ParagraphStyle(
+        name='Referencia',
+        parent=styles['Normal'],
+        alignment=TA_JUSTIFY,
+        fontSize=10.5,
+        fontName='Times-Roman',
+        spaceAfter=8,
+        leading=16,
+        leftIndent=30,        # sangría francesa: cuerpo desplazado a la derecha
+        firstLineIndent=-30   # primera línea al margen izquierdo
     ))
 
     doc = SimpleDocTemplate(
@@ -685,6 +652,8 @@ def generar_pdf(datos_usuario, secciones):
                     continue
                 if re.match(r'^(\d+\.|•|-|\*)\s', p):
                     story.append(Paragraph(p, styles['TextoLista']))
+                elif clave == 'referencias':
+                    story.append(Paragraph(p, styles['Referencia']))
                 else:
                     story.append(Paragraph(p, styles['TextoJustificado']))
         else:
@@ -867,10 +836,18 @@ def generar_word(datos_usuario, secciones):
                 p = doc.add_paragraph()
                 p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
                 r = p.add_run(parrafo)
-                r.font.size = Pt(11)
-                r.font.name = 'Times New Roman'
-                p.paragraph_format.first_line_indent = Cm(0.5)
-                p.paragraph_format.space_after = Pt(8)
+                if titulo_sec == '8. REFERENCIAS BIBLIOGRÁFICAS':
+                    # Sangría francesa APA: primera línea al margen, resto indentado
+                    r.font.size = Pt(10.5)
+                    r.font.name = 'Times New Roman'
+                    p.paragraph_format.left_indent       = Cm(1.0)
+                    p.paragraph_format.first_line_indent = Cm(-1.0)
+                    p.paragraph_format.space_after        = Pt(6)
+                else:
+                    r.font.size = Pt(11)
+                    r.font.name = 'Times New Roman'
+                    p.paragraph_format.first_line_indent = Cm(0.5)
+                    p.paragraph_format.space_after = Pt(8)
         else:
             p = doc.add_paragraph("Esta sección no pudo generarse correctamente.")
             p.runs[0].font.size = Pt(11)
