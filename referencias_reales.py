@@ -25,7 +25,7 @@ CONTACT_EMAIL = "academicreportpro@gmail.com"
 def buscar_crossref(query: str, cantidad: int = 6, desde_anio: int = 2021) -> list:
     params = {
         "query":   query,
-        "rows":    min(cantidad * 3, 30),
+        "rows":    min(cantidad * 5, 50),   # más candidatos para filtrar mejor
         "select":  "DOI,title,author,published,container-title,type,publisher,volume,issue,page",
         "filter":  f"from-pub-date:{desde_anio}-01-01,type:journal-article",
         "sort":    "relevance",
@@ -189,13 +189,20 @@ def buscar_referencias_reales(tema: str, cantidad_total: int = 12) -> list:
     tema_en = _traducir_query(tema)
     mismo_idioma = tema_en.strip() == tema.lower().strip()
 
-    # Paso 1: Artículos en español
-    arts_es = buscar_crossref(tema, cantidad=6, desde_anio=2021)
+    # Enriquecer el query con términos de contexto según el tema detectado
+    # Primero enriquecer en español, luego traducir el resultado completo
+    tema_enriquecido_es = _enriquecer_query(tema)
+    # Para el query en inglés: detectar contexto desde el tema original y construir en inglés
+    tema_en = _traducir_query(tema)
+    tema_enriquecido_en = _enriquecer_query_en(tema, tema_en)
+
+    # Paso 1: Artículos en español (query enriquecido)
+    arts_es = buscar_crossref(tema_enriquecido_es, cantidad=8, desde_anio=2021)
     referencias.extend(arts_es)
     time.sleep(0.3)
 
     # Paso 2: Artículos en inglés (siempre, no solo como fallback)
-    arts_en = buscar_crossref(tema_en, cantidad=6, desde_anio=2021)
+    arts_en = buscar_crossref(tema_enriquecido_en, cantidad=8, desde_anio=2021)
     dois_existentes = {r["doi"] for r in referencias if r.get("doi")}
     for a in arts_en:
         if a.get("doi") not in dois_existentes:
@@ -203,21 +210,21 @@ def buscar_referencias_reales(tema: str, cantidad_total: int = 12) -> list:
     time.sleep(0.3)
 
     # Paso 3: Libros/tesis en español
-    libros_es = buscar_openalex(tema, cantidad=4, tipos=["book", "dissertation"], desde_anio=2021)
+    libros_es = buscar_openalex(tema_enriquecido_es, cantidad=4, tipos=["book", "dissertation"], desde_anio=2021)
     referencias.extend(libros_es)
     time.sleep(0.3)
 
     # Paso 4: Libros en inglés (siempre)
     if not mismo_idioma:
         titulos_existentes = {r["titulo"].lower()[:40] for r in referencias}
-        libros_en = buscar_openalex(tema_en, cantidad=4, tipos=["book"], desde_anio=2021)
+        libros_en = buscar_openalex(tema_enriquecido_en, cantidad=4, tipos=["book"], desde_anio=2021)
         for l in libros_en:
             if l["titulo"].lower()[:40] not in titulos_existentes:
                 referencias.append(l)
         time.sleep(0.3)
 
     # Paso 5: Reportes
-    reportes = buscar_openalex(tema_en, cantidad=3, tipos=["report"], desde_anio=2021)
+    reportes = buscar_openalex(tema_enriquecido_en, cantidad=3, tipos=["report"], desde_anio=2021)
     referencias.extend(reportes)
     time.sleep(0.3)
 
@@ -230,11 +237,89 @@ def buscar_referencias_reales(tema: str, cantidad_total: int = 12) -> list:
             vistos.add(clave)
             unicas.append(ref)
 
-    # Filtrar por relevancia con umbral más alto
-    unicas = _filtrar_por_relevancia(unicas, tema, umbral=0.25)
+    # Filtrar por relevancia — umbral 0.45 para evitar referencias ajenas al tema
+    unicas = _filtrar_por_relevancia(unicas, tema, umbral=0.45)
     unicas = _balancear_tipos(unicas, cantidad_total)
     logger.info(f"Total referencias reales: {len(unicas)}")
     return unicas[:cantidad_total]
+
+
+
+# ──────────────────────────────────────────────────────────────
+# ENRIQUECIMIENTO DE QUERY
+# ──────────────────────────────────────────────────────────────
+# Mapa de palabras clave del tema → términos de contexto adicionales
+# que hacen el query más específico y mejoran la relevancia
+_CONTEXTO_POR_TEMA = {
+    "invasora":         "biodiversidad ecosistema impacto ecológico",
+    "invasive":         "biodiversity ecosystem ecological impact",
+    "biodiversidad":    "conservación especies ecosistema",
+    "biodiversity":     "conservation species ecosystem",
+    "deforestación":    "bosque cobertura vegetal amazonia",
+    "deforestation":    "forest cover vegetation loss",
+    "cambio climático": "temperatura emisiones carbono",
+    "climate change":   "temperature emissions carbon",
+    "salud pública":    "epidemiología enfermedad prevención",
+    "public health":    "epidemiology disease prevention",
+    "inteligencia artificial": "machine learning algoritmo datos",
+    "artificial intelligence": "machine learning algorithm deep learning",
+    "educación":        "aprendizaje pedagógico enseñanza",
+    "education":        "learning pedagogical teaching",
+    "economía":         "crecimiento mercado productividad",
+    "economy":          "growth market productivity",
+    "contaminación":    "residuos tóxicos ambiente agua",
+    "pollution":        "waste toxic environment water",
+    "genética":         "ADN genoma secuenciación",
+    "genetics":         "DNA genome sequencing",
+    "minería":          "extracción recursos impacto ambiental",
+    "mining":           "extraction resources environmental impact",
+    "agua":             "recurso hídrico cuenca calidad",
+    "water":            "resource basin quality hydrological",
+}
+
+
+def _enriquecer_query(tema: str) -> str:
+    """
+    Añade términos de contexto al query según el tema para mejorar
+    la especificidad de las búsquedas en CrossRef / OpenAlex.
+    """
+    tema_lower = tema.lower()
+    extras = []
+    for clave, contexto in _CONTEXTO_POR_TEMA.items():
+        if clave in tema_lower and contexto not in tema_lower:
+            extras.append(contexto)
+            break  # un solo bloque de contexto es suficiente
+    if extras:
+        return f"{tema} {' '.join(extras)}"
+    return tema
+
+
+def _enriquecer_query_en(tema_original: str, tema_traducido: str) -> str:
+    """
+    Detecta el contexto desde el tema en español y añade términos EN al query traducido.
+    Así el query inglés queda limpio sin mezcla de idiomas.
+    """
+    tema_lower = tema_original.lower()
+    # Mapa ES → contexto EN (solo las claves en español)
+    contexto_en = {
+        "invasora":         "biodiversity ecosystem ecological impact",
+        "invasoras":        "biodiversity ecosystem ecological impact",
+        "biodiversidad":    "conservation species ecosystem",
+        "deforestación":    "forest cover vegetation loss",
+        "cambio climático": "temperature emissions carbon",
+        "salud pública":    "epidemiology disease prevention",
+        "inteligencia artificial": "machine learning algorithm deep learning",
+        "educación":        "learning pedagogical teaching",
+        "economía":         "growth market productivity",
+        "contaminación":    "waste toxic environment water",
+        "genética":         "DNA genome sequencing",
+        "minería":          "extraction resources environmental impact",
+        "agua":             "resource basin quality hydrological",
+    }
+    for clave_es, ctx_en in contexto_en.items():
+        if clave_es in tema_lower and ctx_en not in tema_traducido:
+            return f"{tema_traducido} {ctx_en}"
+    return tema_traducido
 
 
 def _traducir_query(texto: str) -> str:
@@ -394,22 +479,47 @@ def _puntaje_relevancia(titulo: str, tema: str) -> float:
     return min(score, 1.0)
 
 
-def _filtrar_por_relevancia(refs: list, tema: str, umbral: float = 0.25) -> list:
+
+# Términos que indican que una referencia es claramente ajena al tema académico
+_BLACKLIST_TERMINOS = [
+    # Derecho / finanzas / seguros
+    "seguros", "aseguradoras", "regalías", "régimen fiscal", "derecho laboral",
+    "financiero", "contrato", "jurídico", "tributario",
+    # Temas sociales no relacionados con ciencias naturales
+    "caucheras", "covid-19", "pandemia educación", "economía sumergida",
+    "reforma pensional", "seguridad social",
+    # Literatura / humanidades (cuando el tema es ciencias)
+    "vorágine", "novela", "poesía", "cine", "arte plástico",
+]
+
+
+def _titulo_en_blacklist(titulo: str) -> bool:
+    """Devuelve True si el título contiene algún término claramente ajeno al tema."""
+    titulo_lower = titulo.lower()
+    return any(term in titulo_lower for term in _BLACKLIST_TERMINOS)
+
+
+def _filtrar_por_relevancia(refs: list, tema: str, umbral: float = 0.45) -> list:
     """
     Descarta referencias cuyo título no tenga relación con el tema.
-    Umbral por defecto subido a 0.25 (antes 0.15) para evitar referencias ajenas.
+    Umbral 0.45 para filtrado estricto. Aplica blacklist de términos ajenos.
     """
     puntuadas = []
     for ref in refs:
-        score = _puntaje_relevancia(ref.get("titulo", ""), tema)
+        titulo = ref.get("titulo", "")
+        # Descartar inmediatamente si está en la blacklist
+        if _titulo_en_blacklist(titulo):
+            logger.debug(f"  BLACKLIST — {titulo[:60]}")
+            continue
+        score = _puntaje_relevancia(titulo, tema)
         puntuadas.append((score, ref))
-        logger.debug(f"  Relevancia {score:.2f} — {ref['titulo'][:60]}")
+        logger.debug(f"  Relevancia {score:.2f} — {titulo[:60]}")
 
     relevantes = [(s, r) for s, r in puntuadas if s >= umbral]
 
-    # Si quedan menos de 4, bajar umbral a 0.12 (nunca a 0 para evitar refs totalmente ajenas)
+    # Si quedan menos de 4, bajar umbral a 0.25 (mínimo razonable para evitar refs totalmente ajenas)
     if len(relevantes) < 4:
-        umbral_bajo = 0.12
+        umbral_bajo = 0.25
         relevantes = [(s, r) for s, r in puntuadas if s >= umbral_bajo]
         logger.warning(
             f"Solo {len(relevantes)} refs con umbral {umbral_bajo} — "
