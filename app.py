@@ -138,7 +138,6 @@ def limpiar_para_word(texto):
 # ============================================================
 # VALIDADORES DE CALIDAD (post-generación)
 # ============================================================
-# Patrones de cita según norma
 _PATRONES_CITA = {
     'APA 7':    re.compile(r'\([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+.*?,\s*20[1-2]\d\)'),
     'APA 6':    re.compile(r'\([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+.*?,\s*20[1-2]\d\)'),
@@ -149,31 +148,21 @@ _PATRONES_CITA = {
     'MLA':      re.compile(r'\([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+\s+\d+\)'),
     'Harvard':  re.compile(r'\([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+.*?20[1-2]\d\)'),
 }
-_SECCIONES_CON_CITAS = {'introduccion', 'marco_teorico', 'desarrollo', 'metodologia'}
-_MIN_CITAS_POR_SECCION = {'introduccion': 2, 'marco_teorico': 4, 'desarrollo': 4, 'metodologia': 1}
+_SECCIONES_CON_CITAS    = {'introduccion', 'marco_teorico', 'desarrollo', 'metodologia'}
+_MIN_CITAS_POR_SECCION  = {'introduccion': 2, 'marco_teorico': 4, 'desarrollo': 4, 'metodologia': 1}
 
 def validar_citas(contenido: str, seccion: str, norma: str) -> dict:
-    """
-    Verifica que el contenido tenga suficientes citas en el formato correcto.
-    Retorna {'ok': bool, 'citas_encontradas': int, 'minimo': int}
-    """
     if seccion not in _SECCIONES_CON_CITAS or not contenido:
         return {'ok': True, 'citas_encontradas': 0, 'minimo': 0}
-
     patron = _PATRONES_CITA.get(norma, _PATRONES_CITA['APA 7'])
-    citas = patron.findall(contenido)
+    citas  = patron.findall(contenido)
     minimo = _MIN_CITAS_POR_SECCION.get(seccion, 1)
-    return {
-        'ok': len(citas) >= minimo,
-        'citas_encontradas': len(citas),
-        'minimo': minimo
-    }
+    return {'ok': len(citas) >= minimo, 'citas_encontradas': len(citas), 'minimo': minimo}
 
 def validar_tabla_en_desarrollo(contenido: str) -> bool:
-    """Verifica que el desarrollo contenga al menos una tabla ##TABLE## o markdown."""
-    tiene_tabla_struct = '##TABLE##' in contenido and '##ENDTABLE##' in contenido
-    tiene_tabla_md = bool(re.search(r'^\|.+\|', contenido, re.MULTILINE))
-    return tiene_tabla_struct or tiene_tabla_md
+    tiene_struct = '##TABLE##' in contenido and '##ENDTABLE##' in contenido
+    tiene_md     = bool(re.search(r'^\|.+\|', contenido, re.MULTILINE))
+    return tiene_struct or tiene_md
 
 # ============================================================
 # PARSEO DE TABLAS ESTRUCTURADAS
@@ -710,59 +699,45 @@ def generar_seccion(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_
         return None
     contenido = contenido.strip()
 
-    # ── Validar citas (1 reintento si no pasan el mínimo) ──────────
-    val_citas = validar_citas(contenido, seccion, norma)
-    if not val_citas['ok']:
-        logger.warning(
-            f"Seccion '{seccion}': {val_citas['citas_encontradas']} citas encontradas "
-            f"(minimo {val_citas['minimo']}). Reintentando con refuerzo..."
+    # Validar citas — 1 reintento si faltan
+    val = validar_citas(contenido, seccion, norma)
+    if not val['ok']:
+        logger.warning(f"Seccion '{seccion}': {val['citas_encontradas']}/{val['minimo']} citas. Reintentando...")
+        p2 = prompt + (
+            f"\n\nATENCION: el texto anterior tiene solo {val['citas_encontradas']} citas en formato {norma}. "
+            f"Necesitas minimo {val['minimo']}. Reescribe incluyendo al menos una cita por parrafo."
         )
-        prompt_retry = prompt + (
-            f"\n\nATENCION CRITICA: el texto generado tiene INSUFICIENTES CITAS en formato {norma}. "
-            f"CADA parrafo DEBE contener al menos una cita. "
-            f"Genera el contenido de nuevo incluyendo minimo "
-            f"{val_citas['minimo']} citas en formato correcto {norma} distribuidas en el texto. "
-            f"Ejemplos validos: (MinTIC, 2023), (Garcia & Lopez, 2022), (DANE, 2024)."
-        )
-        contenido2 = llamar_deepseek(prompt_retry, system_prompt=system_prompt, max_tokens=3000)
-        if contenido2:
-            val2 = validar_citas(contenido2.strip(), seccion, norma)
-            if val2['citas_encontradas'] > val_citas['citas_encontradas']:
-                contenido = contenido2.strip()
-                logger.info(f"Reintento mejoro citas: {val2['citas_encontradas']} encontradas")
-            else:
-                logger.warning("Reintento no mejoro citas, conservando version original")
+        c2 = llamar_deepseek(p2, system_prompt=system_prompt, max_tokens=3000)
+        if c2:
+            v2 = validar_citas(c2.strip(), seccion, norma)
+            if v2['citas_encontradas'] > val['citas_encontradas']:
+                contenido = c2.strip()
+                logger.info(f"Reintento mejoro citas: {v2['citas_encontradas']}")
 
-    # ── Validar tabla en desarrollo (1 reintento si falta) ─────────
+    # Validar tabla en desarrollo — 1 reintento si falta
     if seccion == 'desarrollo' and not validar_tabla_en_desarrollo(contenido):
-        logger.warning("Seccion 'desarrollo' sin tabla. Reintentando...")
-        prompt_tabla = prompt + (
-            "\n\nATENCION CRITICA: el texto generado NO incluye la tabla obligatoria. "
-            "DEBES incluir la tabla en formato ##TABLE##...##ENDTABLE## exactamente como se indico. "
-            "Genera el contenido de nuevo con la tabla incluida en el punto 6."
+        logger.warning("Desarrollo sin tabla. Reintentando...")
+        p3 = prompt + (
+            "\n\nATENCION: falta la tabla obligatoria ##TABLE##...##ENDTABLE##. "
+            "Reescribe el punto 6 incluyendo la tabla exactamente en ese formato."
         )
-        contenido3 = llamar_deepseek(prompt_tabla, system_prompt=system_prompt, max_tokens=3200)
-        if contenido3 and validar_tabla_en_desarrollo(contenido3.strip()):
-            contenido = contenido3.strip()
-            logger.info("Reintento incluyo tabla correctamente")
+        c3 = llamar_deepseek(p3, system_prompt=system_prompt, max_tokens=3200)
+        if c3 and validar_tabla_en_desarrollo(c3.strip()):
+            contenido = c3.strip()
+            logger.info("Reintento incluyo tabla")
 
     logger.info(f"Seccion '{seccion}' generada: {len(contenido)} chars")
     return contenido
 
 def generar_informe_completo(tema, info_extra, tipo_informe, norma, nivel, modo='rapido'):
     """
-    Genera el informe completo con referencias reales de CrossRef/OpenAlex.
-    Orden:
-      1. Busca referencias reales en paralelo con las secciones principales.
-      2. Genera secciones (excepto 'desarrollo' y 'referencias') en paralelo.
-      3. Genera 'desarrollo' con los objetivos inyectados.
-      4. Reemplaza 'referencias' con las reales formateadas (o fallback IA honesto).
+    Genera el informe con referencias reales de CrossRef/OpenAlex en paralelo.
+    Orden: secciones principales en paralelo → desarrollo con objetivos → referencias reales.
     """
     claves = ['introduccion', 'objetivos', 'marco_teorico', 'metodologia',
               'desarrollo', 'conclusiones', 'recomendaciones', 'referencias']
     secciones = {c: '' for c in claves}
 
-    # Paso 1: Lanzar búsqueda de referencias reales en paralelo con el resto
     claves_ia = [c for c in claves if c not in ('desarrollo', 'referencias')]
 
     def _generar(clave):
@@ -781,17 +756,16 @@ def generar_informe_completo(tema, info_extra, tipo_informe, norma, nivel, modo=
 
     refs_texto = None
     refs_total = 0
-    refs_fuente = 'ia_fallback'
 
     with ThreadPoolExecutor(max_workers=5) as executor:
-        futuros_ia   = {executor.submit(_generar, c): c for c in claves_ia}
-        futuro_refs  = executor.submit(_buscar_refs_reales)
+        futuros_ia  = {executor.submit(_generar, c): c for c in claves_ia}
+        futuro_refs = executor.submit(_buscar_refs_reales)
 
         for futuro in as_completed(list(futuros_ia.keys()) + [futuro_refs]):
             if futuro is futuro_refs:
                 try:
                     refs_texto, refs_total, refs_fuente = futuro.result()
-                    logger.info(f"Referencias reales: {refs_total} obtenidas (fuente: {refs_fuente})")
+                    logger.info(f"Referencias reales: {refs_total} ({refs_fuente})")
                 except Exception as e:
                     logger.error(f"Error en futuro_refs: {e}")
             else:
@@ -803,89 +777,66 @@ def generar_informe_completo(tema, info_extra, tipo_informe, norma, nivel, modo=
                     clave = futuros_ia[futuro]
                     logger.error(f"Error en seccion '{clave}': {e}")
 
-    # Paso 2: Generar 'desarrollo' con objetivos inyectados
+    # Desarrollo con objetivos inyectados
     objetivos_generados = secciones.get('objetivos', '')
-    logger.info(f"Generando desarrollo con objetivos inyectados ({len(objetivos_generados)} chars)")
     secciones['desarrollo'] = generar_seccion(
         'desarrollo', tema, info_extra, tipo_informe, norma, nivel,
         modo=modo, objetivos_texto=objetivos_generados
     ) or ''
     logger.info(f"Seccion 'desarrollo' completada ({len(secciones['desarrollo'])} chars)")
 
-    # Paso 3: Asignar referencias
+    # Referencias: reales si hay suficientes, IA con aviso si no
     if refs_texto and refs_total >= 3:
-        # Referencias reales verificadas: usar directamente
         secciones['referencias'] = refs_texto
-        logger.info(f"Referencias reales asignadas: {refs_total} fuentes de {refs_fuente}")
+        logger.info(f"Referencias reales asignadas: {refs_total}")
     else:
-        # Fallback IA — generar con la IA pero con aviso explícito
-        logger.warning(f"Referencias reales insuficientes ({refs_total}), usando generacion IA con aviso")
+        logger.warning(f"Referencias reales insuficientes ({refs_total}), usando IA con aviso")
         refs_ia = generar_seccion(
             'referencias', tema, info_extra, tipo_informe, norma, nivel,
             refs_manuales=info_extra, modo=modo
         ) or ''
-        # Agregar nota de advertencia al inicio
         aviso = (
             "[NOTA: No se encontraron suficientes referencias verificadas en bases de datos "
-            "académicas para este tema. Las referencias a continuación fueron generadas por IA "
-            "y deben ser verificadas antes de su uso académico.]\n\n"
+            "académicas. Las siguientes referencias fueron generadas por IA y deben verificarse "
+            "antes de su uso académico.]\n\n"
         )
         secciones['referencias'] = aviso + refs_ia
 
-    # Paso 4: Revisión de coherencia final (detecta contradicciones obvias)
+    # Revisión de coherencia final
     secciones = _revisar_coherencia(secciones, tema, norma)
-
     return secciones
 
 
 def _revisar_coherencia(secciones: dict, tema: str, norma: str) -> dict:
-    """
-    Paso de post-procesamiento ligero: verifica que conclusiones y recomendaciones
-    estén alineadas con los objetivos generados. Si no lo están, los regenera.
-    No re-genera secciones largas para no multiplicar costos de API.
-    """
-    objetivos = secciones.get('objetivos', '')
+    """Verifica que conclusiones respondan a los objetivos; regenera si la cobertura es baja."""
+    objetivos   = secciones.get('objetivos', '')
     conclusiones = secciones.get('conclusiones', '')
-    desarrollo = secciones.get('desarrollo', '')
-
+    desarrollo  = secciones.get('desarrollo', '')
     if not objetivos or not conclusiones:
         return secciones
-
-    # Heurística simple: si las conclusiones no mencionan ningún término clave
-    # del objetivo general, probablemente están desconectadas
-    primera_linea_obj = objetivos.strip().split('\n')[0].lower()
-    palabras_clave_obj = [w for w in primera_linea_obj.split() if len(w) > 5]
-    conclusiones_lower = conclusiones.lower()
-
-    palabras_encontradas = sum(1 for w in palabras_clave_obj if w in conclusiones_lower)
-    cobertura = palabras_encontradas / max(len(palabras_clave_obj), 1)
-
+    primera_linea = objetivos.strip().split('\n')[0].lower()
+    palabras_clave = [w for w in primera_linea.split() if len(w) > 5]
+    concl_lower    = conclusiones.lower()
+    encontradas    = sum(1 for w in palabras_clave if w in concl_lower)
+    cobertura      = encontradas / max(len(palabras_clave), 1)
     if cobertura < 0.25:
-        logger.warning(
-            f"Coherencia baja ({cobertura:.0%}): conclusiones no reflejan los objetivos. "
-            f"Regenerando conclusiones..."
-        )
-        system_coherencia = (
+        logger.warning(f"Coherencia baja ({cobertura:.0%}). Regenerando conclusiones...")
+        system_c = (
             f"Eres un revisor académico especializado en norma {norma}. "
-            f"Tu única tarea es reescribir las conclusiones para que respondan directamente "
-            f"a los objetivos del informe. No inventes datos nuevos."
+            f"Reescribe las conclusiones para que respondan directamente a los objetivos. "
+            f"No inventes datos nuevos."
         )
-        prompt_coherencia = (
-            f"El informe es sobre: \"{tema}\".\n\n"
-            f"OBJETIVOS ORIGINALES:\n{objetivos}\n\n"
-            f"DESARROLLO (resumen de hallazgos):\n{desarrollo[:800]}...\n\n"
-            f"CONCLUSIONES ACTUALES (no alineadas):\n{conclusiones}\n\n"
-            f"Reescribe las conclusiones (5 puntos numerados) respondiendo directamente "
-            f"a cada objetivo específico listado arriba. "
-            f"Sin título de sección, sin preámbulo."
+        prompt_c = (
+            f'Informe sobre: "{tema}".\n\nOBJETIVOS:\n{objetivos}\n\n'
+            f'DESARROLLO (resumen):\n{desarrollo[:800]}...\n\n'
+            f'CONCLUSIONES ACTUALES (reescribir):\n{conclusiones}\n\n'
+            f'Reescribe las conclusiones (5 puntos numerados) respondiendo a cada objetivo. '
+            f'Sin título de sección.'
         )
-        nuevas_conclusiones = llamar_deepseek(
-            prompt_coherencia, system_prompt=system_coherencia, max_tokens=1500
-        )
-        if nuevas_conclusiones and len(nuevas_conclusiones.strip()) > 200:
-            secciones['conclusiones'] = nuevas_conclusiones.strip()
+        nuevas = llamar_deepseek(prompt_c, system_prompt=system_c, max_tokens=1500)
+        if nuevas and len(nuevas.strip()) > 200:
+            secciones['conclusiones'] = nuevas.strip()
             logger.info("Conclusiones regeneradas por baja coherencia")
-
     return secciones
 
 # ============================================================
@@ -952,6 +903,28 @@ def generar_pdf(datos_usuario, secciones):
         fontName='Times-Roman',
         alignment=TA_CENTER,
         spaceAfter=5
+    ))
+    styles.add(ParagraphStyle(
+        name='ObjetivoTitulo',
+        parent=styles['Normal'],
+        alignment=TA_LEFT,
+        fontSize=11,
+        fontName='Helvetica-Bold',
+        spaceBefore=14,
+        spaceAfter=4,
+        textColor=colors.HexColor('#1a365d'),
+        leading=16
+    ))
+    styles.add(ParagraphStyle(
+        name='ObjetivoItem',
+        parent=styles['Normal'],
+        alignment=TA_JUSTIFY,
+        fontSize=11,
+        fontName='Times-Roman',
+        spaceBefore=8,
+        spaceAfter=8,
+        leftIndent=16,
+        leading=18
     ))
     styles.add(ParagraphStyle(
         name='TextoLista',
@@ -1038,6 +1011,19 @@ def generar_pdf(datos_usuario, secciones):
         contenido = limpiar_para_pdf(contenido_raw)
 
         if contenido and len(contenido) > 50:
+            # ── Renderizado especial para OBJETIVOS ─────────────────
+            if clave == 'objetivos':
+                lineas = [l.strip() for l in re.split(r'\n+', contenido) if l.strip()]
+                for linea in lineas:
+                    if re.match(r'^OBJETIVO\s+(GENERAL|ESPEC)', linea, re.IGNORECASE):
+                        story.append(Paragraph(linea, styles['ObjetivoTitulo']))
+                    elif re.match(r'^\d+\.', linea):
+                        story.append(Paragraph(linea, styles['ObjetivoItem']))
+                    else:
+                        story.append(Paragraph(linea, styles['TextoJustificado']))
+                story.append(PageBreak())
+                continue
+
             contenido_proc, tablas = extraer_tablas(contenido)
             parrafos = re.split(r'\n{2,}', contenido_proc)
             if len(parrafos) == 1:
@@ -1205,6 +1191,35 @@ def generar_word(datos_usuario, secciones):
         contenido = limpiar_para_word(contenido_raw)
 
         if contenido and len(contenido) > 50:
+            # ── Renderizado especial para OBJETIVOS en Word ─────────
+            if clave == 'objetivos':
+                lineas = [l.strip() for l in re.split(r'\n+', contenido) if l.strip()]
+                for linea in lineas:
+                    if re.match(r'^OBJETIVO\s+(GENERAL|ESPEC)', linea, re.IGNORECASE):
+                        p_obj = doc.add_paragraph()
+                        r_obj = p_obj.add_run(linea)
+                        r_obj.bold = True
+                        r_obj.font.size = Pt(11)
+                        r_obj.font.name = 'Times New Roman'
+                        r_obj.font.color.rgb = RGBColor(0x1a, 0x36, 0x5d)
+                        p_obj.paragraph_format.space_before = Pt(10)
+                        p_obj.paragraph_format.space_after  = Pt(3)
+                    elif re.match(r'^\d+\.', linea):
+                        p_obj = doc.add_paragraph()
+                        r_obj = p_obj.add_run(linea)
+                        r_obj.font.size = Pt(11)
+                        r_obj.font.name = 'Times New Roman'
+                        p_obj.paragraph_format.left_indent  = Pt(16)
+                        p_obj.paragraph_format.space_before = Pt(6)
+                        p_obj.paragraph_format.space_after  = Pt(6)
+                        p_obj.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+                    else:
+                        p_obj = doc.add_paragraph(linea)
+                        p_obj.runs[0].font.size = Pt(11) if p_obj.runs else None
+                        p_obj.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+                doc.add_page_break()
+                continue
+
             contenido_proc, tablas = extraer_tablas(contenido)
             parrafos = re.split(r'\n{2,}', contenido_proc)
             if len(parrafos) == 1:
@@ -1419,18 +1434,15 @@ def api_referencias_reales():
         refs = buscar_referencias_reales(tema, cantidad_total=12)
 
         if not refs:
-            # No hay referencias reales: retornar error claro en lugar de ficción
-            logger.warning("No se encontraron referencias reales para el tema")
+            # Fallback: usar DeepSeek para generar referencias plausibles
+            logger.warning("No se encontraron referencias reales, usando fallback IA")
+            contenido_ia = generar_seccion('referencias', tema, refs_manuales, 'academico', norma, 'universitario', refs_manuales)
             return jsonify({
-                'success':   False,
-                'error':     (
-                    f'No se encontraron referencias verificadas en CrossRef/OpenAlex para el tema '
-                    f'"{tema[:60]}". Intenta con términos en inglés o un tema más específico. '
-                    f'También puedes agregar tus referencias manualmente en el campo correspondiente.'
-                ),
-                'fuente':    'sin_resultados',
-                'total':     0
-            }), 404
+                'success':    True,
+                'contenido':  contenido_ia or 'No se pudieron obtener referencias.',
+                'fuente':     'ia_fallback',
+                'total':      0
+            })
 
         # Formatear según la norma
         texto_refs = formatear_referencias(refs, norma)
