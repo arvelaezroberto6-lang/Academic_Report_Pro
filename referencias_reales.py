@@ -237,8 +237,8 @@ def buscar_referencias_reales(tema: str, cantidad_total: int = 12) -> list:
             vistos.add(clave)
             unicas.append(ref)
 
-    # Filtrar por relevancia — umbral 0.45 para evitar referencias ajenas al tema
-    unicas = _filtrar_por_relevancia(unicas, tema, umbral=0.45)
+    # Filtrar por relevancia — lógica dinámica, sin blacklists estáticas
+    unicas = _filtrar_por_relevancia(unicas, tema, umbral=0.25)
     unicas = _balancear_tipos(unicas, cantidad_total)
     logger.info(f"Total referencias reales: {len(unicas)}")
     return unicas[:cantidad_total]
@@ -329,8 +329,10 @@ def _traducir_query(texto: str) -> str:
         "especies invasoras": "invasive species",
         "especie invasora": "invasive species",
         "invasión biológica": "biological invasion",
+        "invasiones biológicas": "biological invasions",
         "biodiversidad": "biodiversity",
         "ecosistema": "ecosystem",
+        "ecosistemas": "ecosystems",
         "deforestación": "deforestation",
         "cambio climático": "climate change",
         "medio ambiente": "environment",
@@ -341,6 +343,16 @@ def _traducir_query(texto: str) -> str:
         "recursos naturales": "natural resources",
         "agua": "water",
         "energía renovable": "renewable energy",
+        "servicios ecosistémicos": "ecosystem services",
+        "servicios ambientales": "environmental services",
+        "flora": "flora",
+        "fauna": "fauna",
+        "bosque": "forest",
+        "selva": "rainforest",
+        "páramo": "paramo",
+        "humedal": "wetland",
+        "cuenca": "watershed",
+        "biodiversidad marina": "marine biodiversity",
         # Salud
         "salud pública": "public health",
         "salud": "health",
@@ -351,9 +363,12 @@ def _traducir_query(texto: str) -> str:
         "enfermedad": "disease",
         "nutrición": "nutrition",
         "psicología": "psychology",
+        "meningitis": "meningitis",
+        "zoonosis": "zoonosis",
         # Tecnología
         "inteligencia artificial": "artificial intelligence",
         "aprendizaje automático": "machine learning",
+        "aprendizaje profundo": "deep learning",
         "tecnología": "technology",
         "ciberseguridad": "cybersecurity",
         "blockchain": "blockchain",
@@ -363,16 +378,31 @@ def _traducir_query(texto: str) -> str:
         "computación": "computing",
         "redes": "networks",
         "nube": "cloud",
+        "algoritmo": "algorithm",
+        "red neuronal": "neural network",
         # Educación
+        "educación superior": "higher education",
+        "educación universitaria": "university education",
         "educación": "education",
         "aprendizaje": "learning",
         "enseñanza": "teaching",
         "pedagogía": "pedagogy",
         "universidad": "university",
         "estudiante": "student",
-        # Economía / social
-        "economía": "economy",
+        "currículo": "curriculum",
+        # Economía / finanzas / derecho
+        "aseguradoras": "insurance companies",
+        "aseguradora": "insurer",
+        "seguros": "insurance",
+        "seguro": "insurance",
+        "responsabilidad civil": "civil liability",
+        "responsabilidad": "liability",
+        "regalías": "royalties",
+        "tributario": "tax",
+        "fiscal": "fiscal",
+        "financiero": "financial",
         "finanzas": "finance",
+        "economía": "economy",
         "mercado": "market",
         "empresa": "enterprise",
         "inflación": "inflation",
@@ -383,12 +413,36 @@ def _traducir_query(texto: str) -> str:
         "conflicto": "conflict",
         "paz": "peace",
         "derechos humanos": "human rights",
+        "contrato": "contract",
+        "indemnización": "indemnity",
+        "siniestro": "claim",
+        "activos": "assets",
+        "inversión": "investment",
+        "banca": "banking",
+        # Minería / extracción
+        "minería ilegal": "illegal mining",
+        "minería artesanal": "artisanal mining",
+        "minería": "mining",
+        "extracción minera": "mineral extraction",
+        "extracción": "extraction",
+        "petróleo": "oil",
+        "hidrocarburos": "hydrocarbons",
+        "carbón": "coal",
+        "oro": "gold",
+        "comunidades indígenas": "indigenous communities",
+        "pueblos indígenas": "indigenous peoples",
+        "indígenas": "indigenous",
+        "campesinos": "peasants",
+        "territorio": "territory",
+        "territorios": "territories",
         # Ciencias / derecho / otros
         "química": "chemistry",
         "física": "physics",
         "biología": "biology",
         "laboratorio": "laboratory",
         "genética": "genetics",
+        "genómica": "genomics",
+        "derecho ambiental": "environmental law",
         "derecho": "law",
         "política pública": "public policy",
         "sociedad": "society",
@@ -401,12 +455,21 @@ def _traducir_query(texto: str) -> str:
         "arte": "art",
         "literatura": "literature",
         "investigación": "research",
+        "desarrollo sostenible": "sustainable development",
         "desarrollo": "development",
         "colombia": "colombia",
         "latinoamérica": "latin america",
+        "seguridad alimentaria": "food security",
         "seguridad": "security",
         "política": "policy",
         "sociología": "sociology",
+        "trabajo": "labor",
+        "género": "gender",
+        "violencia": "violence",
+        "corrupción": "corruption",
+        "gobernanza": "governance",
+        "participación": "participation",
+        "derechos": "rights",
     }
     resultado = texto.lower()
     # Reemplazar frases primero (más específicas), luego palabras sueltas
@@ -415,22 +478,105 @@ def _traducir_query(texto: str) -> str:
     return resultado
 
 
+
+# Sinónimos y variantes por término — permiten que títulos con vocabulario
+# relacionado (pero no idéntico) también obtengan score de relevancia.
+# Clave = palabra del tema (EN) → lista de variantes aceptadas en títulos.
+_SINONIMOS_EN = {
+    "invasive":     ["invasion", "invasions", "invasiveness", "invader", "invaders", "introduced", "exotic", "alien"],
+    "species":      ["species", "organism", "organisms", "taxa", "taxon", "flora", "fauna"],
+    "biodiversity": ["biodiversity", "diversity", "richness", "biota", "wildlife"],
+    "ecosystem":    ["ecosystem", "ecosystems", "habitat", "habitats", "ecology", "ecological"],
+    "colombia":     ["colombia", "colombian", "andean", "neotropical"],
+    "deforestation":["deforestation", "forest loss", "forest cover", "deforested", "logging"],
+    "climate":      ["climate", "climatic", "temperature", "warming", "greenhouse"],
+    "health":       ["health", "disease", "epidemiology", "medical", "clinical", "public health"],
+    "education":    ["education", "educational", "learning", "teaching", "academic", "university", "school"],
+    "artificial":   ["artificial", "machine learning", "deep learning", "neural", "algorithmic", "automated"],
+    "intelligence": ["intelligence", "intelligent", "cognitive", "computational"],
+    "water":        ["water", "aquatic", "hydrological", "watershed", "river", "lake"],
+    "insurance":    ["insurance", "insurer", "liability", "indemnity", "underwriting", "actuarial", "claim", "siniestro"],
+    "financial":    ["financial", "finance", "fiscal", "monetary", "economic", "banking"],
+    "pollution":    ["pollution", "contamination", "pollutant", "emissions", "waste"],
+    "mining":       ["mining", "extraction", "mineral", "quarry", "excavation", "gold", "coal", "oil"],
+    "genetics":     ["genetics", "genomics", "genome", "dna", "rna", "sequence"],
+    "agriculture":  ["agriculture", "agricultural", "farming", "crop", "cultivation", "agronomy"],
+    "security":     ["security", "cybersecurity", "cyber", "threat", "vulnerability", "attack"],
+    "conflict":     ["conflict", "war", "violence", "peace", "armed", "dispute"],
+    "migration":    ["migration", "migrant", "immigrant", "displacement", "refugee"],
+    "poverty":      ["poverty", "inequality", "socioeconomic", "deprivation", "marginalization"],
+    "indigenous":   ["indigenous", "native", "tribal", "community", "territory", "ancestral"],
+    "liability":    ["liability", "insurance", "indemnity", "actuarial", "claim", "underwriting"],
+}
+
+# Lo mismo para palabras en español
+_SINONIMOS_ES = {
+    "invasora":      ["invasora", "invasoras", "invasión", "invasiones", "exótica", "exóticas", "introducida"],
+    "especie":       ["especie", "especies", "organismo", "organismos", "taxa", "flora", "fauna"],
+    "biodiversidad": ["biodiversidad", "diversidad", "riqueza", "biota", "vida silvestre"],
+    "ecosistema":    ["ecosistema", "ecosistemas", "hábitat", "ecología", "ecológico"],
+    "colombia":      ["colombia", "colombiano", "colombiana", "andino", "neotropical"],
+    "deforestación": ["deforestación", "tala", "cobertura forestal", "pérdida bosque"],
+    "clima":         ["clima", "climático", "temperatura", "calentamiento", "emisiones"],
+    "salud":         ["salud", "enfermedad", "epidemiología", "médico", "clínico", "sanitario"],
+    "educación":     ["educación", "educativo", "aprendizaje", "enseñanza", "académico", "universitario"],
+    "inteligencia":  ["inteligencia", "machine learning", "aprendizaje automático", "red neuronal"],
+    "agua":          ["agua", "acuático", "hidrológico", "cuenca", "río", "lago"],
+    "seguros":       ["seguros", "aseguradoras", "asegurador", "responsabilidad", "indemnización", "siniestro", "póliza", "riesgo asegurado"],
+    "financiero":    ["financiero", "finanzas", "fiscal", "monetario", "bancario", "tributario", "regalías"],
+    "contaminación": ["contaminación", "contaminante", "emisiones", "residuos", "vertimiento"],
+    "minería":       ["minería", "extracción", "mineral", "canteras", "excavación", "oro", "carbón", "petróleo", "hidrocarburos"],
+    "genética":      ["genética", "genómica", "genoma", "adn", "arn", "secuenciación"],
+    "agricultura":   ["agricultura", "agrícola", "cultivo", "cosecha", "agronomía", "campesino"],
+    "seguridad":     ["seguridad", "ciberseguridad", "amenaza", "vulnerabilidad", "ataque"],
+    "conflicto":     ["conflicto", "guerra", "violencia", "paz", "armado", "disputa"],
+    "migración":     ["migración", "migrante", "inmigrante", "desplazamiento", "refugiado"],
+    "pobreza":       ["pobreza", "desigualdad", "socioeconómico", "marginación"],
+    "indígenas":     ["indígenas", "indígena", "comunidades", "pueblos", "territorio", "ancestral", "étnico"],
+    "responsabilidad": ["responsabilidad", "seguros", "aseguradoras", "indemnización", "siniestro", "póliza"],
+}
+
+
 def _palabras_clave_tema(tema: str) -> tuple[list, list]:
     """
     Devuelve (palabras_es, palabras_en) — términos del tema en ambos idiomas,
-    sin stopwords, longitud > 3.
+    sin stopwords, longitud > 3, expandidos con sinónimos y variantes.
+    Esto permite que títulos con vocabulario relacionado también obtengan
+    score de relevancia, sin depender de coincidencias exactas de palabras.
     """
     stopwords_es = {"de", "del", "la", "el", "los", "las", "en", "y", "a", "para",
                     "con", "por", "que", "una", "un", "su", "se", "es", "al", "lo",
                     "como", "más", "sus", "desde", "hacia", "entre", "sobre"}
     stopwords_en = {"the", "and", "for", "with", "from", "into", "that", "this",
                     "are", "was", "has", "have", "been", "its", "their"}
+
     tema_es = tema.lower()
     tema_en = _traducir_query(tema_es)
-    palabras_es = [p for p in re.split(r'\W+', tema_es)
-                   if p and p not in stopwords_es and len(p) > 3]
-    palabras_en = [p for p in re.split(r'\W+', tema_en)
-                   if p and p not in stopwords_en and len(p) > 3]
+
+    palabras_es_base = [p for p in re.split(r'\W+', tema_es)
+                        if p and p not in stopwords_es and len(p) > 3]
+    palabras_en_base = [p for p in re.split(r'\W+', tema_en)
+                        if p and p not in stopwords_en and len(p) > 3]
+
+    # Expandir con sinónimos
+    palabras_es = list(palabras_es_base)
+    for p in palabras_es_base:
+        for clave, variantes in _SINONIMOS_ES.items():
+            if p in variantes or p == clave:
+                palabras_es.extend(variantes)
+                break
+
+    palabras_en = list(palabras_en_base)
+    for p in palabras_en_base:
+        for clave, variantes in _SINONIMOS_EN.items():
+            if p in variantes or p == clave:
+                palabras_en.extend(variantes)
+                break
+
+    # Deduplicar manteniendo orden
+    palabras_es = list(dict.fromkeys(palabras_es))
+    palabras_en = list(dict.fromkeys(palabras_en))
+
     return palabras_es, palabras_en
 
 
@@ -452,79 +598,121 @@ def _balancear_tipos(refs: list, total: int) -> list:
 
 def _puntaje_relevancia(titulo: str, tema: str) -> float:
     """
-    Puntúa relevancia de un título respecto al tema.
-    Compara en español E inglés para cubrir títulos de CrossRef/OpenAlex.
+    Puntúa la relevancia de un título respecto al tema del informe.
+
+    Lógica completamente dinámica — no depende de blacklists estáticas.
+    Funciona igual para cualquier tema (ciencias, derecho, economía, etc.).
+
+    Criterios:
+      1. Extrae conceptos clave del tema (palabras sustantivas > 4 chars).
+      2. Para cada concepto, verifica si el título contiene esa palabra
+         O cualquiera de sus sinónimos/variantes conocidas.
+      3. Score = fracción de conceptos del tema cubiertos en el título.
+      4. Bonus por bigramas exactos (frases de 2 palabras).
+      5. Penalty si la mayoría de palabras del título son completamente
+         ajenas a todos los conceptos del tema.
     """
     titulo_lower = titulo.lower()
     palabras_es, palabras_en = _palabras_clave_tema(tema)
-    todas = list(set(palabras_es + palabras_en))
 
-    if not todas:
+    # Conceptos = palabras base del tema (sin sinónimos aún), > 4 chars
+    # Excluir términos geográficos/genéricos que no discriminan el área temática
+    _TERMINOS_GENERICOS = {
+        "colombia", "colombian", "latin", "america", "american", "global",
+        "nacional", "regional", "local", "general", "social", "public",
+        "analysis", "study", "review", "research", "impact", "effect",
+        "impacto", "efectos", "estudio", "análisis", "revisión", "caso",
+    }
+    conceptos_es = [p for p in re.split(r'\W+', tema.lower())
+                    if p and len(p) > 4 and p not in {
+                        "de", "del", "la", "el", "los", "las", "en", "y",
+                        "para", "con", "por", "que", "una", "un", "su", "se",
+                        "como", "más", "sus", "desde", "hacia", "entre", "sobre"}
+                    and p not in _TERMINOS_GENERICOS]
+    tema_en_base = _traducir_query(tema.lower())
+    conceptos_en = [p for p in re.split(r'\W+', tema_en_base)
+                    if p and len(p) > 4 and p not in {
+                        "the", "and", "for", "with", "from", "into", "that",
+                        "this", "are", "was", "has", "have", "been", "its"}
+                    and p not in _TERMINOS_GENERICOS]
+
+    todos_conceptos = list(dict.fromkeys(conceptos_es + conceptos_en))
+    if not todos_conceptos:
         return 0.5
 
-    coincidencias = sum(1 for p in todas if p in titulo_lower)
-    score = coincidencias / len(todas)
+    # Para cada concepto, construir su grupo de variantes aceptables
+    def variantes_de(concepto: str, sinonimos: dict) -> list:
+        for clave, vars_ in sinonimos.items():
+            if concepto == clave or concepto in vars_:
+                return [clave] + vars_
+        return [concepto]
 
-    # Bonus por bigramas en inglés (más frecuentes en CrossRef)
-    for i in range(len(palabras_en) - 1):
-        bigram = palabras_en[i] + " " + palabras_en[i + 1]
-        if bigram in titulo_lower:
-            score += 0.4
-    # Bonus por bigramas en español
-    for i in range(len(palabras_es) - 1):
-        bigram = palabras_es[i] + " " + palabras_es[i + 1]
-        if bigram in titulo_lower:
-            score += 0.4
+    # Score: fracción de conceptos del tema cubiertos en el título
+    cubiertos = 0
+    for c in todos_conceptos:
+        vars_es = variantes_de(c, _SINONIMOS_ES)
+        vars_en = variantes_de(c, _SINONIMOS_EN)
+        todas_variantes = set(vars_es + vars_en + [c])
+        if any(v in titulo_lower for v in todas_variantes):
+            cubiertos += 1
+
+    score = cubiertos / len(todos_conceptos)
+
+    # Bonus por bigramas exactos del tema en el título
+    for i in range(len(conceptos_en) - 1):
+        if conceptos_en[i] + " " + conceptos_en[i + 1] in titulo_lower:
+            score += 0.25
+    for i in range(len(conceptos_es) - 1):
+        if conceptos_es[i] + " " + conceptos_es[i + 1] in titulo_lower:
+            score += 0.25
+
+    # Penalty por extrañeza: si casi todas las palabras del título son ajenas
+    todas_variantes_tema = set()
+    for c in todos_conceptos:
+        todas_variantes_tema.update(variantes_de(c, _SINONIMOS_ES))
+        todas_variantes_tema.update(variantes_de(c, _SINONIMOS_EN))
+
+    palabras_titulo = [p for p in re.split(r'\W+', titulo_lower) if p and len(p) > 4]
+    if palabras_titulo:
+        ajenas = sum(1 for p in palabras_titulo if p not in todas_variantes_tema)
+        ratio_ajenas = ajenas / len(palabras_titulo)
+        if ratio_ajenas > 0.85:
+            score *= max(0.1, 1 - (ratio_ajenas - 0.85) * 3)
 
     return min(score, 1.0)
 
 
-
-# Términos que indican que una referencia es claramente ajena al tema académico
-_BLACKLIST_TERMINOS = [
-    # Derecho / finanzas / seguros
-    "seguros", "aseguradoras", "regalías", "régimen fiscal", "derecho laboral",
-    "financiero", "contrato", "jurídico", "tributario",
-    # Temas sociales no relacionados con ciencias naturales
-    "caucheras", "covid-19", "pandemia educación", "economía sumergida",
-    "reforma pensional", "seguridad social",
-    # Literatura / humanidades (cuando el tema es ciencias)
-    "vorágine", "novela", "poesía", "cine", "arte plástico",
-]
-
-
-def _titulo_en_blacklist(titulo: str) -> bool:
-    """Devuelve True si el título contiene algún término claramente ajeno al tema."""
-    titulo_lower = titulo.lower()
-    return any(term in titulo_lower for term in _BLACKLIST_TERMINOS)
-
-
-def _filtrar_por_relevancia(refs: list, tema: str, umbral: float = 0.45) -> list:
+def _filtrar_por_relevancia(refs: list, tema: str, umbral: float = 0.25) -> list:
     """
-    Descarta referencias cuyo título no tenga relación con el tema.
-    Umbral 0.45 para filtrado estricto. Aplica blacklist de términos ajenos.
+    Filtra referencias por relevancia respecto al tema del informe.
+
+    Sin blacklists estáticas — funciona para cualquier tema.
+    Umbral 0.25: exige que el título comparta al menos 1 concepto con el tema
+    (con sinónimos incluidos). CrossRef ya pre-ordena por relevancia semántica,
+    así que los primeros resultados suelen ser los más pertinentes.
+
+    Si hay pocas referencias con umbral principal, baja gradualmente hasta 0.10.
+    Score 0.0 = ningún concepto del tema aparece → siempre descartado.
     """
     puntuadas = []
     for ref in refs:
         titulo = ref.get("titulo", "")
-        # Descartar inmediatamente si está en la blacklist
-        if _titulo_en_blacklist(titulo):
-            logger.debug(f"  BLACKLIST — {titulo[:60]}")
-            continue
         score = _puntaje_relevancia(titulo, tema)
         puntuadas.append((score, ref))
         logger.debug(f"  Relevancia {score:.2f} — {titulo[:60]}")
 
+    # Score 0.0 = ningún concepto del tema en el título → siempre descartar
+    puntuadas = [(s, r) for s, r in puntuadas if s > 0.0]
+
     relevantes = [(s, r) for s, r in puntuadas if s >= umbral]
 
-    # Si quedan menos de 4, bajar umbral a 0.25 (mínimo razonable para evitar refs totalmente ajenas)
-    if len(relevantes) < 4:
-        umbral_bajo = 0.25
-        relevantes = [(s, r) for s, r in puntuadas if s >= umbral_bajo]
-        logger.warning(
-            f"Solo {len(relevantes)} refs con umbral {umbral_bajo} — "
-            f"puede haber referencias poco relacionadas"
-        )
+    # Si quedan pocas, bajar gradualmente
+    if len(relevantes) < 6:
+        for umbral_reducido in (0.15, 0.10):
+            relevantes = [(s, r) for s, r in puntuadas if s >= umbral_reducido]
+            if len(relevantes) >= 4:
+                logger.warning(f"Umbral reducido a {umbral_reducido} — {len(relevantes)} refs")
+                break
 
     relevantes.sort(key=lambda x: x[0], reverse=True)
     return [r for _, r in relevantes]
