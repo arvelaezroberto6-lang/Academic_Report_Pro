@@ -1,1037 +1,1523 @@
-"""
-referencias_reales.py
-=====================
-Módulo para obtener referencias bibliográficas REALES usando:
-  1. CrossRef API  — artículos científicos con DOI verificado
-  2. OpenAlex API  — libros, tesis, reportes institucionales
-"""
-
-import requests
+from flask import Flask, render_template, request, jsonify, send_file
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import inch, cm
+from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER, TA_LEFT
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, HRFlowable, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+from reportlab.lib.units import cm as rl_cm
+from docx import Document
+from docx.shared import Pt, Cm, RGBColor
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml.ns import qn
+from docx.oxml import OxmlElement
+from io import BytesIO
+import os
+import uuid
+from datetime import datetime
+import requests as http_requests
 import logging
 import re
+import html
 import time
-from urllib.parse import quote
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
+# ── Importar módulo de referencias reales ──────────────────────
+from referencias_reales import buscar_referencias_reales, formatear_referencias
+
+app = Flask(__name__)
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-CROSSREF_URL  = "https://api.crossref.org/works"
-OPENALEX_URL  = "https://api.openalex.org/works"
-CONTACT_EMAIL = "academicreportpro@gmail.com"
+os.makedirs('informes_generados', exist_ok=True)
 
+DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
+DEEPSEEK_URL     = "https://api.deepseek.com/v1/chat/completions"
 
-# ──────────────────────────────────────────────────────────────
-# CROSSREF
-# ──────────────────────────────────────────────────────────────
-def buscar_crossref(query: str, cantidad: int = 6, desde_anio: int = 2021) -> list:
-    params = {
-        "query":   query,
-        "rows":    min(cantidad * 5, 50),   # más candidatos para filtrar mejor
-        "select":  "DOI,title,author,published,container-title,type,publisher,volume,issue,page",
-        "filter":  f"from-pub-date:{desde_anio}-01-01,type:journal-article",
-        "sort":    "relevance",
-        "mailto":  CONTACT_EMAIL,
+logger.info("=" * 60)
+logger.info("🚀 ACADEMIC REPORT PRO - VERSIÓN 3.3")
+logger.info(f"🔑 API Key: {'SÍ ✅' if DEEPSEEK_API_KEY else 'NO ❌'}")
+logger.info("=" * 60)
+
+# ============================================================
+# NORMAS Y TIPOS
+# ============================================================
+NORMAS_INSTRUCCIONES = {
+    'APA 7': """NORMA APA 7 — En texto: (Apellido, año). 3+ autores: primer apellido et al.
+Referencias: Apellido, I. (año). Título. Revista, vol(num), págs. https://doi.org/...""",
+    'APA 6': """NORMA APA 6 — En texto: (Apellido, año, p. XX). 3-5 autores: primera vez todos; luego et al.
+Referencias: Apellido, I. (año). Título del libro en cursiva. Ciudad: Editorial.""",
+    'ICONTEC': """NORMA ICONTEC (NTC 5613) — Notas al pie numeradas. Referencias en ORDEN DE APARICIÓN.
+Formato: APELLIDO, Nombre. Título en cursiva. Ed. Ciudad: Editorial, año.""",
+    'IEEE': """NORMA IEEE — En texto: [1], [2]. Referencias numeradas en orden de aparición.
+Artículos: [1] I. Apellido, "Título," Revista, vol. X, no. X, pp. XX, año.""",
+    'Vancouver': """NORMA VANCOUVER — Números superíndice en orden de aparición.
+Artículos: Apellido AB. Título. Revista. año;vol(num):págs.""",
+    'Chicago': """NORMA CHICAGO 17 — En texto: (Apellido año, página). Bibliografía alfabética.
+Libros: Apellido, Nombre. Año. Título. Ciudad: Editorial.""",
+    'MLA': """NORMA MLA 9 — En texto: (Apellido página). Works Cited alfabético.
+Artículos: Apellido, Nombre. "Título." Revista, vol. X, no. X, año, pp. XX.""",
+    'Harvard': """NORMA HARVARD — En texto: (Apellido año). Referencias alfabéticas.
+Artículos: Apellido, I. (año) 'Título', Revista, vol. X, no. X, pp. XX.""",
+}
+
+TIPOS_INSTRUCCIONES = {
+    'academico':  "Informe académico estándar con rigor teórico, citas y análisis crítico.",
+    'laboratorio':"Informe de laboratorio: hipótesis, materiales, procedimiento, resultados con datos/tablas, análisis de error.",
+    'ejecutivo':  "Informe ejecutivo: lenguaje conciso, KPIs, análisis costo-beneficio, recomendaciones accionables.",
+    'tesis':      "Tesis académica: argumentación profunda, revisión exhaustiva de literatura, marco metodológico robusto.",
+    'pasantia':   "Informe de pasantía/práctica empresarial: describe la organización, el rol del practicante, actividades realizadas por etapas, competencias desarrolladas, herramientas usadas y lecciones aprendidas. Tono reflexivo y profesional.",
+    'proyecto':   "Informe de proyecto (gestión de proyectos): describe alcance, fases, recursos, entregables, gestión de riesgos, indicadores de éxito (KPIs), estado de avance y lecciones aprendidas. Estructura orientada a resultados medibles.",
+}
+
+# ============================================================
+# DEEPSEEK
+# ============================================================
+def llamar_deepseek(prompt, system_prompt=None, max_tokens=3000, reintentos=3):
+    headers = {
+        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+        "Content-Type": "application/json"
     }
-    try:
-        resp = requests.get(CROSSREF_URL, params=params, timeout=15)
-        if resp.status_code != 200:
-            logger.warning(f"CrossRef HTTP {resp.status_code}")
-            return []
+    messages = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role": "user", "content": prompt})
+    data = {
+        "model":       "deepseek-chat",
+        "messages":    messages,
+        "max_tokens":  max_tokens,
+        "temperature": 0.7
+    }
+    for intento in range(1, reintentos + 1):
+        try:
+            response = http_requests.post(DEEPSEEK_URL, headers=headers, json=data, timeout=150)
+            if response.status_code == 200:
+                contenido = response.json()['choices'][0]['message']['content']
+                return contenido.encode('utf-8', 'ignore').decode('utf-8')
+            elif response.status_code in (429, 503, 502):
+                wait = 5 * intento
+                logger.warning(f"DeepSeek HTTP {response.status_code} — reintento {intento}/{reintentos} en {wait}s")
+                time.sleep(wait)
+            else:
+                logger.error(f"DeepSeek HTTP {response.status_code}: {response.text[:200]}")
+                return None
+        except http_requests.exceptions.Timeout:
+            wait = 8 * intento
+            logger.warning(f"Timeout DeepSeek — reintento {intento}/{reintentos} en {wait}s")
+            time.sleep(wait)
+        except Exception as e:
+            logger.error(f"Error DeepSeek: {e}")
+            if intento < reintentos:
+                time.sleep(5 * intento)
+            else:
+                return None
+    logger.error(f"DeepSeek falló después de {reintentos} reintentos")
+    return None
 
-        items = resp.json().get("message", {}).get("items", [])
-        resultados = []
+# ============================================================
+# LIMPIEZA DE TEXTO
+# ============================================================
+def limpiar_para_pdf(texto):
+    if not texto:
+        return ""
+    texto = texto.replace('<br/>', '\n').replace('<br>', '\n')
+    texto = re.sub(r'<[^>]+>', '', texto)
+    texto = html.unescape(texto)
+    texto = re.sub(r'\n{3,}', '\n\n', texto)
+    return texto.strip()
 
-        for item in items:
-            if not item.get("DOI"):
-                continue
-            titulo_list = item.get("title", [])
-            if not titulo_list:
-                continue
-            autores_raw = item.get("author", [])
-            if not autores_raw:
-                continue
+def limpiar_para_word(texto):
+    if not texto:
+        return ""
+    texto = texto.replace('<br/>', '\n').replace('<br>', '\n')
+    texto = re.sub(r'<[^>]+>', '', texto)
+    texto = html.unescape(texto)
+    return texto.strip()
 
-            pub    = item.get("published", {})
-            partes = pub.get("date-parts", [[None]])[0]
-            anio   = partes[0] if partes else None
-            if not anio or anio < desde_anio:
-                continue
+# ============================================================
+# VALIDADORES DE CALIDAD (post-generación)
+# ============================================================
+_PATRONES_CITA = {
+    'APA 7':    re.compile(r'\([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+.*?,\s*20[1-2]\d\)'),
+    'APA 6':    re.compile(r'\([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+.*?,\s*20[1-2]\d\)'),
+    'ICONTEC':  re.compile(r'(?:\d+\s*\)|\[?\d+\]?\s*[A-ZÁÉÍÓÚÑ])'),
+    'IEEE':     re.compile(r'\[\d+\]'),
+    'Vancouver':re.compile(r'(?:^\d+\.|(?<!\w)\d{1,2}(?!\w))'),
+    'Chicago':  re.compile(r'\([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+\s+20[1-2]\d\)'),
+    'MLA':      re.compile(r'\([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+\s+\d+\)'),
+    'Harvard':  re.compile(r'\([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+.*?20[1-2]\d\)'),
+}
+_SECCIONES_CON_CITAS    = {'introduccion', 'marco_teorico', 'desarrollo', 'metodologia'}
+_MIN_CITAS_POR_SECCION  = {'introduccion': 2, 'marco_teorico': 4, 'desarrollo': 4, 'metodologia': 1}
 
-            autores = []
-            for a in autores_raw[:7]:
-                apellido = a.get("family", "")
-                nombre   = a.get("given", "")
-                if apellido:
-                    autores.append({"apellido": apellido, "nombre": nombre})
+def validar_citas(contenido: str, seccion: str, norma: str) -> dict:
+    if seccion not in _SECCIONES_CON_CITAS or not contenido:
+        return {'ok': True, 'citas_encontradas': 0, 'minimo': 0}
+    patron = _PATRONES_CITA.get(norma, _PATRONES_CITA['APA 7'])
+    citas  = patron.findall(contenido)
+    minimo = _MIN_CITAS_POR_SECCION.get(seccion, 1)
+    return {'ok': len(citas) >= minimo, 'citas_encontradas': len(citas), 'minimo': minimo}
 
-            revista_list = item.get("container-title", [])
-            revista = revista_list[0] if revista_list else ""
+def validar_tabla_en_desarrollo(contenido: str) -> bool:
+    tiene_struct = '##TABLE##' in contenido and '##ENDTABLE##' in contenido
+    tiene_md     = bool(re.search(r'^\|.+\|', contenido, re.MULTILINE))
+    return tiene_struct or tiene_md
 
-            resultados.append({
-                "tipo":    "articulo",
-                "titulo":  titulo_list[0],
-                "autores": autores,
-                "anio":    anio,
-                "revista": revista,
-                "volumen": item.get("volume", ""),
-                "numero":  item.get("issue", ""),
-                "paginas": item.get("page", ""),
-                "doi":     item.get("DOI", ""),
-                "fuente":  "crossref",
-            })
+# ============================================================
+# PARSEO DE TABLAS ESTRUCTURADAS
+# ============================================================
+def extraer_tablas(texto: str):
+    """
+    Detecta bloques ##TABLE## ... ##ENDTABLE## y también tablas markdown (| col | col |).
+    Devuelve lista de dicts: {titulo, cabeceras: [], filas: [[]], inicio, fin}
+    y el texto con los bloques reemplazados por marcadores únicos.
+    """
+    tablas = []
 
-            if len(resultados) >= cantidad:
-                break
+    # ── Formato estructurado ##TABLE## ──
+    patron = re.compile(r'##TABLE##(.*?)##ENDTABLE##', re.DOTALL)
+    def reemplazar(m):
+        bloque = m.group(1).strip()
+        titulo = ""
+        cabeceras = []
+        filas = []
+        for linea in bloque.splitlines():
+            linea = linea.strip()
+            if linea.startswith("TITULO:"):
+                titulo = linea[7:].strip()
+            elif linea.startswith("CABECERAS:"):
+                cabeceras = [c.strip() for c in linea[10:].split("|")]
+            elif linea.startswith("FILA:"):
+                fila = [c.strip() for c in linea[5:].split("|")]
+                if fila:
+                    filas.append(fila)
+        if cabeceras and filas:
+            idx = len(tablas)
+            tablas.append({"titulo": titulo, "cabeceras": cabeceras, "filas": filas})
+            return f"__TABLA_{idx}__"
+        return bloque  # si malformado, dejar como texto
+    texto = patron.sub(reemplazar, texto)
 
-        logger.info(f"CrossRef: {len(resultados)} artículos para '{query[:40]}'")
-        return resultados
+    # ── Formato markdown  | col | col | ──
+    lineas = texto.splitlines()
+    i = 0
+    nuevo_texto = []
+    while i < len(lineas):
+        linea = lineas[i].strip()
+        if linea.startswith("|") and linea.endswith("|") and linea.count("|") >= 3:
+            # Detectar bloque de tabla
+            bloque_md = []
+            while i < len(lineas) and lineas[i].strip().startswith("|"):
+                bloque_md.append(lineas[i].strip())
+                i += 1
+            # Filtrar separadores (|---|---|)
+            filas_md = [l for l in bloque_md if not re.match(r'^\|[-:\s|]+\|$', l)]
+            parsed = [[c.strip() for c in f.strip("|").split("|")] for f in filas_md]
+            if len(parsed) >= 2:
+                # Buscar si hay un titulo antes
+                titulo_md = ""
+                if nuevo_texto:
+                    ultima = nuevo_texto[-1].strip()
+                    if ultima.lower().startswith("tabla") and len(ultima) < 120:
+                        titulo_md = nuevo_texto.pop()
+                idx = len(tablas)
+                tablas.append({
+                    "titulo": titulo_md,
+                    "cabeceras": parsed[0],
+                    "filas": parsed[1:]
+                })
+                nuevo_texto.append(f"__TABLA_{idx}__")
+            else:
+                nuevo_texto.extend(bloque_md)
+            continue
+        nuevo_texto.append(lineas[i])
+        i += 1
+    texto = "\n".join(nuevo_texto)
+    return texto, tablas
 
-    except Exception as e:
-        logger.error(f"Error CrossRef: {e}")
-        return []
+
+# ============================================================
+# PROMPTS POR SECCIÓN  (v3.3 — mejorado con recomendaciones)
+# ============================================================
+# Contexto colombiano inyectado en todas las secciones relevantes
+_CONTEXTO_COLOMBIA = """
+CONTEXTO COLOMBIANO OBLIGATORIO:
+- Cuando sea pertinente, menciona entidades reales de Colombia:
+  MinTIC, DANE, CRC, MinCiencias, SENA, DNP, Superintendencia de Industria y Comercio, etc.
+- Usa cifras REALES y verificables de fuentes oficiales (DANE, MinTIC, CRC).
+  Si no tienes un dato exacto confirmado, usa rangos o expresiones como
+  "según estimaciones de..." o "alrededor del X%" en lugar de decimales precisos inventados.
+  NUNCA inventes cifras exactas con decimales (ej: 23,7%) si no están en una fuente real.
+- Menciona empresas, sectores o casos reales del país.
+- Aterriza los conceptos globales al contexto nacional colombiano.
+"""
+
+_ESTILO_NATURAL = """
+ESTILO DE REDACCIÓN:
+- Redacción académica pero con voz propia: mezcla de análisis técnico y reflexión del autor.
+- Evita frases vacías, genéricas o que suenen completamente automatizadas.
+- Usa variedad de estructuras sintácticas; no comiences todos los párrafos igual.
+- Incluye interpretaciones o valoraciones propias del autor en las secciones analíticas.
+"""
+
+def build_prompt(seccion, tema, info, tipo, norma, nivel, refs_manuales='', modo='rapido', objetivos_texto=''):
+    instruccion_norma = NORMAS_INSTRUCCIONES.get(norma, NORMAS_INSTRUCCIONES['APA 7'])
+    instruccion_tipo  = TIPOS_INSTRUCCIONES.get(tipo, TIPOS_INSTRUCCIONES['academico'])
+
+    _NIVELES_INSTRUCCION = {
+        'colegio':       "NIVEL COLEGIO/SECUNDARIA: Usa lenguaje claro y accesible. Oraciones cortas. Explica los conceptos desde cero sin asumir conocimiento previo. Evita tecnicismos; cuando los uses, defínelos. Extensión moderada.",
+        'tecnico':       "NIVEL TÉCNICO/TECNOLÓGICO: Lenguaje práctico y orientado a la aplicación. Relaciona la teoría con ejemplos concretos del campo técnico. Incluye procedimientos y estándares cuando aplique. Evita abstracción excesiva.",
+        'universitario': "NIVEL UNIVERSITARIO: Lenguaje académico formal con análisis crítico. Usa terminología disciplinar correctamente. Argumenta con citas y evidencias. Integra perspectivas teóricas y prácticas.",
+        'posgrado':      "NIVEL POSGRADO/MAESTRÍA/DOCTORADO: Lenguaje altamente especializado. Profundidad teórica máxima. Discute debates académicos, limitaciones epistemológicas y brechas en la literatura. Cita fuentes primarias recientes (2022-2025). Análisis crítico riguroso.",
+    }
+    instruccion_nivel = _NIVELES_INSTRUCCION.get(nivel, _NIVELES_INSTRUCCION['universitario'])
+
+    _MODOS_INSTRUCCION = {
+        'rapido':     "",
+        'automatico': f"\nINFORMACIÓN DEL AUTOR (apuntes/notas): Usa esta información como base y complementa con tu conocimiento académico:\n{info}\n",
+        'manual':     f"\nINFORMACIÓN DEL AUTOR (texto propio para convertir): Toma este texto como el contenido central de la sección. Tu tarea es restructurarlo, formalizarlo y enriquecerlo con citas y lenguaje académico, SIN inventar hechos nuevos ni contradecir al autor:\n{info}\n",
+    }
+    instruccion_modo = _MODOS_INSTRUCCION.get(modo, "")
+
+    # FIX 5: Detect subject area for domain-specific depth
+    _AREAS_TEMATICAS = {
+        'tecnologia': ['inteligencia artificial', 'ia ', ' ia,', 'machine learning', 'software', 'programacion',
+                       'digital', 'internet', 'ciberseguridad', 'blockchain', 'datos', 'tic', 'algoritmo',
+                       'automatizacion', 'robotica', 'computacion', 'redes', 'cloud', 'nube'],
+        'salud':      ['salud', 'medicina', 'enfermedad', 'clinico', 'hospital', 'farmaco', 'vacuna',
+                       'epidemia', 'pandemia', 'covid', 'paciente', 'quirurgico', 'terapia', 'diagnostico',
+                       'nutricion', 'mental', 'psicologia', 'biologico', 'genetico', 'celula'],
+        'educacion':  ['educacion', 'aprendizaje', 'enseñanza', 'pedagogia', 'curriculo', 'docente',
+                       'universidad', 'colegio', 'estudiante', 'escuela', 'formacion', 'competencia',
+                       'didactica', 'evaluacion', 'inclusion', 'desercion', 'alfabetizacion'],
+        'medio_ambiente': ['ambiente', 'ecologia', 'sostenibilidad', 'cambio climatico', 'contaminacion',
+                           'biodiversidad', 'residuos', 'energia renovable', 'deforestacion', 'agua',
+                           'emisiones', 'carbono', 'mineria', 'petroleo', 'recurso natural'],
+        'economia':   ['economia', 'finanzas', 'mercado', 'empresa', 'emprendimiento', 'inflacion',
+                       'pib', 'comercio', 'exportacion', 'inversion', 'fiscal', 'tributario', 'banco',
+                       'creditio', 'desempleo', 'laboral', 'productividad', 'competitividad'],
+        'ciencias':   ['quimica', 'fisica', 'biologia', 'laboratorio', 'experimento', 'reaccion',
+                       'molecula', 'atomo', 'celular', 'organico', 'inorganico', 'termodinamica',
+                       'electromagnetismo', 'genetica', 'evolucion', 'taxonomia'],
+        'derecho':    ['derecho', 'juridico', 'ley', 'norma', 'constitucion', 'penal', 'civil',
+                       'contrato', 'litigio', 'jurisprudencia', 'tribunal', 'regulacion', 'politica publica'],
+        'social':     ['sociedad', 'cultura', 'comunidad', 'migracion', 'genero', 'pobreza',
+                       'desigualdad', 'violencia', 'paz', 'conflicto', 'derechos humanos', 'inclusion',
+                       'diversidad', 'familia', 'poblacion'],
+    }
+    _AREA_INSTRUCCIONES = {
+        'tecnologia':     "Área TECNOLOGÍA/IA: incluye arquitecturas, métricas técnicas (precisión, recall, F1), estándares ISO/IEEE aplicables, comparación de herramientas y casos de uso reales en Colombia (sector público y privado).",
+        'salud':          "Área SALUD/MEDICINA: usa nomenclatura clínica correcta (CIE-10 si aplica), cifras epidemiológicas del INS o MinSalud, protocolos clínicos vigentes en Colombia, y referencias de revistas indexadas (PubMed, Scielo).",
+        'educacion':      "Área EDUCACIÓN: referencia el sistema educativo colombiano (MEN, ICFES, SENA), incluye estadísticas de calidad educativa del DANE y MinEducación, y vincula con políticas como Ser Pilo Paga o modelos pedagógicos actuales.",
+        'medio_ambiente': "Área MEDIO AMBIENTE: cita el IDEAM, MADS, CAR y acuerdos internacionales ratificados por Colombia (Acuerdo de París, COP28). Incluye datos de temperatura, deforestación o contaminación con fuente.",
+        'economia':       "Área ECONOMÍA/FINANZAS: usa datos macroeconómicos del DANE, Banco de la República o DNP. Menciona sectores estratégicos colombianos (minería, agro, servicios, manufactura) con cifras del PIB sectoriales.",
+        'ciencias':       "Área CIENCIAS NATURALES/LABORATORIO: usa nomenclatura IUPAC si aplica, describe procedimientos con precisión técnica, incluye ecuaciones o fórmulas cuando corresponda, y cita artículos de revistas científicas con DOI.",
+        'derecho':        "Área DERECHO/JURÍDICO: cita la Constitución Política de Colombia de 1991, leyes, decretos y jurisprudencia real de la Corte Constitucional o Corte Suprema. Usa lenguaje jurídico técnico correcto.",
+        'social':         "Área CIENCIAS SOCIALES: incluye perspectivas interseccionales cuando aplique, cita investigaciones cualitativas y cuantitativas, y contextualiza en la realidad sociopolítica colombiana (post-conflicto, desplazamiento, paz total).",
+    }
+    tema_lower = tema.lower()
+    area_detectada = None
+    max_matches = 0
+    for area, keywords in _AREAS_TEMATICAS.items():
+        matches = sum(1 for kw in keywords if kw in tema_lower)
+        if matches > max_matches:
+            max_matches = matches
+            area_detectada = area
+    instruccion_area = ("\n" + _AREA_INSTRUCCIONES[area_detectada] + "\n") if area_detectada else ""
+
+    base = f"""Tipo de informe: {instruccion_tipo}
+{instruccion_nivel}
+Norma bibliográfica activa: {norma}.
+{instruccion_norma}
+{_CONTEXTO_COLOMBIA}
+{_ESTILO_NATURAL}
+{instruccion_area}{instruccion_modo}"""
+    if seccion == 'introduccion':
+        return base + f"""Escribe ÚNICAMENTE la INTRODUCCIÓN del informe sobre: "{tema}".
+Estructura obligatoria (4-5 párrafos):
+1. Contexto general del tema con datos estadísticos concretos y referencia a Colombia.
+2. Justificación: por qué es relevante este tema en el panorama colombiano y latinoamericano.
+3. Planteamiento del problema: ¿cuál es la brecha, tensión o necesidad que aborda el informe?
+4. Alineación con los objetivos del informe: anuncia brevemente qué secciones siguen y qué aporta cada una.
+- Al menos 2 citas en formato {norma}. Referencias entre 2019 y 2025.
+- Menciona al menos una entidad colombiana relevante (MinTIC, DANE, CRC, etc.) si aplica al tema.
+- NO incluyas el título de la sección, solo el contenido puro."""
+
+    elif seccion == 'objetivos':
+        return base + f"""Escribe ÚNICAMENTE los OBJETIVOS del informe sobre: "{tema}".
+Usa este formato exacto:
+
+OBJETIVO GENERAL:
+[Un objetivo general claro, medible y redactado en infinitivo que capture la esencia del informe]
+
+OBJETIVOS ESPECÍFICOS:
+1. [Verbo en infinitivo + acción concreta + resultado esperado — directamente vinculado al tema]
+2. [Verbo en infinitivo + acción concreta + resultado esperado]
+3. [Verbo en infinitivo + acción concreta + resultado esperado]
+4. [Verbo en infinitivo + acción concreta + resultado esperado]
+5. [Verbo en infinitivo + acción concreta + resultado esperado]
+
+Cada objetivo específico debe ser verificable y conectarse con una sección del informe (marco teórico, metodología, desarrollo, conclusiones o recomendaciones)."""
+
+    elif seccion == 'marco_teorico':
+        return base + f"""Escribe ÚNICAMENTE el MARCO TEÓRICO del informe sobre: "{tema}".
+Estructura obligatoria (mínimo 5 párrafos):
+1. Antecedentes históricos o evolución del tema.
+2. Definiciones y conceptos clave con citas de autores reconocidos.
+3. Teorías o modelos teóricos principales que sustentan el informe.
+4. Estado del arte: investigaciones recientes (2020-2025) sobre el tema.
+5. Contexto colombiano: cómo se ha estudiado o implementado este tema en Colombia.
+- Al menos 5 citas en formato {norma} con años entre 2019 y 2025.
+- Incluye autores latinoamericanos o colombianos cuando existan."""
+
+    elif seccion == 'metodologia':
+        # FIX 1: Metodología adaptada según tipo de informe real
+        _METODO_POR_TIPO = {
+            'laboratorio': f"""Este informe es un INFORME DE LABORATORIO sobre: "{tema}".
+La metodología DEBE describir el procedimiento experimental real con estos 5 elementos:
+1. Enfoque experimental: hipótesis planteada, variables independientes y dependientes, grupos de control.
+2. Materiales y equipos: lista detallada de materiales usados (reactivos, instrumentos, software de medición).
+3. Procedimiento paso a paso: descripción cronológica de los pasos del experimento con precisión técnica.
+4. Técnicas de recolección de datos: cómo se midieron los resultados (tablas, gráficas, análisis estadístico).
+5. Criterios de validez y limitaciones: posibles fuentes de error, condiciones del laboratorio, repetibilidad.
+- Usa terminología técnica del área (química, biología, física, etc.) correctamente.
+- Menciona al menos 2 protocolos o normas técnicas que apliquen al experimento.""",
+
+            'pasantia': f"""Este informe es un INFORME DE PASANTÍA sobre: "{tema}".
+La metodología describe el marco de trabajo de la práctica con estos 4 elementos:
+1. Modalidad y duración: tipo de vinculación, empresa/entidad, horas totales, período.
+2. Método de trabajo: metodologías usadas en la empresa (Scrum, Kanban, PMBOK, etc.) y cómo el pasante se integró.
+3. Fuentes de información: documentos internos, manuales técnicos, capacitaciones recibidas, supervisión.
+4. Evaluación y seguimiento: indicadores con los que se midió el desempeño del pasante, informes de avance.
+- NO inventes trabajo de campo externo: la pasantía ocurrió dentro de la empresa.""",
+
+            'proyecto': f"""Este informe es un INFORME DE PROYECTO sobre: "{tema}".
+La metodología describe el marco de gestión del proyecto con estos 5 elementos:
+1. Marco metodológico de gestión: enfoque usado (PMI/PMBOK, PRINCE2, metodología ágil, etc.) con justificación.
+2. Fases del proyecto y cronograma: etapas definidas, hitos y entregables asociados a cada fase.
+3. Técnicas de recolección y análisis: cómo se recopiló información para tomar decisiones (reuniones, informes, KPIs).
+4. Gestión de riesgos: metodología para identificar y mitigar riesgos durante la ejecución.
+5. Criterios de éxito y control de calidad: indicadores de desempeño definidos al inicio del proyecto.""",
+
+            'ejecutivo': f"""Este informe es un INFORME EJECUTIVO sobre: "{tema}".
+La metodología es concisa y orientada a la toma de decisiones con estos 3 elementos:
+1. Fuentes consultadas: bases de datos empresariales, reportes del sector, benchmarks y analistas de referencia.
+2. Criterios de análisis: variables clave evaluadas, período temporal, alcance geográfico (Colombia / Latam).
+3. Limitaciones: acceso a información confidencial, oportunidad de los datos disponibles.""",
+
+            'tesis': f"""Este informe tiene estructura de TESIS/MONOGRAFÍA sobre: "{tema}".
+La metodología es el núcleo del trabajo académico y DEBE incluir estos 6 elementos:
+1. Paradigma investigativo: positivista, interpretativo o socio-crítico — con fundamentación teórica.
+2. Enfoque: cuantitativo, cualitativo o mixto — justificado epistemológicamente.
+3. Tipo y alcance: exploratorio, descriptivo, correlacional o explicativo.
+4. Población, muestra y muestreo: si aplica revisión sistemática, describe el protocolo PRISMA.
+5. Instrumentos y técnicas: encuestas (con validación), entrevistas semiestructuradas, análisis documental, etc.
+6. Procedimiento de análisis: software estadístico, análisis de contenido, triangulación, etc.""",
+        }
+
+        # Default para académico, investigativo y otros
+        _metodo_default = f"""Este informe es de REVISIÓN DOCUMENTAL Y ANÁLISIS sobre: "{tema}".
+REGLA DE CREDIBILIDAD: Este informe NO incluye investigación de campo real.
+Basa la metodología en análisis de fuentes secundarias — NO inventes encuestas ni muestras.
+Estructura obligatoria (4 párrafos):
+1. Enfoque cualitativo-documental o descriptivo con justificación académica.
+2. Tipo y alcance: investigación descriptiva basada en análisis de fuentes secundarias (informes
+   del DANE, MinTIC, CRC, artículos de revistas indexadas, documentos de política pública).
+3. Proceso de selección y análisis de fuentes: criterios de inclusión/exclusión, bases de datos
+   consultadas (Scopus, Redalyc, Scielo, Google Scholar), período temporal cubierto.
+4. Limitaciones honestas: acceso a datos primarios, actualización de fuentes, sesgo de publicación."""
+
+        metodo_especifico = _METODO_POR_TIPO.get(tipo, _metodo_default)
+        return base + f"""Escribe ÚNICAMENTE la METODOLOGÍA del informe sobre: "{tema}".
+Adecua la complejidad al nivel educativo indicado.
+
+{metodo_especifico}
+
+- Al menos 2 citas en formato {norma} sobre metodología de investigación o del área específica.
+- Tono académico, honesto y específico. NUNCA menciones datos de muestra inventados."""
+
+    elif seccion == 'desarrollo':
+        # FIX 2: Inject the actual generated objectives so the development directly addresses them
+        bloque_objetivos = ""
+        if objetivos_texto and objetivos_texto.strip():
+            bloque_objetivos = f"""
+OBJETIVOS DEL INFORME (YA GENERADOS — ÚSALOS COMO GUÍA OBLIGATORIA):
+{objetivos_texto.strip()}
+
+REGLA CRÍTICA: El desarrollo DEBE responder explícitamente a cada objetivo específico listado arriba.
+Dedica al menos un párrafo sustancial a demostrar cómo se cumplió cada objetivo específico.
+Usa frases de conexión directa como: "En relación con el objetivo específico N, que planteaba [objetivo]..."
+NO puedes concluir el desarrollo sin haber abordado todos los objetivos específicos.
+"""
+        return base + f"""Escribe ÚNICAMENTE el DESARROLLO del informe de tipo "{tipo}" sobre: "{tema}".
+{bloque_objetivos}
+Estructura obligatoria (mínimo 7 párrafos):
+1. Presentación del contexto y resultados principales con datos concretos y citas en formato {norma}.
+2. Respuesta al Objetivo Específico 1: [desarrollar el hallazgo central con evidencia y citas].
+3. Respuesta al Objetivo Específico 2: [segundo hallazgo con análisis comparativo].
+4. Respuesta al Objetivo Específico 3: [tercer hallazgo con perspectiva crítica].
+5. Análisis del contexto colombiano: aplica los resultados a la realidad de Colombia.
+   - Cita datos del DANE, MinTIC, CRC u otras entidades institucionales relevantes.
+   - Nombra empresas, sectores o casos reales del país con sus respectivas fuentes.
+6. Tabla de datos estructurada — FORMATO OBLIGATORIO (usa EXACTAMENTE ##TABLE##/##ENDTABLE##):
+   ##TABLE##
+   TITULO: [Nombre descriptivo de la tabla]
+   CABECERAS: Categoría | Valor | Año | Fuente
+   FILA: [dato] | [dato] | [año] | [fuente]
+   FILA: [dato] | [dato] | [año] | [fuente]
+   FILA: [dato] | [dato] | [año] | [fuente]
+   FILA: [dato] | [dato] | [año] | [fuente]
+   ##ENDTABLE##
+7. Análisis crítico del autor: ¿los hallazgos confirman la teoría?, ¿qué limitaciones existen?
+- Al menos 5 citas en formato {norma} distribuidas en el texto. Fuentes entre 2021 y 2025.
+- TODA cifra o estadística debe ir acompañada de su cita inmediatamente."""
+
+    elif seccion == 'conclusiones':
+        return base + f"""Escribe ÚNICAMENTE las CONCLUSIONES del informe sobre: "{tema}".
+Usa este formato (5 conclusiones numeradas):
+1. [Responde directamente al objetivo general — mínimo 3-4 oraciones explicando si se cumplió y por qué]
+2. [Hallazgo más importante del desarrollo: dato clave o resultado central]
+3. [Implicaciones prácticas para Colombia: qué debería cambiar o mejorar en el país]
+4. [Limitaciones del estudio: qué no pudo resolverse y por qué]
+5. [Perspectivas futuras: líneas de investigación o acciones recomendadas a futuro]
+- Incluye al menos 1 opinión o interpretación propia del autor en las conclusiones.
+- Usa un tono reflexivo y personal, no únicamente descriptivo."""
+
+    elif seccion == 'recomendaciones':
+        return base + f"""Escribe ÚNICAMENTE las RECOMENDACIONES del informe de tipo "{tipo}" sobre: "{tema}".
+Usa este formato (5 recomendaciones numeradas):
+1. [Dirigida al Ministerio o entidad pública colombiana relevante: acción concreta + justificación — 3 oraciones]
+2. [Dirigida a empresas del sector privado en Colombia: acción específica + beneficio esperado]
+3. [Dirigida a instituciones educativas o de investigación: formación, programas o estudios sugeridos]
+4. [Dirigida a profesionales o practicantes del área: cambio de práctica o habilidad a desarrollar]
+5. [Para futuras investigaciones: pregunta de investigación abierta o metodología a explorar]
+- Cada recomendación debe ser accionable, dirigida a un actor específico y justificada."""
+
+    # ── Secciones específicas para PASANTÍA ──────────────────────
+    elif tipo == 'pasantia' and seccion == 'desarrollo':
+        return base + f"""Escribe ÚNICAMENTE el DESARROLLO del INFORME DE PASANTÍA sobre: "{tema}".
+Estructura obligatoria (7 párrafos mínimo):
+1. Descripción de la empresa/organización: nombre, sector, misión, ubicación, tamaño y contexto en Colombia.
+2. Rol y funciones del pasante: cargo, dependencia, supervisor y responsabilidades asignadas.
+3. Actividades realizadas semana a semana o por etapas: descripción detallada de tareas ejecutadas.
+4. Proyectos específicos en los que participó: objetivos del proyecto, contribución del pasante, resultado.
+5. Herramientas, tecnologías y metodologías utilizadas durante la pasantía.
+6. Competencias desarrolladas: habilidades técnicas, blandas y profesionales adquiridas.
+7. Análisis crítico: ¿qué funcionó bien?, ¿qué desafíos enfrentó?, ¿qué aprendió que no está en los libros?
+- Incluye al menos UNA tabla con cronograma de actividades o resumen de logros en formato ##TABLE##.
+- Al menos 3 citas en formato {norma} sobre el área profesional o sector de la empresa."""""
+
+    elif tipo == 'pasantia' and seccion == 'recomendaciones':
+        return base + f"""Escribe ÚNICAMENTE las RECOMENDACIONES del INFORME DE PASANTÍA sobre: "{tema}".
+Usa este formato (5 recomendaciones numeradas, con destinatario explícito):
+1. [Para la empresa/organización donde se realizó la pasantía: mejora de proceso, área o práctica concreta que el pasante identificó]
+2. [Para futuros pasantes que vayan a la misma área: preparación, actitud o conocimientos recomendados]
+3. [Para la institución educativa: ajustes al pensum o preparación previa que facilite la práctica]
+4. [Para el área o dependencia específica: cambio operativo o de gestión que mejoraría el desempeño del equipo]
+5. [Para el propio autor: plan de desarrollo profesional personal a partir de esta experiencia]
+- Cada recomendación debe ser específica, accionable y basada en la experiencia descrita."""""
+
+    elif tipo == 'proyecto' and seccion == 'desarrollo':
+        return base + f"""Escribe ÚNICAMENTE el DESARROLLO del INFORME DE PROYECTO sobre: "{tema}".
+Estructura obligatoria (7 párrafos mínimo):
+1. Descripción general del proyecto: alcance, justificación y contexto organizacional o académico.
+2. Fases o etapas del proyecto con fechas clave: planificación, ejecución, seguimiento, cierre.
+3. Recursos utilizados: humanos (roles del equipo), tecnológicos, financieros y materiales.
+4. Entregables principales: qué se produjo en cada etapa y cuál fue su estado de completitud.
+5. Gestión de riesgos: riesgos identificados, probabilidad, impacto y medidas de mitigación aplicadas.
+6. Estado de avance y resultados: ¿se cumplieron los hitos?, indicadores de éxito o KPIs del proyecto.
+7. Lecciones aprendidas y análisis crítico: desviaciones del plan original y cómo se gestionaron.
+- Incluye al menos UNA tabla en formato ##TABLE## con hitos, fechas y estado (completado/en progreso/pendiente).
+- Al menos 3 citas en formato {norma} sobre gestión de proyectos o el área del proyecto."""""
+
+    elif tipo == 'proyecto' and seccion == 'recomendaciones':
+        return base + f"""Escribe ÚNICAMENTE las RECOMENDACIONES del INFORME DE PROYECTO sobre: "{tema}".
+Usa este formato (5 recomendaciones numeradas):
+1. [Para el equipo del proyecto: mejora de proceso, comunicación o metodología en futuros proyectos similares]
+2. [Para la dirección o patrocinador: decisión estratégica sobre continuación, escalamiento o replicación]
+3. [Para la gestión de riesgos: riesgos no contemplados que deberían incluirse en proyectos similares]
+4. [Para la gestión de recursos: optimización de tiempos, costos o asignación de roles]
+5. [Para futuras investigaciones o proyectos relacionados: líneas de acción o preguntas abiertas]
+- Cada recomendación debe ser específica, accionable y vinculada a los hallazgos del proyecto."""""
+
+    elif seccion == 'referencias':
+        refs_extra = f"\nIncluye o adapta estas referencias del autor:\n{refs_manuales}" if refs_manuales else ""
+
+        # Instrucciones de formato específicas por norma
+        _FORMATO_REFS = {
+            'APA 7': """FORMATO APA 7 ESTRICTO:
+   - Entidades: Sigla. (año). Título del documento. Nombre completo de la entidad. URL
+   - Personas: Apellido, I. I. (año). Título. Revista, vol(num), págs. https://doi.org/...
+   - Orden: ALFABÉTICO por primer apellido o sigla de entidad
+   - Sin numeración. Sin negrita. DOI en formato https://doi.org/xxxxx""",
+            'APA 6': """FORMATO APA 6 ESTRICTO:
+   - Entidades: Nombre Entidad. (año). Título del documento. Ciudad: Editorial. Recuperado de URL
+   - Personas: Apellido, I. I. (año). Título. Revista, vol(num), págs.
+   - Orden: ALFABÉTICO. Sin numeración. Sin negrita.""",
+            'ICONTEC': """FORMATO ICONTEC (NTC 5613) ESTRICTO:
+   - Entidades: NOMBRE ENTIDAD. Título del documento. Ciudad: Editorial, año. Disponible en: URL
+   - Personas: APELLIDO, Nombre. Título en cursiva. Ed. Ciudad: Editorial, año.
+   - Orden: ORDEN DE APARICIÓN en el texto (numeradas 1, 2, 3...)
+   - Separador entre autores: punto y coma (;)""",
+            'IEEE': """FORMATO IEEE ESTRICTO:
+   - Artículos: [N] I. Apellido, "Título," Nombre Revista, vol. X, no. X, pp. XX-XX, año. doi: ...
+   - Libros: [N] I. Apellido, Título del libro. Ciudad: Editorial, año.
+   - Entidades: [N] Nombre Entidad, "Título del documento," año. [Online]. Available: URL
+   - Orden: NUMÉRICO por orden de aparición en el texto""",
+            'Vancouver': """FORMATO VANCOUVER ESTRICTO:
+   - Artículos: N. Apellido AB, Apellido CD. Título del artículo. Abrev Revista. año;vol(num):págs.
+   - Libros: N. Apellido AB. Título. Edición. Ciudad: Editorial; año.
+   - Entidades: N. Nombre Entidad. Título [Internet]. Ciudad: Entidad; año [citado año mes día]. Disponible en: URL
+   - Orden: NUMÉRICO por orden de aparición. Máximo 6 autores, luego "et al."
+   - Sin negrita. Sin DOI en formato URL, usar: doi:xxxxxxxxx""",
+            'Chicago': """FORMATO CHICAGO 17ª EDICIÓN ESTRICTO:
+   - Artículos: Apellido, Nombre. año. "Título del artículo." Nombre Revista vol, no. num: págs. URL/DOI.
+   - Libros: Apellido, Nombre. año. Título en cursiva. Ciudad: Editorial.
+   - Entidades: Nombre Entidad. año. "Título del documento." URL.
+   - Orden: ALFABÉTICO por apellido""",
+            'MLA': """FORMATO MLA 9ª EDICIÓN ESTRICTO:
+   - Artículos: Apellido, Nombre. "Título del artículo." Nombre Revista, vol. X, no. X, año, pp. XX-XX. DOI/URL.
+   - Libros: Apellido, Nombre. Título en cursiva. Editorial, año.
+   - Entidades: Nombre Entidad. "Título del documento." Año, URL.
+   - Sección: Works Cited (no "Referencias")
+   - Orden: ALFABÉTICO""",
+            'Harvard': """FORMATO HARVARD ESTRICTO:
+   - Artículos: Apellido, I. (año) 'Título del artículo', Nombre Revista, vol. X, no. X, pp. XX-XX.
+   - Libros: Apellido, I. (año) Título en cursiva. Ciudad: Editorial.
+   - Entidades: Nombre Entidad (año) Título del documento. Ciudad: Entidad. Available at: URL (Accessed: fecha).
+   - Orden: ALFABÉTICO por apellido""",
+        }
+        formato_norma = _FORMATO_REFS.get(norma, _FORMATO_REFS['APA 7'])
+
+        # Ejemplos de entidades colombianas adaptados por norma
+        _EJEMPLOS_COLOMBIA = {
+            'APA 7':    "DANE. (2023). Nombre del informe relevante al tema. Departamento Administrativo Nacional de Estadística. https://www.dane.gov.co",
+            'APA 6':    "DANE. (2023). Nombre del informe relevante al tema. Bogotá: DANE. Recuperado de https://www.dane.gov.co",
+            'ICONTEC':  "DEPARTAMENTO ADMINISTRATIVO NACIONAL DE ESTADÍSTICA (DANE). Nombre del informe relevante al tema. Bogotá: DANE, 2023. Disponible en: https://www.dane.gov.co",
+            'IEEE':     '[N] DANE, "Nombre del informe relevante al tema," 2023. [Online]. Available: https://www.dane.gov.co',
+            'Vancouver':"N. DANE. Nombre del informe [Internet]. Bogotá: DANE; 2023. Disponible en: https://www.dane.gov.co",
+            'Chicago':  "DANE. 2023. \"Nombre del informe relevante al tema.\" https://www.dane.gov.co.",
+            'MLA':      'DANE. "Nombre del informe relevante al tema." 2023, https://www.dane.gov.co.',
+            'Harvard':  "DANE (2023) Nombre del informe relevante al tema. Bogotá: DANE. Available at: https://www.dane.gov.co",
+        }
+        ejemplo_colombia = _EJEMPLOS_COLOMBIA.get(norma, _EJEMPLOS_COLOMBIA['APA 7'])
+
+        return base + f"""Genera ÚNICAMENTE la lista de REFERENCIAS BIBLIOGRÁFICAS en norma {norma} sobre: "{tema}".
+{refs_extra}
+CRITERIOS OBLIGATORIOS — cumple TODOS sin excepción:
+
+1. CANTIDAD Y FECHA: Entre 10 y 12 referencias. TODAS de años 2021-2025. Ninguna anterior a 2021.
+
+2. COHERENCIA: Las referencias deben corresponder EXACTAMENTE a las fuentes citadas en el informe.
+   Si el texto menciona DANE, MinTIC, CRC, SENA, DNP, MinCiencias u otras entidades colombianas,
+   su referencia DEBE aparecer en la lista.
+
+3. ENTIDADES COLOMBIANAS (mínimo 3): Adapta el formato a la norma {norma}.
+   Ejemplo de cómo citar el DANE en norma {norma}:
+   {ejemplo_colombia}
+   Haz lo mismo con MinTIC, CRC, DNP u otras entidades pertinentes al tema "{tema}".
+
+4. ARTÍCULOS ACADÉMICOS (mínimo 4): con revista, volumen, número, páginas y DOI real.
+   Deben ser directamente sobre el tema del informe.
+
+5. ORGANISMO INTERNACIONAL (mínimo 1): CEPAL, BID, UNESCO, OCDE u otro, con URL oficial.
+   Formatea también este organismo en norma {norma}.
+
+6. {formato_norma}
+
+7. NO incluyas referencias de temas NO relacionados con el informe.
+   NO mezcles formatos de otras normas. Aplica SOLO {norma} en todas las referencias.
+
+Sin título de sección, sin preámbulo, sin explicación. Solo las referencias."""
+
+    # ── Tipos especiales: Pasantía ──────────────────────────────
+    elif tipo == 'pasantia' and seccion in ('introduccion', 'objetivos', 'marco_teorico',
+                                             'metodologia', 'desarrollo', 'conclusiones',
+                                             'recomendaciones'):
+        # Para pasantía, si no hay un prompt de sección específico arriba, usar estructura de pasantía
+        pass  # los prompts anteriores ya manejan las secciones, la diferencia viene de instruccion_tipo
+
+    # ── Tipos especiales: Proyecto ──────────────────────────────
+    elif tipo == 'proyecto' and seccion in ('introduccion', 'objetivos', 'marco_teorico',
+                                             'metodologia', 'desarrollo', 'conclusiones',
+                                             'recomendaciones'):
+        pass  # ídem
+
+    return ""
+
+# ============================================================
+# GENERAR SECCIÓN
+# ============================================================
+def generar_seccion(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_manuales='', modo='rapido', objetivos_texto=''):
+    prompt = build_prompt(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_manuales, modo, objetivos_texto)
+    if not prompt:
+        return None
+
+    _nivel_sistema = {
+        'colegio':       "para un estudiante de colegio/secundaria: usa lenguaje simple, claro y accesible, sin tecnicismos innecesarios",
+        'tecnico':       "para un estudiante técnico/tecnológico: lenguaje práctico, orientado a la aplicación profesional",
+        'universitario': "para un estudiante universitario: lenguaje académico formal con análisis crítico y terminología disciplinar",
+        'posgrado':      "para un estudiante de posgrado/maestría/doctorado: máxima profundidad teórica, debate académico y análisis epistemológico",
+    }.get(nivel, "para un estudiante universitario")
+
+    _modo_sistema = {
+        'rapido':     "",
+        'automatico': " El autor te proporcionó sus apuntes o notas; úsalos como base y complementa con conocimiento académico.",
+        'manual':     " El autor te proporcionó su propio texto; tu tarea es formalizarlo y enriquecerlo con lenguaje académico y citas, sin inventar hechos nuevos.",
+    }.get(modo, "")
+
+    system_prompt = (
+        f"Eres un experto en redacción académica en español, especializado en norma {norma} "
+        f"y profundo conocedor del contexto colombiano y latinoamericano. "
+        f"Escribes {_nivel_sistema}.{_modo_sistema} "
+
+        # FIX 4: Citas obligatorias dentro del texto
+        f"REGLA CRÍTICA DE CITAS: TODA afirmación factual, estadística o concepto teórico "
+        f"DEBE tener una cita en el texto en formato {norma}. "
+        f"Por ejemplo en APA: (MinTIC, 2023), (García & López, 2022), (DANE, 2024). "
+        f"No puedes escribir un dato o afirmación sin su respectiva cita inmediatamente después. "
+        f"Las secciones de introducción, marco teórico y desarrollo deben tener al menos "
+        f"una cita por párrafo. "
+
+        # FIX 7: No inventar datos
+        "REGLA CRÍTICA DE VERACIDAD: NUNCA inventes datos, cifras, estadísticas ni nombres de estudios. "
+        "Si no tienes el dato exacto de una fuente real, escribe: "
+        "'según estimaciones recientes' o 'de acuerdo con reportes del sector (año aproximado)'. "
+        "NUNCA uses porcentajes con decimales inventados (ej: 23,7% o 41,3%) — usa rangos: 'entre el 20 y 25%'. "
+        "Si citas a MinTIC, DANE, CRC u otra entidad colombiana, el dato debe ser real y verificable. "
+
+        "Cuando aplique al tema, incluyes datos de Colombia citando fuentes como MinTIC, DANE, CRC o MinCiencias. "
+        "Usas referencias de años 2021-2025. "
+        f"Para referencias en norma {norma}: aplica formato estrictamente correcto. "
+        "Balanceas el análisis técnico con interpretaciones propias del autor. "
+        "Respondes SOLO con el contenido solicitado, sin títulos de sección, sin preámbulos, sin asteriscos (**), sin markdown."
+    )
+
+    contenido = llamar_deepseek(prompt, system_prompt=system_prompt, max_tokens=3000)
+    if not contenido:
+        return None
+    contenido = contenido.strip()
+
+    # Validar citas — 1 reintento si faltan
+    val = validar_citas(contenido, seccion, norma)
+    if not val['ok']:
+        logger.warning(f"Seccion '{seccion}': {val['citas_encontradas']}/{val['minimo']} citas. Reintentando...")
+        p2 = prompt + (
+            f"\n\nATENCION: el texto anterior tiene solo {val['citas_encontradas']} citas en formato {norma}. "
+            f"Necesitas minimo {val['minimo']}. Reescribe incluyendo al menos una cita por parrafo."
+        )
+        c2 = llamar_deepseek(p2, system_prompt=system_prompt, max_tokens=3000)
+        if c2:
+            v2 = validar_citas(c2.strip(), seccion, norma)
+            if v2['citas_encontradas'] > val['citas_encontradas']:
+                contenido = c2.strip()
+                logger.info(f"Reintento mejoro citas: {v2['citas_encontradas']}")
+
+    # Validar tabla en desarrollo — 1 reintento si falta
+    if seccion == 'desarrollo' and not validar_tabla_en_desarrollo(contenido):
+        logger.warning("Desarrollo sin tabla. Reintentando...")
+        p3 = prompt + (
+            "\n\nATENCION: falta la tabla obligatoria ##TABLE##...##ENDTABLE##. "
+            "Reescribe el punto 6 incluyendo la tabla exactamente en ese formato."
+        )
+        c3 = llamar_deepseek(p3, system_prompt=system_prompt, max_tokens=3200)
+        if c3 and validar_tabla_en_desarrollo(c3.strip()):
+            contenido = c3.strip()
+            logger.info("Reintento incluyo tabla")
+
+    logger.info(f"Seccion '{seccion}' generada: {len(contenido)} chars")
+    return contenido
+
+def generar_informe_completo(tema, info_extra, tipo_informe, norma, nivel, modo='rapido'):
+    """
+    Genera el informe con referencias reales de CrossRef/OpenAlex en paralelo.
+    Orden: secciones principales en paralelo → desarrollo con objetivos → referencias reales.
+    """
+    claves = ['introduccion', 'objetivos', 'marco_teorico', 'metodologia',
+              'desarrollo', 'conclusiones', 'recomendaciones', 'referencias']
+    secciones = {c: '' for c in claves}
+
+    claves_ia = [c for c in claves if c not in ('desarrollo', 'referencias')]
+
+    def _generar(clave):
+        resultado = generar_seccion(clave, tema, info_extra, tipo_informe, norma, nivel, modo=modo)
+        return clave, resultado or ''
+
+    def _buscar_refs_reales():
+        try:
+            refs = buscar_referencias_reales(tema, cantidad_total=12)
+            if refs:
+                return formatear_referencias(refs, norma), len(refs), 'crossref_openalex'
+            return None, 0, 'sin_resultados'
+        except Exception as e:
+            logger.error(f"Error buscando referencias reales: {e}")
+            return None, 0, 'error'
+
+    refs_texto = None
+    refs_total = 0
+
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        futuros_ia  = {executor.submit(_generar, c): c for c in claves_ia}
+        futuro_refs = executor.submit(_buscar_refs_reales)
+
+        for futuro in as_completed(list(futuros_ia.keys()) + [futuro_refs]):
+            if futuro is futuro_refs:
+                try:
+                    refs_texto, refs_total, refs_fuente = futuro.result()
+                    logger.info(f"Referencias reales: {refs_total} ({refs_fuente})")
+                except Exception as e:
+                    logger.error(f"Error en futuro_refs: {e}")
+            else:
+                try:
+                    clave, contenido = futuro.result()
+                    secciones[clave] = contenido
+                    logger.info(f"Seccion '{clave}' completada ({len(contenido)} chars)")
+                except Exception as e:
+                    clave = futuros_ia[futuro]
+                    logger.error(f"Error en seccion '{clave}': {e}")
+
+    # Desarrollo con objetivos inyectados
+    objetivos_generados = secciones.get('objetivos', '')
+    secciones['desarrollo'] = generar_seccion(
+        'desarrollo', tema, info_extra, tipo_informe, norma, nivel,
+        modo=modo, objetivos_texto=objetivos_generados
+    ) or ''
+    logger.info(f"Seccion 'desarrollo' completada ({len(secciones['desarrollo'])} chars)")
+
+    # Referencias: reales si hay suficientes, IA con aviso si no
+    if refs_texto and refs_total >= 3:
+        secciones['referencias'] = refs_texto
+        logger.info(f"Referencias reales asignadas: {refs_total}")
+    else:
+        logger.warning(f"Referencias reales insuficientes ({refs_total}), usando IA con aviso")
+        refs_ia = generar_seccion(
+            'referencias', tema, info_extra, tipo_informe, norma, nivel,
+            refs_manuales=info_extra, modo=modo
+        ) or ''
+        aviso = (
+            "[NOTA: No se encontraron suficientes referencias verificadas en bases de datos "
+            "académicas. Las siguientes referencias fueron generadas por IA y deben verificarse "
+            "antes de su uso académico.]\n\n"
+        )
+        secciones['referencias'] = aviso + refs_ia
+
+    # Revisión de coherencia final
+    secciones = _revisar_coherencia(secciones, tema, norma)
+    return secciones
 
 
-# ──────────────────────────────────────────────────────────────
-# OPENALEX
-# ──────────────────────────────────────────────────────────────
-def buscar_openalex(query: str, cantidad: int = 6,
-                   tipos: list = None, desde_anio: int = 2021) -> list:
-    if tipos is None:
-        tipos = ["book", "dissertation", "report"]
+def _revisar_coherencia(secciones: dict, tema: str, norma: str) -> dict:
+    """Verifica que conclusiones respondan a los objetivos; regenera si la cobertura es baja."""
+    objetivos   = secciones.get('objetivos', '')
+    conclusiones = secciones.get('conclusiones', '')
+    desarrollo  = secciones.get('desarrollo', '')
+    if not objetivos or not conclusiones:
+        return secciones
+    primera_linea = objetivos.strip().split('\n')[0].lower()
+    palabras_clave = [w for w in primera_linea.split() if len(w) > 5]
+    concl_lower    = conclusiones.lower()
+    encontradas    = sum(1 for w in palabras_clave if w in concl_lower)
+    cobertura      = encontradas / max(len(palabras_clave), 1)
+    if cobertura < 0.25:
+        logger.warning(f"Coherencia baja ({cobertura:.0%}). Regenerando conclusiones...")
+        system_c = (
+            f"Eres un revisor académico especializado en norma {norma}. "
+            f"Reescribe las conclusiones para que respondan directamente a los objetivos. "
+            f"No inventes datos nuevos."
+        )
+        prompt_c = (
+            f'Informe sobre: "{tema}".\n\nOBJETIVOS:\n{objetivos}\n\n'
+            f'DESARROLLO (resumen):\n{desarrollo[:800]}...\n\n'
+            f'CONCLUSIONES ACTUALES (reescribir):\n{conclusiones}\n\n'
+            f'Reescribe las conclusiones (5 puntos numerados) respondiendo a cada objetivo. '
+            f'Sin título de sección.'
+        )
+        nuevas = llamar_deepseek(prompt_c, system_prompt=system_c, max_tokens=1500)
+        if nuevas and len(nuevas.strip()) > 200:
+            secciones['conclusiones'] = nuevas.strip()
+            logger.info("Conclusiones regeneradas por baja coherencia")
+    return secciones
 
-    filtros = [
-        f"publication_year:>{desde_anio - 1}",
-        f"type:{'|'.join(tipos)}",
+# ============================================================
+# GENERAR PDF
+# ============================================================
+def generar_pdf(datos_usuario, secciones):
+    nombre      = datos_usuario.get('nombre', 'Estudiante')
+    autores_extra = datos_usuario.get('autores_extra', [])
+    tema        = datos_usuario.get('tema', 'Tema')
+    asignatura  = datos_usuario.get('asignatura', '')
+    profesor    = datos_usuario.get('profesor', '')
+    institucion = datos_usuario.get('institucion', '')
+    ciudad      = datos_usuario.get('ciudad', '')
+    fecha       = datos_usuario.get('fecha', datetime.now().strftime('%d/%m/%Y'))
+    norma       = datos_usuario.get('norma', 'APA 7')
+
+    filename = f"informe_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}.pdf"
+    filepath = os.path.join('informes_generados', filename)
+
+    styles = getSampleStyleSheet()
+
+    styles.add(ParagraphStyle(
+        name='TextoJustificado',
+        parent=styles['Normal'],
+        alignment=TA_JUSTIFY,
+        fontSize=11,
+        fontName='Times-Roman',
+        spaceAfter=10,
+        leading=18,
+        firstLineIndent=18
+    ))
+    styles.add(ParagraphStyle(
+        name='Titulo1',
+        parent=styles['Heading1'],
+        fontSize=14,
+        fontName='Helvetica-Bold',
+        textColor=colors.HexColor('#1a365d'),
+        spaceBefore=20,
+        spaceAfter=10,
+        alignment=TA_LEFT
+    ))
+    styles.add(ParagraphStyle(
+        name='TituloPortada',
+        parent=styles['Normal'],
+        fontSize=22,
+        fontName='Helvetica-Bold',
+        textColor=colors.HexColor('#1a365d'),
+        alignment=TA_CENTER,
+        spaceAfter=12
+    ))
+    styles.add(ParagraphStyle(
+        name='SubtituloPortada',
+        parent=styles['Normal'],
+        fontSize=14,
+        fontName='Helvetica-Bold',
+        textColor=colors.HexColor('#2d4a7a'),
+        alignment=TA_CENTER,
+        spaceAfter=8
+    ))
+    styles.add(ParagraphStyle(
+        name='TextoCentrado',
+        parent=styles['Normal'],
+        fontSize=11,
+        fontName='Times-Roman',
+        alignment=TA_CENTER,
+        spaceAfter=5
+    ))
+    styles.add(ParagraphStyle(
+        name='ObjetivoTitulo',
+        parent=styles['Normal'],
+        alignment=TA_LEFT,
+        fontSize=11,
+        fontName='Helvetica-Bold',
+        spaceBefore=14,
+        spaceAfter=4,
+        textColor=colors.HexColor('#1a365d'),
+        leading=16
+    ))
+    styles.add(ParagraphStyle(
+        name='ObjetivoItem',
+        parent=styles['Normal'],
+        alignment=TA_JUSTIFY,
+        fontSize=11,
+        fontName='Times-Roman',
+        spaceBefore=8,
+        spaceAfter=8,
+        leftIndent=16,
+        leading=18
+    ))
+    styles.add(ParagraphStyle(
+        name='TextoLista',
+        parent=styles['Normal'],
+        alignment=TA_LEFT,
+        fontSize=11,
+        fontName='Times-Roman',
+        spaceAfter=6,
+        leftIndent=20,
+        leading=16
+    ))
+    styles.add(ParagraphStyle(
+        name='Referencia',
+        parent=styles['Normal'],
+        alignment=TA_JUSTIFY,
+        fontSize=10.5,
+        fontName='Times-Roman',
+        spaceAfter=8,
+        leading=16,
+        leftIndent=30,        # sangría francesa: cuerpo desplazado a la derecha
+        firstLineIndent=-30   # primera línea al margen izquierdo
+    ))
+
+    doc = SimpleDocTemplate(
+        filepath,
+        pagesize=A4,
+        rightMargin=2.5*cm,
+        leftMargin=2.5*cm,
+        topMargin=2.5*cm,
+        bottomMargin=2.5*cm
+    )
+    story = []
+
+    # PORTADA
+    story.append(Spacer(1, 2.0*inch))
+    story.append(Paragraph("INFORME ACADÉMICO", styles['TituloPortada']))
+    story.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor('#1a365d'), spaceAfter=12))
+    story.append(Paragraph(tema.upper(), styles['SubtituloPortada']))
+    story.append(Spacer(1, 1.2*inch))
+    story.append(Paragraph(f"<b>Presentado por:</b> {nombre}", styles['TextoCentrado']))
+    for autor in autores_extra:
+        if autor.get('nombre'):
+            linea = autor['nombre']
+            if autor.get('cargo'):
+                linea += f" — {autor['cargo']}"
+            story.append(Paragraph(linea, styles['TextoCentrado']))
+    if asignatura:
+        story.append(Paragraph(f"<b>Asignatura:</b> {asignatura}", styles['TextoCentrado']))
+    if profesor:
+        story.append(Paragraph(f"<b>Docente:</b> {profesor}", styles['TextoCentrado']))
+    if institucion:
+        story.append(Paragraph(f"<b>Institución:</b> {institucion}", styles['TextoCentrado']))
+    if ciudad:
+        story.append(Paragraph(f"<b>Ciudad:</b> {ciudad}", styles['TextoCentrado']))
+    story.append(Paragraph(f"<b>Fecha:</b> {fecha}", styles['TextoCentrado']))
+    story.append(Paragraph(f"<b>Norma bibliográfica:</b> {norma}", styles['TextoCentrado']))
+    story.append(PageBreak())
+
+    # ÍNDICE
+    story.append(Paragraph("ÍNDICE", styles['Titulo1']))
+    story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#cccccc'), spaceAfter=8))
+    for idx in ["1. Introducción", "2. Objetivos", "3. Marco Teórico",
+                "4. Metodología", "5. Desarrollo", "6. Conclusiones",
+                "7. Recomendaciones", "8. Referencias Bibliográficas"]:
+        story.append(Paragraph(f"&nbsp;&nbsp;&nbsp;&nbsp;{idx}", styles['TextoLista']))
+    story.append(PageBreak())
+
+    # SECCIONES
+    secciones_orden = [
+        ("1. INTRODUCCIÓN",               'introduccion'),
+        ("2. OBJETIVOS",                  'objetivos'),
+        ("3. MARCO TEÓRICO",              'marco_teorico'),
+        ("4. METODOLOGÍA",                'metodologia'),
+        ("5. DESARROLLO",                 'desarrollo'),
+        ("6. CONCLUSIONES",               'conclusiones'),
+        ("7. RECOMENDACIONES",            'recomendaciones'),
+        ("8. REFERENCIAS BIBLIOGRÁFICAS", 'referencias'),
     ]
 
-    params = {
-        "search":   query,
-        "filter":   ",".join(filtros),
-        "per-page": min(cantidad * 3, 25),
-        "select":   "id,title,authorships,publication_year,type,primary_location,biblio,doi",
-        "sort":     "relevance_score:desc",
-        "mailto":   CONTACT_EMAIL,
-    }
+    for titulo, clave in secciones_orden:
+        story.append(Paragraph(titulo, styles['Titulo1']))
+        story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#e0e0e0'), spaceAfter=8))
+        contenido_raw = secciones.get(clave, '')
+        contenido = limpiar_para_pdf(contenido_raw)
 
+        if contenido and len(contenido) > 50:
+            # ── Renderizado especial para OBJETIVOS ─────────────────
+            if clave == 'objetivos':
+                lineas = [l.strip() for l in re.split(r'\n+', contenido) if l.strip()]
+                for linea in lineas:
+                    if re.match(r'^OBJETIVO\s+(GENERAL|ESPEC)', linea, re.IGNORECASE):
+                        story.append(Paragraph(linea, styles['ObjetivoTitulo']))
+                    elif re.match(r'^\d+\.', linea):
+                        story.append(Paragraph(linea, styles['ObjetivoItem']))
+                    else:
+                        story.append(Paragraph(linea, styles['TextoJustificado']))
+                story.append(PageBreak())
+                continue
+
+            contenido_proc, tablas = extraer_tablas(contenido)
+            parrafos = re.split(r'\n{2,}', contenido_proc)
+            if len(parrafos) == 1:
+                parrafos = contenido_proc.split('\n')
+            for p in parrafos:
+                p = p.strip()
+                if not p:
+                    continue
+                # Detectar marcador de tabla
+                m_tabla = re.match(r'^__TABLA_(\d+)__$', p)
+                if m_tabla and tablas:
+                    idx_t = int(m_tabla.group(1))
+                    if idx_t < len(tablas):
+                        t = tablas[idx_t]
+                        if t.get("titulo"):
+                            story.append(Spacer(1, 6))
+                            story.append(Paragraph(
+                                f"<i>{t['titulo']}</i>",
+                                ParagraphStyle('TituloTabla', parent=styles['Normal'],
+                                    fontSize=9, fontName='Helvetica-Bold',
+                                    textColor=colors.HexColor('#1a365d'),
+                                    spaceAfter=4, spaceBefore=10)
+                            ))
+                        # Construir datos de tabla
+                        cabeceras = t.get("cabeceras", [])
+                        filas     = t.get("filas", [])
+                        # Normalizar ancho de columnas
+                        n_cols = max(len(cabeceras), max((len(f) for f in filas), default=0))
+                        if n_cols == 0:
+                            continue
+                        def normalizar(fila, n):
+                            return fila[:n] + [''] * max(0, n - len(fila))
+                        data = [normalizar(cabeceras, n_cols)] + [normalizar(f, n_cols) for f in filas]
+                        col_w = (15.5 / n_cols)  # cm, A4 ancho útil ~15.5cm
+                        tbl = Table(data, colWidths=[col_w * rl_cm] * n_cols, repeatRows=1)
+                        tbl.setStyle(TableStyle([
+                            ('BACKGROUND',   (0,0), (-1,0), colors.HexColor('#1a365d')),
+                            ('TEXTCOLOR',    (0,0), (-1,0), colors.white),
+                            ('FONTNAME',     (0,0), (-1,0), 'Helvetica-Bold'),
+                            ('FONTSIZE',     (0,0), (-1,0), 8.5),
+                            ('ALIGN',        (0,0), (-1,-1), 'CENTER'),
+                            ('VALIGN',       (0,0), (-1,-1), 'MIDDLE'),
+                            ('FONTNAME',     (0,1), (-1,-1), 'Times-Roman'),
+                            ('FONTSIZE',     (0,1), (-1,-1), 8.5),
+                            ('ROWBACKGROUNDS',(0,1),(-1,-1),[colors.HexColor('#f5f7fa'), colors.white]),
+                            ('GRID',         (0,0), (-1,-1), 0.5, colors.HexColor('#cccccc')),
+                            ('TOPPADDING',   (0,0), (-1,-1), 5),
+                            ('BOTTOMPADDING',(0,0), (-1,-1), 5),
+                            ('LEFTPADDING',  (0,0), (-1,-1), 6),
+                            ('RIGHTPADDING', (0,0), (-1,-1), 6),
+                            ('BOX',          (0,0), (-1,-1), 1, colors.HexColor('#1a365d')),
+                        ]))
+                        story.append(tbl)
+                        story.append(Spacer(1, 10))
+                    continue
+                if re.match(r'^(\d+\.|•|-|\*)\s', p):
+                    story.append(Paragraph(p, styles['TextoLista']))
+                elif clave == 'referencias':
+                    story.append(Paragraph(p, styles['Referencia']))
+                else:
+                    story.append(Paragraph(p, styles['TextoJustificado']))
+        else:
+            story.append(Paragraph("Esta sección no pudo generarse.", styles['TextoJustificado']))
+
+        story.append(PageBreak())
+
+    doc.build(story)
+    return filename, filepath
+
+# ============================================================
+# GENERAR WORD
+# ============================================================
+def generar_word(datos_usuario, secciones):
+    nombre      = datos_usuario.get('nombre', 'Estudiante')
+    autores_extra = datos_usuario.get('autores_extra', [])
+    tema        = datos_usuario.get('tema', 'Tema')
+    asignatura  = datos_usuario.get('asignatura', '')
+    profesor    = datos_usuario.get('profesor', '')
+    institucion = datos_usuario.get('institucion', '')
+    ciudad      = datos_usuario.get('ciudad', '')
+    fecha       = datos_usuario.get('fecha', datetime.now().strftime('%d/%m/%Y'))
+    norma       = datos_usuario.get('norma', 'APA 7')
+
+    doc = Document()
+    section = doc.sections[0]
+    section.top_margin    = Cm(2.5)
+    section.bottom_margin = Cm(2.5)
+    section.left_margin   = Cm(3.0)
+    section.right_margin  = Cm(2.5)
+
+    # PORTADA
+    portada = doc.add_paragraph()
+    portada.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = portada.add_run('\n\n\nINFORME ACADÉMICO')
+    run.bold = True
+    run.font.size = Pt(22)
+    run.font.color.rgb = RGBColor(0x1a, 0x36, 0x5d)
+
+    doc.add_paragraph()
+    p_tema = doc.add_paragraph()
+    p_tema.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r = p_tema.add_run(tema.upper())
+    r.bold = True
+    r.font.size = Pt(14)
+    r.font.color.rgb = RGBColor(0x2d, 0x4a, 0x7a)
+
+    doc.add_paragraph()
+    doc.add_paragraph()
+
+    def agregar_dato(label, valor):
+        if valor:
+            p = doc.add_paragraph()
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            r1 = p.add_run(f"{label}: ")
+            r1.bold = True
+            r1.font.size = Pt(11)
+            p.add_run(valor).font.size = Pt(11)
+
+    agregar_dato("Presentado por", nombre)
+    for autor in autores_extra:
+        if autor.get('nombre'):
+            linea = autor['nombre']
+            if autor.get('cargo'):
+                linea += f" — {autor['cargo']}"
+            agregar_dato("Autor", linea)
+    agregar_dato("Asignatura", asignatura)
+    agregar_dato("Docente", profesor)
+    agregar_dato("Institución", institucion)
+    agregar_dato("Ciudad", ciudad)
+    agregar_dato("Fecha", fecha)
+    agregar_dato("Norma bibliográfica", norma)
+
+    doc.add_page_break()
+
+    # ÍNDICE
+    h_idx = doc.add_heading('ÍNDICE', level=1)
+    h_idx.runs[0].font.color.rgb = RGBColor(0x1a, 0x36, 0x5d)
+    for item in ['1. Introducción', '2. Objetivos', '3. Marco Teórico', '4. Metodología',
+                 '5. Desarrollo', '6. Conclusiones', '7. Recomendaciones', '8. Referencias Bibliográficas']:
+        p = doc.add_paragraph()
+        r = p.add_run(f"    {item}")
+        r.font.size = Pt(11)
+
+    doc.add_page_break()
+
+    # SECCIONES
+    secciones_orden = [
+        ("1. INTRODUCCIÓN",               'introduccion'),
+        ("2. OBJETIVOS",                  'objetivos'),
+        ("3. MARCO TEÓRICO",              'marco_teorico'),
+        ("4. METODOLOGÍA",                'metodologia'),
+        ("5. DESARROLLO",                 'desarrollo'),
+        ("6. CONCLUSIONES",               'conclusiones'),
+        ("7. RECOMENDACIONES",            'recomendaciones'),
+        ("8. REFERENCIAS BIBLIOGRÁFICAS", 'referencias'),
+    ]
+
+    for titulo_sec, clave in secciones_orden:
+        h = doc.add_heading(titulo_sec, level=1)
+        if h.runs:
+            h.runs[0].font.color.rgb = RGBColor(0x1a, 0x36, 0x5d)
+            h.runs[0].font.size = Pt(14)
+
+        contenido_raw = secciones.get(clave, '')
+        contenido = limpiar_para_word(contenido_raw)
+
+        if contenido and len(contenido) > 50:
+            # ── Renderizado especial para OBJETIVOS en Word ─────────
+            if clave == 'objetivos':
+                lineas = [l.strip() for l in re.split(r'\n+', contenido) if l.strip()]
+                for linea in lineas:
+                    if re.match(r'^OBJETIVO\s+(GENERAL|ESPEC)', linea, re.IGNORECASE):
+                        p_obj = doc.add_paragraph()
+                        r_obj = p_obj.add_run(linea)
+                        r_obj.bold = True
+                        r_obj.font.size = Pt(11)
+                        r_obj.font.name = 'Times New Roman'
+                        r_obj.font.color.rgb = RGBColor(0x1a, 0x36, 0x5d)
+                        p_obj.paragraph_format.space_before = Pt(10)
+                        p_obj.paragraph_format.space_after  = Pt(3)
+                    elif re.match(r'^\d+\.', linea):
+                        p_obj = doc.add_paragraph()
+                        r_obj = p_obj.add_run(linea)
+                        r_obj.font.size = Pt(11)
+                        r_obj.font.name = 'Times New Roman'
+                        p_obj.paragraph_format.left_indent  = Pt(16)
+                        p_obj.paragraph_format.space_before = Pt(6)
+                        p_obj.paragraph_format.space_after  = Pt(6)
+                        p_obj.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+                    else:
+                        p_obj = doc.add_paragraph(linea)
+                        p_obj.runs[0].font.size = Pt(11) if p_obj.runs else None
+                        p_obj.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+                doc.add_page_break()
+                continue
+
+            contenido_proc, tablas = extraer_tablas(contenido)
+            parrafos = re.split(r'\n{2,}', contenido_proc)
+            if len(parrafos) == 1:
+                parrafos = contenido_proc.split('\n')
+            for parrafo in parrafos:
+                parrafo = parrafo.strip()
+                if not parrafo:
+                    continue
+                # Detectar marcador de tabla
+                m_tabla = re.match(r'^__TABLA_(\d+)__$', parrafo)
+                if m_tabla and tablas:
+                    idx_t = int(m_tabla.group(1))
+                    if idx_t < len(tablas):
+                        t = tablas[idx_t]
+                        if t.get("titulo"):
+                            p_titulo = doc.add_paragraph()
+                            r_titulo = p_titulo.add_run(t["titulo"])
+                            r_titulo.bold = True
+                            r_titulo.italic = True
+                            r_titulo.font.size = Pt(10)
+                            r_titulo.font.name = 'Times New Roman'
+                            r_titulo.font.color.rgb = RGBColor(0x1a, 0x36, 0x5d)
+                        cabeceras = t.get("cabeceras", [])
+                        filas     = t.get("filas", [])
+                        n_cols = max(len(cabeceras), max((len(f) for f in filas), default=0))
+                        if n_cols == 0:
+                            continue
+                        def normalizar(fila, n):
+                            return fila[:n] + [''] * max(0, n - len(fila))
+                        tbl = doc.add_table(rows=1 + len(filas), cols=n_cols)
+                        tbl.style = 'Table Grid'
+                        # Cabecera
+                        hdr_cells = tbl.rows[0].cells
+                        for j, cab in enumerate(normalizar(cabeceras, n_cols)):
+                            cell = hdr_cells[j]
+                            cell.text = cab
+                            run = cell.paragraphs[0].runs[0] if cell.paragraphs[0].runs else cell.paragraphs[0].add_run(cab)
+                            run.bold = True
+                            run.font.size = Pt(9)
+                            run.font.name = 'Calibri'
+                            run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+                            # Color de fondo cabecera
+                            tc = cell._tc
+                            tcPr = tc.get_or_add_tcPr()
+                            shd = OxmlElement('w:shd')
+                            shd.set(qn('w:val'), 'clear')
+                            shd.set(qn('w:color'), 'auto')
+                            shd.set(qn('w:fill'), '1a365d')
+                            tcPr.append(shd)
+                            cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+                        # Filas de datos
+                        for i_f, fila in enumerate(filas):
+                            row_cells = tbl.rows[i_f + 1].cells
+                            bg_color = 'EEF2F7' if i_f % 2 == 0 else 'FFFFFF'
+                            for j, val in enumerate(normalizar(fila, n_cols)):
+                                cell = row_cells[j]
+                                cell.text = val
+                                run = cell.paragraphs[0].runs[0] if cell.paragraphs[0].runs else cell.paragraphs[0].add_run(val)
+                                run.font.size = Pt(9)
+                                run.font.name = 'Calibri'
+                                # Color alterno
+                                tc = cell._tc
+                                tcPr = tc.get_or_add_tcPr()
+                                shd = OxmlElement('w:shd')
+                                shd.set(qn('w:val'), 'clear')
+                                shd.set(qn('w:color'), 'auto')
+                                shd.set(qn('w:fill'), bg_color)
+                                tcPr.append(shd)
+                                cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+                        doc.add_paragraph()
+                    continue
+                p = doc.add_paragraph()
+                p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+                r = p.add_run(parrafo)
+                if titulo_sec == '8. REFERENCIAS BIBLIOGRÁFICAS':
+                    # Sangría francesa APA: primera línea al margen, resto indentado
+                    r.font.size = Pt(10.5)
+                    r.font.name = 'Times New Roman'
+                    p.paragraph_format.left_indent       = Cm(1.0)
+                    p.paragraph_format.first_line_indent = Cm(-1.0)
+                    p.paragraph_format.space_after        = Pt(6)
+                else:
+                    r.font.size = Pt(11)
+                    r.font.name = 'Times New Roman'
+                    p.paragraph_format.first_line_indent = Cm(0.5)
+                    p.paragraph_format.space_after = Pt(8)
+        else:
+            p = doc.add_paragraph("Esta sección no pudo generarse correctamente.")
+            p.runs[0].font.size = Pt(11)
+
+        doc.add_page_break()
+
+    buffer = BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    return buffer
+
+# ============================================================
+# RUTAS — PÁGINAS (GET)
+# ============================================================
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/generar', methods=['GET'])
+def generar_page():
+    return render_template('generar.html')
+
+@app.route('/mis-informes')
+def mis_informes():
+    return render_template('mis-informes.html')
+
+@app.route('/perfil')
+def perfil():
+    return render_template('perfil.html')
+
+# ============================================================
+# RUTAS — API (POST)
+# ============================================================
+@app.route('/api/generar', methods=['POST'])
+def api_generar():
     try:
-        resp = requests.get(OPENALEX_URL, params=params, timeout=15)
-        if resp.status_code != 200:
-            logger.warning(f"OpenAlex HTTP {resp.status_code}")
-            return []
+        data            = request.json
+        tema            = data.get('tema', '').strip()
+        nivel           = data.get('nivel', 'universitario')
+        tipo_informe    = data.get('tipo_informe', 'academico')
+        norma           = data.get('norma', 'APA 7')
+        nombre          = data.get('nombre', 'Estudiante')
+        asignatura      = data.get('asignatura', '')
+        profesor        = data.get('profesor', '')
+        institucion     = data.get('institucion', '')
+        ciudad          = data.get('ciudad', '')
+        texto_usuario   = data.get('texto_usuario', '')
+        autores         = data.get('autores', [])
+        nombre_principal = autores[0].get('nombre', nombre) if autores else nombre
 
-        items = resp.json().get("results", [])
-        resultados = []
+        if not tema:
+            return jsonify({'success': False, 'error': 'El tema es requerido'}), 400
 
-        for item in items:
-            if not item.get("title"):
-                continue
+        logger.info(f"📨 Generando informe — Tema: {tema[:50]}...")
+        secciones = generar_informe_completo(tema, texto_usuario, tipo_informe, norma, nivel, modo=data.get('modo', 'rapido'))
 
-            autores = []
-            for auth in item.get("authorships", [])[:7]:
-                nombre_completo = auth.get("author", {}).get("display_name", "")
-                partes = nombre_completo.rsplit(" ", 1)
-                if len(partes) == 2:
-                    autores.append({"apellido": partes[1], "nombre": partes[0]})
-                elif nombre_completo:
-                    autores.append({"apellido": nombre_completo, "nombre": ""})
+        if not secciones:
+            return jsonify({'success': False, 'error': 'No se pudo generar el informe'}), 500
 
-            if not autores:
-                continue
+        datos_usuario = {
+            'nombre':      nombre_principal,
+            'autores_extra': autores[1:] if len(autores) > 1 else [],
+            'tema':        tema,
+            'asignatura':  asignatura,
+            'profesor':    profesor,
+            'institucion': institucion,
+            'ciudad':      ciudad,
+            'fecha':       datetime.now().strftime('%d/%m/%Y'),
+            'norma':       norma
+        }
 
-            anio = item.get("publication_year")
-            if not anio or anio < desde_anio:
-                continue
-
-            loc        = item.get("primary_location") or {}
-            fuente_inf = loc.get("source") or {}
-            editorial  = fuente_inf.get("display_name", "")
-
-            doi_raw = item.get("doi", "") or ""
-            doi     = doi_raw.replace("https://doi.org/", "").strip()
-
-            tipo_raw = item.get("type", "book")
-            tipo_map = {
-                "book":            "libro",
-                "dissertation":    "tesis",
-                "report":          "reporte",
-                "journal-article": "articulo",
-            }
-            tipo = tipo_map.get(tipo_raw, "libro")
-
-            biblio = item.get("biblio", {}) or {}
-
-            resultados.append({
-                "tipo":      tipo,
-                "titulo":    item["title"],
-                "autores":   autores,
-                "anio":      anio,
-                "editorial": editorial,
-                "doi":       doi,
-                "paginas":   str(biblio.get("last_page", "")) if biblio.get("last_page") else "",
-                "fuente":    "openalex",
-            })
-
-            if len(resultados) >= cantidad:
-                break
-
-        logger.info(f"OpenAlex: {len(resultados)} resultados para '{query[:40]}'")
-        return resultados
+        return jsonify({'success': True, 'secciones': secciones, 'datos_usuario': datos_usuario})
 
     except Exception as e:
-        logger.error(f"Error OpenAlex: {e}")
-        return []
+        logger.error(f"Error en /api/generar: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
-# ──────────────────────────────────────────────────────────────
-# BÚSQUEDA COMBINADA
-# ──────────────────────────────────────────────────────────────
-def buscar_referencias_reales(tema: str, cantidad_total: int = 12) -> list:
-    referencias = []
-    tema_en = _traducir_query(tema)
-    mismo_idioma = tema_en.strip() == tema.lower().strip()
+@app.route('/api/generar-seccion', methods=['POST'])
+def api_generar_seccion():
+    try:
+        data      = request.json
+        seccion   = data.get('seccion', '')
+        tema      = data.get('tema', '').strip()
+        nivel     = data.get('nivel', 'universitario')
+        tipo      = data.get('tipo_informe', 'academico')
+        norma     = data.get('norma', 'APA 7')
+        info      = data.get('texto_usuario', '')
+        refs_man  = data.get('refs_manuales', '')
+        # FIX 2: Accept objetivos_texto from frontend when regenerating 'desarrollo'
+        objetivos_texto = data.get('objetivos_texto', '')
 
-    # Enriquecer el query con términos de contexto según el tema detectado
-    # Primero enriquecer en español, luego traducir el resultado completo
-    tema_enriquecido_es = _enriquecer_query(tema)
-    # Para el query en inglés: detectar contexto desde el tema original y construir en inglés
-    tema_en = _traducir_query(tema)
-    tema_enriquecido_en = _enriquecer_query_en(tema, tema_en)
+        if not seccion or not tema:
+            return jsonify({'success': False, 'error': 'Faltan parámetros'}), 400
 
-    # Paso 1: Artículos en español (query enriquecido)
-    arts_es = buscar_crossref(tema_enriquecido_es, cantidad=8, desde_anio=2021)
-    referencias.extend(arts_es)
-    time.sleep(0.3)
+        modo      = data.get('modo', 'rapido')
+        contenido = generar_seccion(seccion, tema, info, tipo, norma, nivel, refs_man, modo, objetivos_texto)
 
-    # Paso 2: Artículos en inglés (siempre, no solo como fallback)
-    arts_en = buscar_crossref(tema_enriquecido_en, cantidad=8, desde_anio=2021)
-    dois_existentes = {r["doi"] for r in referencias if r.get("doi")}
-    for a in arts_en:
-        if a.get("doi") not in dois_existentes:
-            referencias.append(a)
-    time.sleep(0.3)
+        if contenido:
+            return jsonify({'success': True, 'seccion': seccion, 'contenido': contenido})
+        return jsonify({'success': False, 'error': f'No se pudo generar: {seccion}'}), 500
 
-    # Paso 3: Libros/tesis en español
-    libros_es = buscar_openalex(tema_enriquecido_es, cantidad=4, tipos=["book", "dissertation"], desde_anio=2021)
-    referencias.extend(libros_es)
-    time.sleep(0.3)
-
-    # Paso 4: Libros en inglés (siempre)
-    if not mismo_idioma:
-        titulos_existentes = {r["titulo"].lower()[:40] for r in referencias}
-        libros_en = buscar_openalex(tema_enriquecido_en, cantidad=4, tipos=["book"], desde_anio=2021)
-        for l in libros_en:
-            if l["titulo"].lower()[:40] not in titulos_existentes:
-                referencias.append(l)
-        time.sleep(0.3)
-
-    # Paso 5: Reportes
-    reportes = buscar_openalex(tema_enriquecido_en, cantidad=3, tipos=["report"], desde_anio=2021)
-    referencias.extend(reportes)
-    time.sleep(0.3)
-
-    # Deduplicar
-    vistos = set()
-    unicas = []
-    for ref in referencias:
-        clave = re.sub(r'\W+', '', ref["titulo"].lower())[:60]
-        if clave not in vistos:
-            vistos.add(clave)
-            unicas.append(ref)
-
-    # Filtrar por relevancia — lógica dinámica, sin blacklists estáticas
-    unicas = _filtrar_por_relevancia(unicas, tema, umbral=0.25)
-    unicas = _balancear_tipos(unicas, cantidad_total)
-    logger.info(f"Total referencias reales: {len(unicas)}")
-    return unicas[:cantidad_total]
+    except Exception as e:
+        logger.error(f"Error en /api/generar-seccion: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
-
-# ──────────────────────────────────────────────────────────────
-# ENRIQUECIMIENTO DE QUERY
-# ──────────────────────────────────────────────────────────────
-# Mapa de palabras clave del tema → términos de contexto adicionales
-# que hacen el query más específico y mejoran la relevancia
-_CONTEXTO_POR_TEMA = {
-    "invasora":         "biodiversidad ecosistema impacto ecológico",
-    "invasive":         "biodiversity ecosystem ecological impact",
-    "biodiversidad":    "conservación especies ecosistema",
-    "biodiversity":     "conservation species ecosystem",
-    "deforestación":    "bosque cobertura vegetal amazonia",
-    "deforestation":    "forest cover vegetation loss",
-    "cambio climático": "temperatura emisiones carbono",
-    "climate change":   "temperature emissions carbon",
-    "salud pública":    "epidemiología enfermedad prevención",
-    "public health":    "epidemiology disease prevention",
-    "inteligencia artificial": "machine learning algoritmo datos",
-    "artificial intelligence": "machine learning algorithm deep learning",
-    "educación":        "aprendizaje pedagógico enseñanza",
-    "education":        "learning pedagogical teaching",
-    "economía":         "crecimiento mercado productividad",
-    "economy":          "growth market productivity",
-    "contaminación":    "residuos tóxicos ambiente agua",
-    "pollution":        "waste toxic environment water",
-    "genética":         "ADN genoma secuenciación",
-    "genetics":         "DNA genome sequencing",
-    "minería":          "extracción recursos impacto ambiental",
-    "mining":           "extraction resources environmental impact",
-    "agua":             "recurso hídrico cuenca calidad",
-    "water":            "resource basin quality hydrological",
-}
-
-
-def _enriquecer_query(tema: str) -> str:
+@app.route('/api/referencias-reales', methods=['POST'])
+def api_referencias_reales():
     """
-    Añade términos de contexto al query según el tema para mejorar
-    la especificidad de las búsquedas en CrossRef / OpenAlex.
+    Obtiene referencias REALES de CrossRef y OpenAlex,
+    las formatea según la norma y las devuelve al frontend.
     """
-    tema_lower = tema.lower()
-    extras = []
-    for clave, contexto in _CONTEXTO_POR_TEMA.items():
-        if clave in tema_lower and contexto not in tema_lower:
-            extras.append(contexto)
-            break  # un solo bloque de contexto es suficiente
-    if extras:
-        return f"{tema} {' '.join(extras)}"
-    return tema
-
-
-def _enriquecer_query_en(tema_original: str, tema_traducido: str) -> str:
-    """
-    Detecta el contexto desde el tema en español y añade términos EN al query traducido.
-    Así el query inglés queda limpio sin mezcla de idiomas.
-    """
-    tema_lower = tema_original.lower()
-    # Mapa ES → contexto EN (solo las claves en español)
-    contexto_en = {
-        "invasora":         "biodiversity ecosystem ecological impact",
-        "invasoras":        "biodiversity ecosystem ecological impact",
-        "biodiversidad":    "conservation species ecosystem",
-        "deforestación":    "forest cover vegetation loss",
-        "cambio climático": "temperature emissions carbon",
-        "salud pública":    "epidemiology disease prevention",
-        "inteligencia artificial": "machine learning algorithm deep learning",
-        "educación":        "learning pedagogical teaching",
-        "economía":         "growth market productivity",
-        "contaminación":    "waste toxic environment water",
-        "genética":         "DNA genome sequencing",
-        "minería":          "extraction resources environmental impact",
-        "agua":             "resource basin quality hydrological",
-    }
-    for clave_es, ctx_en in contexto_en.items():
-        if clave_es in tema_lower and ctx_en not in tema_traducido:
-            return f"{tema_traducido} {ctx_en}"
-    return tema_traducido
-
-
-def _traducir_query(texto: str) -> str:
-    """Traduce palabras clave del español al inglés para búsquedas en CrossRef/OpenAlex."""
-    traducciones = {
-        # Medio ambiente / biología
-        "especies invasoras": "invasive species",
-        "especie invasora": "invasive species",
-        "invasión biológica": "biological invasion",
-        "invasiones biológicas": "biological invasions",
-        "biodiversidad": "biodiversity",
-        "ecosistema": "ecosystem",
-        "ecosistemas": "ecosystems",
-        "deforestación": "deforestation",
-        "cambio climático": "climate change",
-        "medio ambiente": "environment",
-        "ecología": "ecology",
-        "conservación": "conservation",
-        "contaminación": "pollution",
-        "sostenibilidad": "sustainability",
-        "recursos naturales": "natural resources",
-        "agua": "water",
-        "energía renovable": "renewable energy",
-        "servicios ecosistémicos": "ecosystem services",
-        "servicios ambientales": "environmental services",
-        "flora": "flora",
-        "fauna": "fauna",
-        "bosque": "forest",
-        "selva": "rainforest",
-        "páramo": "paramo",
-        "humedal": "wetland",
-        "cuenca": "watershed",
-        "biodiversidad marina": "marine biodiversity",
-        # Salud
-        "salud pública": "public health",
-        "salud": "health",
-        "medicina": "medicine",
-        "pandemia": "pandemic",
-        "vacuna": "vaccine",
-        "epidemia": "epidemic",
-        "enfermedad": "disease",
-        "nutrición": "nutrition",
-        "psicología": "psychology",
-        "meningitis": "meningitis",
-        "zoonosis": "zoonosis",
-        # Tecnología
-        "inteligencia artificial": "artificial intelligence",
-        "aprendizaje automático": "machine learning",
-        "aprendizaje profundo": "deep learning",
-        "tecnología": "technology",
-        "ciberseguridad": "cybersecurity",
-        "blockchain": "blockchain",
-        "datos": "data",
-        "automatización": "automation",
-        "robótica": "robotics",
-        "computación": "computing",
-        "redes": "networks",
-        "nube": "cloud",
-        "algoritmo": "algorithm",
-        "red neuronal": "neural network",
-        # Educación
-        "educación superior": "higher education",
-        "educación universitaria": "university education",
-        "educación": "education",
-        "aprendizaje": "learning",
-        "enseñanza": "teaching",
-        "pedagogía": "pedagogy",
-        "universidad": "university",
-        "estudiante": "student",
-        "currículo": "curriculum",
-        # Economía / finanzas / derecho
-        "aseguradoras": "insurance companies",
-        "aseguradora": "insurer",
-        "seguros": "insurance",
-        "seguro": "insurance",
-        "responsabilidad civil": "civil liability",
-        "responsabilidad": "liability",
-        "regalías": "royalties",
-        "tributario": "tax",
-        "fiscal": "fiscal",
-        "financiero": "financial",
-        "finanzas": "finance",
-        "economía": "economy",
-        "mercado": "market",
-        "empresa": "enterprise",
-        "inflación": "inflation",
-        "desempleo": "unemployment",
-        "pobreza": "poverty",
-        "desigualdad": "inequality",
-        "migración": "migration",
-        "conflicto": "conflict",
-        "paz": "peace",
-        "derechos humanos": "human rights",
-        "contrato": "contract",
-        "indemnización": "indemnity",
-        "siniestro": "claim",
-        "activos": "assets",
-        "inversión": "investment",
-        "banca": "banking",
-        # Minería / extracción
-        "minería ilegal": "illegal mining",
-        "minería artesanal": "artisanal mining",
-        "minería": "mining",
-        "extracción minera": "mineral extraction",
-        "extracción": "extraction",
-        "petróleo": "oil",
-        "hidrocarburos": "hydrocarbons",
-        "carbón": "coal",
-        "oro": "gold",
-        "comunidades indígenas": "indigenous communities",
-        "pueblos indígenas": "indigenous peoples",
-        "indígenas": "indigenous",
-        "campesinos": "peasants",
-        "territorio": "territory",
-        "territorios": "territories",
-        # Ciencias / derecho / otros
-        "química": "chemistry",
-        "física": "physics",
-        "biología": "biology",
-        "laboratorio": "laboratory",
-        "genética": "genetics",
-        "genómica": "genomics",
-        "derecho ambiental": "environmental law",
-        "derecho": "law",
-        "política pública": "public policy",
-        "sociedad": "society",
-        "cultura": "culture",
-        "historia": "history",
-        "ciencia": "science",
-        "matemáticas": "mathematics",
-        "filosofía": "philosophy",
-        "comunicación": "communication",
-        "arte": "art",
-        "literatura": "literature",
-        "investigación": "research",
-        "desarrollo sostenible": "sustainable development",
-        "desarrollo": "development",
-        "colombia": "colombia",
-        "latinoamérica": "latin america",
-        "seguridad alimentaria": "food security",
-        "seguridad": "security",
-        "política": "policy",
-        "sociología": "sociology",
-        "trabajo": "labor",
-        "género": "gender",
-        "violencia": "violence",
-        "corrupción": "corruption",
-        "gobernanza": "governance",
-        "participación": "participation",
-        "derechos": "rights",
-    }
-    resultado = texto.lower()
-    # Reemplazar frases primero (más específicas), luego palabras sueltas
-    for es, en in sorted(traducciones.items(), key=lambda x: -len(x[0])):
-        resultado = resultado.replace(es, en)
-    return resultado
-
-
-
-# Sinónimos y variantes por término — permiten que títulos con vocabulario
-# relacionado (pero no idéntico) también obtengan score de relevancia.
-# Clave = palabra del tema (EN) → lista de variantes aceptadas en títulos.
-_SINONIMOS_EN = {
-    "invasive":     ["invasion", "invasions", "invasiveness", "invader", "invaders", "introduced", "exotic", "alien"],
-    "species":      ["species", "organism", "organisms", "taxa", "taxon", "flora", "fauna"],
-    "biodiversity": ["biodiversity", "diversity", "richness", "biota", "wildlife"],
-    "ecosystem":    ["ecosystem", "ecosystems", "habitat", "habitats", "ecology", "ecological"],
-    "colombia":     ["colombia", "colombian", "andean", "neotropical"],
-    "deforestation":["deforestation", "forest loss", "forest cover", "deforested", "logging"],
-    "climate":      ["climate", "climatic", "temperature", "warming", "greenhouse"],
-    "health":       ["health", "disease", "epidemiology", "medical", "clinical", "public health"],
-    "education":    ["education", "educational", "learning", "teaching", "academic", "university", "school"],
-    "artificial":   ["artificial", "machine learning", "deep learning", "neural", "algorithmic", "automated"],
-    "intelligence": ["intelligence", "intelligent", "cognitive", "computational"],
-    "water":        ["water", "aquatic", "hydrological", "watershed", "river", "lake"],
-    "insurance":    ["insurance", "insurer", "liability", "indemnity", "underwriting", "actuarial", "claim", "siniestro"],
-    "financial":    ["financial", "finance", "fiscal", "monetary", "economic", "banking"],
-    "pollution":    ["pollution", "contamination", "pollutant", "emissions", "waste"],
-    "mining":       ["mining", "extraction", "mineral", "quarry", "excavation", "gold", "coal", "oil"],
-    "genetics":     ["genetics", "genomics", "genome", "dna", "rna", "sequence"],
-    "agriculture":  ["agriculture", "agricultural", "farming", "crop", "cultivation", "agronomy"],
-    "security":     ["security", "cybersecurity", "cyber", "threat", "vulnerability", "attack"],
-    "conflict":     ["conflict", "war", "violence", "peace", "armed", "dispute"],
-    "migration":    ["migration", "migrant", "immigrant", "displacement", "refugee"],
-    "poverty":      ["poverty", "inequality", "socioeconomic", "deprivation", "marginalization"],
-    "indigenous":   ["indigenous", "native", "tribal", "community", "territory", "ancestral"],
-    "liability":    ["liability", "insurance", "indemnity", "actuarial", "claim", "underwriting"],
-}
-
-# Lo mismo para palabras en español
-_SINONIMOS_ES = {
-    "invasora":      ["invasora", "invasoras", "invasión", "invasiones", "exótica", "exóticas", "introducida"],
-    "especie":       ["especie", "especies", "organismo", "organismos", "taxa", "flora", "fauna"],
-    "biodiversidad": ["biodiversidad", "diversidad", "riqueza", "biota", "vida silvestre"],
-    "ecosistema":    ["ecosistema", "ecosistemas", "hábitat", "ecología", "ecológico"],
-    "colombia":      ["colombia", "colombiano", "colombiana", "andino", "neotropical"],
-    "deforestación": ["deforestación", "tala", "cobertura forestal", "pérdida bosque"],
-    "clima":         ["clima", "climático", "temperatura", "calentamiento", "emisiones"],
-    "salud":         ["salud", "enfermedad", "epidemiología", "médico", "clínico", "sanitario"],
-    "educación":     ["educación", "educativo", "aprendizaje", "enseñanza", "académico", "universitario"],
-    "inteligencia":  ["inteligencia", "machine learning", "aprendizaje automático", "red neuronal"],
-    "agua":          ["agua", "acuático", "hidrológico", "cuenca", "río", "lago"],
-    "seguros":       ["seguros", "aseguradoras", "asegurador", "responsabilidad", "indemnización", "siniestro", "póliza", "riesgo asegurado"],
-    "financiero":    ["financiero", "finanzas", "fiscal", "monetario", "bancario", "tributario", "regalías"],
-    "contaminación": ["contaminación", "contaminante", "emisiones", "residuos", "vertimiento"],
-    "minería":       ["minería", "extracción", "mineral", "canteras", "excavación", "oro", "carbón", "petróleo", "hidrocarburos"],
-    "genética":      ["genética", "genómica", "genoma", "adn", "arn", "secuenciación"],
-    "agricultura":   ["agricultura", "agrícola", "cultivo", "cosecha", "agronomía", "campesino"],
-    "seguridad":     ["seguridad", "ciberseguridad", "amenaza", "vulnerabilidad", "ataque"],
-    "conflicto":     ["conflicto", "guerra", "violencia", "paz", "armado", "disputa"],
-    "migración":     ["migración", "migrante", "inmigrante", "desplazamiento", "refugiado"],
-    "pobreza":       ["pobreza", "desigualdad", "socioeconómico", "marginación"],
-    "indígenas":     ["indígenas", "indígena", "comunidades", "pueblos", "territorio", "ancestral", "étnico"],
-    "responsabilidad": ["responsabilidad", "seguros", "aseguradoras", "indemnización", "siniestro", "póliza"],
-}
-
-
-def _palabras_clave_tema(tema: str) -> tuple[list, list]:
-    """
-    Devuelve (palabras_es, palabras_en) — términos del tema en ambos idiomas,
-    sin stopwords, longitud > 3, expandidos con sinónimos y variantes.
-    Esto permite que títulos con vocabulario relacionado también obtengan
-    score de relevancia, sin depender de coincidencias exactas de palabras.
-    """
-    stopwords_es = {"de", "del", "la", "el", "los", "las", "en", "y", "a", "para",
-                    "con", "por", "que", "una", "un", "su", "se", "es", "al", "lo",
-                    "como", "más", "sus", "desde", "hacia", "entre", "sobre"}
-    stopwords_en = {"the", "and", "for", "with", "from", "into", "that", "this",
-                    "are", "was", "has", "have", "been", "its", "their"}
-
-    tema_es = tema.lower()
-    tema_en = _traducir_query(tema_es)
-
-    palabras_es_base = [p for p in re.split(r'\W+', tema_es)
-                        if p and p not in stopwords_es and len(p) > 3]
-    palabras_en_base = [p for p in re.split(r'\W+', tema_en)
-                        if p and p not in stopwords_en and len(p) > 3]
-
-    # Expandir con sinónimos
-    palabras_es = list(palabras_es_base)
-    for p in palabras_es_base:
-        for clave, variantes in _SINONIMOS_ES.items():
-            if p in variantes or p == clave:
-                palabras_es.extend(variantes)
-                break
-
-    palabras_en = list(palabras_en_base)
-    for p in palabras_en_base:
-        for clave, variantes in _SINONIMOS_EN.items():
-            if p in variantes or p == clave:
-                palabras_en.extend(variantes)
-                break
-
-    # Deduplicar manteniendo orden
-    palabras_es = list(dict.fromkeys(palabras_es))
-    palabras_en = list(dict.fromkeys(palabras_en))
-
-    return palabras_es, palabras_en
-
-
-def _balancear_tipos(refs: list, total: int) -> list:
-    articulos = [r for r in refs if r["tipo"] == "articulo"]
-    libros    = [r for r in refs if r["tipo"] == "libro"]
-    tesis     = [r for r in refs if r["tipo"] == "tesis"]
-    reportes  = [r for r in refs if r["tipo"] == "reporte"]
-
-    resultado = []
-    pools = [articulos, libros, tesis, reportes]
-    while len(resultado) < total and any(pools):
-        for pool in pools:
-            if pool and len(resultado) < total:
-                resultado.append(pool.pop(0))
-    return resultado
-
-
-
-def _puntaje_relevancia(titulo: str, tema: str) -> float:
-    """
-    Puntúa la relevancia de un título respecto al tema del informe.
-
-    Lógica completamente dinámica — no depende de blacklists estáticas.
-    Funciona igual para cualquier tema (ciencias, derecho, economía, etc.).
-
-    Criterios:
-      1. Extrae conceptos clave del tema (palabras sustantivas > 4 chars).
-      2. Para cada concepto, verifica si el título contiene esa palabra
-         O cualquiera de sus sinónimos/variantes conocidas.
-      3. Score = fracción de conceptos del tema cubiertos en el título.
-      4. Bonus por bigramas exactos (frases de 2 palabras).
-      5. Penalty si la mayoría de palabras del título son completamente
-         ajenas a todos los conceptos del tema.
-    """
-    titulo_lower = titulo.lower()
-    palabras_es, palabras_en = _palabras_clave_tema(tema)
-
-    # Conceptos = palabras base del tema (sin sinónimos aún), > 4 chars
-    # Excluir términos geográficos/genéricos que no discriminan el área temática
-    _TERMINOS_GENERICOS = {
-        "colombia", "colombian", "latin", "america", "american", "global",
-        "nacional", "regional", "local", "general", "social", "public",
-        "analysis", "study", "review", "research", "impact", "effect",
-        "impacto", "efectos", "estudio", "análisis", "revisión", "caso",
-    }
-    conceptos_es = [p for p in re.split(r'\W+', tema.lower())
-                    if p and len(p) > 4 and p not in {
-                        "de", "del", "la", "el", "los", "las", "en", "y",
-                        "para", "con", "por", "que", "una", "un", "su", "se",
-                        "como", "más", "sus", "desde", "hacia", "entre", "sobre"}
-                    and p not in _TERMINOS_GENERICOS]
-    tema_en_base = _traducir_query(tema.lower())
-    conceptos_en = [p for p in re.split(r'\W+', tema_en_base)
-                    if p and len(p) > 4 and p not in {
-                        "the", "and", "for", "with", "from", "into", "that",
-                        "this", "are", "was", "has", "have", "been", "its"}
-                    and p not in _TERMINOS_GENERICOS]
-
-    todos_conceptos = list(dict.fromkeys(conceptos_es + conceptos_en))
-    if not todos_conceptos:
-        return 0.5
-
-    # Para cada concepto, construir su grupo de variantes aceptables
-    def variantes_de(concepto: str, sinonimos: dict) -> list:
-        for clave, vars_ in sinonimos.items():
-            if concepto == clave or concepto in vars_:
-                return [clave] + vars_
-        return [concepto]
-
-    # Score: fracción de conceptos del tema cubiertos en el título
-    cubiertos = 0
-    for c in todos_conceptos:
-        vars_es = variantes_de(c, _SINONIMOS_ES)
-        vars_en = variantes_de(c, _SINONIMOS_EN)
-        todas_variantes = set(vars_es + vars_en + [c])
-        if any(v in titulo_lower for v in todas_variantes):
-            cubiertos += 1
-
-    score = cubiertos / len(todos_conceptos)
-
-    # Bonus por bigramas exactos del tema en el título
-    for i in range(len(conceptos_en) - 1):
-        if conceptos_en[i] + " " + conceptos_en[i + 1] in titulo_lower:
-            score += 0.25
-    for i in range(len(conceptos_es) - 1):
-        if conceptos_es[i] + " " + conceptos_es[i + 1] in titulo_lower:
-            score += 0.25
-
-    # Penalty por extrañeza: si casi todas las palabras del título son ajenas
-    todas_variantes_tema = set()
-    for c in todos_conceptos:
-        todas_variantes_tema.update(variantes_de(c, _SINONIMOS_ES))
-        todas_variantes_tema.update(variantes_de(c, _SINONIMOS_EN))
-
-    palabras_titulo = [p for p in re.split(r'\W+', titulo_lower) if p and len(p) > 4]
-    if palabras_titulo:
-        ajenas = sum(1 for p in palabras_titulo if p not in todas_variantes_tema)
-        ratio_ajenas = ajenas / len(palabras_titulo)
-        if ratio_ajenas > 0.85:
-            score *= max(0.1, 1 - (ratio_ajenas - 0.85) * 3)
-
-    return min(score, 1.0)
-
-
-def _filtrar_por_relevancia(refs: list, tema: str, umbral: float = 0.25) -> list:
-    """
-    Filtra referencias por relevancia respecto al tema del informe.
-
-    Sin blacklists estáticas — funciona para cualquier tema.
-    Umbral 0.25: exige que el título comparta al menos 1 concepto con el tema
-    (con sinónimos incluidos). CrossRef ya pre-ordena por relevancia semántica,
-    así que los primeros resultados suelen ser los más pertinentes.
-
-    Si hay pocas referencias con umbral principal, baja gradualmente hasta 0.10.
-    Score 0.0 = ningún concepto del tema aparece → siempre descartado.
-    """
-    puntuadas = []
-    for ref in refs:
-        titulo = ref.get("titulo", "")
-        score = _puntaje_relevancia(titulo, tema)
-        puntuadas.append((score, ref))
-        logger.debug(f"  Relevancia {score:.2f} — {titulo[:60]}")
-
-    # Score 0.0 = ningún concepto del tema en el título → siempre descartar
-    puntuadas = [(s, r) for s, r in puntuadas if s > 0.0]
-
-    relevantes = [(s, r) for s, r in puntuadas if s >= umbral]
-
-    # Si quedan pocas, bajar gradualmente
-    if len(relevantes) < 6:
-        for umbral_reducido in (0.15, 0.10):
-            relevantes = [(s, r) for s, r in puntuadas if s >= umbral_reducido]
-            if len(relevantes) >= 4:
-                logger.warning(f"Umbral reducido a {umbral_reducido} — {len(relevantes)} refs")
-                break
-
-    relevantes.sort(key=lambda x: x[0], reverse=True)
-    return [r for _, r in relevantes]
-
-
-# ──────────────────────────────────────────────────────────────
-# FORMATEADORES POR NORMA
-# ──────────────────────────────────────────────────────────────
-def _autores_apa(autores: list, max_autores: int = 20) -> str:
-    if not autores:
-        return "Autor desconocido"
-    partes = []
-    for a in autores[:max_autores]:
-        apellido = a.get("apellido", "")
-        nombre   = a.get("nombre", "")
-        if nombre:
-            inicial = nombre[0].upper() + "."
-            partes.append(f"{apellido}, {inicial}")
-        else:
-            partes.append(apellido)
-    if len(autores) > max_autores:
-        partes.append("et al.")
-    if len(partes) == 1:
-        return partes[0]
-    if len(partes) == 2:
-        return f"{partes[0]} & {partes[1]}"
-    return ", ".join(partes[:-1]) + f", & {partes[-1]}"
-
-
-def _autores_icontec(autores: list) -> str:
-    if not autores:
-        return "AUTOR DESCONOCIDO"
-    partes = []
-    for a in autores[:3]:
-        apellido = a.get("apellido", "").upper()
-        nombre   = a.get("nombre", "")
-        partes.append(f"{apellido}, {nombre}" if nombre else apellido)
-    if len(autores) > 3:
-        partes.append("et al.")
-    return "; ".join(partes)
-
-
-def _autores_ieee(autores: list, idx: int) -> str:
-    if not autores:
-        return f"[{idx}] Autor desconocido"
-    partes = []
-    for a in autores[:6]:
-        nombre   = a.get("nombre", "")
-        apellido = a.get("apellido", "")
-        inicial  = nombre[0].upper() + ". " if nombre else ""
-        partes.append(f"{inicial}{apellido}")
-    if len(autores) > 6:
-        partes.append("et al.")
-    prefijo = f"[{idx}] "
-    if len(partes) <= 2:
-        return prefijo + " and ".join(partes)
-    return prefijo + ", ".join(partes[:-1]) + ", and " + partes[-1]
-
-
-def _autores_vancouver(autores: list) -> str:
-    if not autores:
-        return "Anónimo"
-    partes = []
-    for a in autores[:6]:
-        apellido  = a.get("apellido", "")
-        nombre    = a.get("nombre", "")
-        iniciales = "".join(p[0].upper() for p in nombre.split() if p) if nombre else ""
-        partes.append(f"{apellido} {iniciales}".strip())
-    if len(autores) > 6:
-        partes.append("et al.")
-    return ", ".join(partes)
-
-
-def _sentence_case(titulo: str) -> str:
-    """
-    APA 7 requiere sentence case en títulos de artículos:
-    solo primera letra en mayúscula y nombres propios.
-    Preserva mayúsculas después de ':' (subtítulos).
-    """
-    if not titulo:
-        return titulo
-    # Capitalizar después de ': ' para subtítulos
-    partes = re.split(r'(:\s+)', titulo)
-    resultado = []
-    for i, parte in enumerate(partes):
-        if re.match(r':\s+', parte):
-            resultado.append(parte)
-        elif i == 0 or (i > 0 and re.match(r':\s+', partes[i-1])):
-            # Primera letra mayúscula, resto minúscula (excepto siglas de 2+ mayúsculas)
-            if len(parte) > 1:
-                resultado.append(parte[0].upper() + parte[1:].lower())
-            else:
-                resultado.append(parte.upper())
-        else:
-            resultado.append(parte)
-    return "".join(resultado)
-
-
-def formatear_referencia(ref: dict, norma: str, indice: int = 1) -> str:
-    tipo    = ref.get("tipo", "articulo")
-    titulo  = ref.get("titulo", "Sin título")
-    anio    = ref.get("anio", "s.f.")
-    doi     = ref.get("doi", "")
-    revista = ref.get("revista", "")
-    vol     = ref.get("volumen", "")
-    num     = ref.get("numero", "")
-    pags    = ref.get("paginas", "")
-    ed      = ref.get("editorial", "")
-    autores = ref.get("autores", [])
-    doi_url = f"https://doi.org/{doi}" if doi else ""
-
-    # APA 7 / APA 6
-    if norma in ("APA 7", "APA 6"):
-        aut_str = _autores_apa(autores)
-        if tipo == "articulo":
-            # APA 7: título en sentence case (sin cursiva), revista en cursiva
-            titulo_fmt = _sentence_case(titulo)
-            partes = [f"{aut_str} ({anio}). {titulo_fmt}."]
-            if revista:
-                rev_part = f" {revista}"  # revista en cursiva (se aplica en PDF/Word)
-                if vol:
-                    rev_part += f", {vol}"
-                    if num:
-                        rev_part += f"({num})"
-                if pags:
-                    rev_part += f", {pags}"
-                partes.append(rev_part + ".")
-            if doi_url:
-                partes.append(f" {doi_url}")
-            return "".join(partes)
-        else:
-            titulo_fmt = _sentence_case(titulo)
-            linea = f"{aut_str} ({anio}). {titulo_fmt}."
-            if ed:
-                linea += f" {ed}."
-            if doi_url:
-                linea += f" {doi_url}"
-            return linea
-
-    # ICONTEC
-    elif norma == "ICONTEC":
-        aut_str = _autores_icontec(autores)
-        if tipo == "articulo":
-            linea = f"{aut_str}. {titulo}."
-            if revista:
-                linea += f" En: {revista}."
-                if vol:
-                    linea += f" Vol. {vol}"
-                if num:
-                    linea += f", No. {num}"
-                if pags:
-                    linea += f"; p. {pags}"
-                linea += f" ({anio})."
-            if doi_url:
-                linea += f" DOI: {doi_url}"
-            return linea
-        else:
-            linea = f"{aut_str}. {titulo}."
-            if ed:
-                linea += f" {ed},"
-            linea += f" {anio}."
-            if doi_url:
-                linea += f" Disponible en: {doi_url}"
-            return linea
-
-    # IEEE
-    elif norma == "IEEE":
-        aut_str = _autores_ieee(autores, indice)
-        if tipo == "articulo":
-            linea = f'{aut_str}, "{titulo},"'
-            if revista:
-                linea += f" {revista},"
-            if vol:
-                linea += f" vol. {vol},"
-            if num:
-                linea += f" no. {num},"
-            if pags:
-                linea += f" pp. {pags},"
-            linea += f" {anio}."
-            if doi_url:
-                linea += f" doi: {doi}"
-            return linea
-        else:
-            linea = f'{aut_str}, {titulo}.'
-            if ed:
-                linea += f" {ed},"
-            linea += f" {anio}."
-            if doi_url:
-                linea += f" doi: {doi}"
-            return linea
-
-    # Vancouver
-    elif norma == "Vancouver":
-        aut_str = _autores_vancouver(autores)
-        if tipo == "articulo":
-            linea = f"{indice}. {aut_str}. {titulo}."
-            if revista:
-                linea += f" {revista}."
-            linea += f" {anio}"
-            if vol:
-                linea += f";{vol}"
-                if num:
-                    linea += f"({num})"
-            if pags:
-                linea += f":{pags}"
-            linea += "."
-            if doi_url:
-                linea += f" doi:{doi}"
-            return linea
-        else:
-            linea = f"{indice}. {aut_str}. {titulo}."
-            if ed:
-                linea += f" {ed};"
-            linea += f" {anio}."
-            if doi_url:
-                linea += f" doi:{doi}"
-            return linea
-
-    # Chicago
-    elif norma == "Chicago":
-        aut_str = _autores_apa(autores)
-        if tipo == "articulo":
-            titulo_fmt = _sentence_case(titulo)
-            linea = f'{aut_str} {anio}. "{titulo_fmt}."'
-            if revista:
-                linea += f" {revista}"
-                if vol:
-                    linea += f" {vol}"
-                if num:
-                    linea += f", no. {num}"
-            if pags:
-                linea += f": {pags}."
-            else:
-                linea += "."
-            if doi_url:
-                linea += f" {doi_url}."
-            return linea
-        else:
-            titulo_fmt = _sentence_case(titulo)
-            linea = f"{aut_str} {anio}. {titulo_fmt}."
-            if ed:
-                linea += f" {ed}."
-            if doi_url:
-                linea += f" {doi_url}."
-            return linea
-
-    # MLA
-    elif norma == "MLA":
-        if autores:
-            primero = autores[0]
-            aut_str = primero.get("apellido", "")
-            if primero.get("nombre"):
-                aut_str += f", {primero['nombre']}"
-            if len(autores) > 1:
-                aut_str += ", et al."
-        else:
-            aut_str = "Anónimo"
-
-        if tipo == "articulo":
-            linea = f'{aut_str}. "{titulo}."'
-            if revista:
-                linea += f" {revista},"
-            if vol:
-                linea += f" vol. {vol},"
-            if num:
-                linea += f" no. {num},"
-            linea += f" {anio},"
-            if pags:
-                linea += f" pp. {pags}."
-            if doi_url:
-                linea += f" {doi_url}."
-            return linea
-        else:
-            linea = f"{aut_str}. {titulo}. {ed + ',' if ed else ''} {anio}."
-            if doi_url:
-                linea += f" {doi_url}."
-            return linea
-
-    # Harvard
-    elif norma == "Harvard":
-        aut_str = _autores_apa(autores)
-        if tipo == "articulo":
-            linea = f"{aut_str} ({anio}) '{titulo}',"
-            if revista:
-                linea += f" {revista},"
-            if vol:
-                linea += f" vol. {vol},"
-            if num:
-                linea += f" no. {num},"
-            if pags:
-                linea += f" pp. {pags}."
-            if doi_url:
-                linea += f" Available at: {doi_url}"
-            return linea
-        else:
-            linea = f"{aut_str} ({anio}) {titulo}."
-            if ed:
-                linea += f" {ed}."
-            if doi_url:
-                linea += f" Available at: {doi_url}"
-            return linea
-
-    # Fallback APA
-    aut_str = _autores_apa(autores)
-    return f"{aut_str} ({anio}). {titulo}. {ed or revista}. {doi_url}"
-
-
-def formatear_referencias(refs: list, norma: str) -> str:
-    if not refs:
-        return "No se pudieron obtener referencias para este tema."
-
-    if norma in ("APA 7", "APA 6", "Harvard", "Chicago", "MLA"):
-        refs = sorted(refs, key=lambda r: (
-            r["autores"][0]["apellido"].lower() if r.get("autores") else "z"
-        ))
-
-    lineas = []
-    for i, ref in enumerate(refs, 1):
-        linea = formatear_referencia(ref, norma, indice=i)
-        lineas.append(linea)
-
-    return "\n\n".join(lineas)
+    try:
+        data         = request.json
+        tema         = data.get('tema', '').strip()
+        norma        = data.get('norma', 'APA 7')
+        refs_manuales = data.get('refs_manuales', '')
+
+        if not tema:
+            return jsonify({'success': False, 'error': 'Tema requerido'}), 400
+
+        logger.info(f"🔬 Buscando referencias reales para: '{tema[:50]}'")
+
+        # Extraer contenido relevante del informe para mejorar la relevancia
+        # Usamos introducción + marco teórico + desarrollo si están disponibles
+        contenido_informe = data.get('contenido_informe', '')
+        if not contenido_informe:
+            # Intentar reconstruir desde secciones si el frontend las envía
+            secciones_recibidas = data.get('secciones', {})
+            partes = []
+            for sec in ('introduccion', 'marco_teorico', 'desarrollo'):
+                if secciones_recibidas.get(sec):
+                    partes.append(secciones_recibidas[sec][:1500])
+            contenido_informe = ' '.join(partes)
+
+        # Buscar en CrossRef + OpenAlex, usando el contenido para mejorar relevancia
+        refs = buscar_referencias_reales(tema, cantidad_total=12,
+                                         contenido_informe=contenido_informe)
+
+        if not refs:
+            # Fallback: usar DeepSeek para generar referencias plausibles
+            logger.warning("No se encontraron referencias reales, usando fallback IA")
+            contenido_ia = generar_seccion('referencias', tema, refs_manuales, 'academico', norma, 'universitario', refs_manuales)
+            return jsonify({
+                'success':    True,
+                'contenido':  contenido_ia or 'No se pudieron obtener referencias.',
+                'fuente':     'ia_fallback',
+                'total':      0
+            })
+
+        # Formatear según la norma
+        texto_refs = formatear_referencias(refs, norma)
+
+        # Si hay referencias manuales, agregarlas al final
+        if refs_manuales and refs_manuales.strip():
+            texto_refs += f"\n\n{refs_manuales.strip()}"
+
+        logger.info(f"✅ {len(refs)} referencias reales formateadas en norma {norma}")
+
+        return jsonify({
+            'success':   True,
+            'contenido': texto_refs,
+            'fuente':    'crossref_openalex',
+            'total':     len(refs),
+            'detalles':  [{'tipo': r['tipo'], 'titulo': r['titulo'][:60], 'anio': r['anio']} for r in refs]
+        })
+
+    except Exception as e:
+        logger.error(f"Error en /api/referencias-reales: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/exportar-pdf', methods=['POST'])
+def exportar_pdf():
+    try:
+        data = request.json
+        filename, filepath = generar_pdf(data['datos_usuario'], data['secciones'])
+        return send_file(filepath, as_attachment=True, download_name=filename, mimetype='application/pdf')
+    except Exception as e:
+        logger.error(f"Error PDF: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/exportar-word', methods=['POST'])
+def exportar_word():
+    try:
+        data   = request.json
+        buffer = generar_word(data['datos_usuario'], data['secciones'])
+        nombre_archivo = f"informe_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx"
+        return send_file(
+            buffer,
+            as_attachment=True,
+            download_name=nombre_archivo,
+            mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        )
+    except Exception as e:
+        logger.error(f"Error Word: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/health')
+def health():
+    return jsonify({
+        'status':              'healthy',
+        'api_configured':      bool(DEEPSEEK_API_KEY),
+        'normas_disponibles':  list(NORMAS_INSTRUCCIONES.keys()),
+        'tipos_disponibles':   list(TIPOS_INSTRUCCIONES.keys()),
+        'version':             '3.3'
+    })
+
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 10000))
+    app.run(host='0.0.0.0', port=port, debug=False)
