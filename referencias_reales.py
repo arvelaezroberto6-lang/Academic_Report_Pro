@@ -273,7 +273,8 @@ def buscar_referencias_reales(tema: str, cantidad_total: int = 12,
     # con el informe, descartando referencias temáticamente ajenas.
     texto_referencia = contenido_informe if contenido_informe.strip() else tema
     unicas = _filtrar_por_relevancia(unicas, texto_referencia, umbral=0.35)
-    unicas = _balancear_tipos(unicas, cantidad_total)
+    # Balancear tipos DESPUÉS del filtrado, respetando el orden de score
+    unicas = _balancear_tipos_con_score(unicas, cantidad_total)
     logger.info(f"Total referencias reales: {len(unicas)}")
     return unicas[:cantidad_total]
 
@@ -679,6 +680,36 @@ def _balancear_tipos(refs: list, total: int) -> list:
     return resultado
 
 
+def _balancear_tipos_con_score(refs: list, total: int) -> list:
+    """
+    Igual que _balancear_tipos pero los refs ya vienen ordenados por score
+    descendente desde _filtrar_por_relevancia. Toma como máximo:
+      - 60% artículos, 25% libros/tesis, 15% reportes
+    pero si faltan de un tipo, rellena con los de mayor score disponibles.
+    Nunca incluye refs de score 0.
+    """
+    articulos = [r for r in refs if r["tipo"] == "articulo"]
+    libros    = [r for r in refs if r["tipo"] in ("libro", "tesis")]
+    reportes  = [r for r in refs if r["tipo"] == "reporte"]
+
+    cuota_art = max(1, int(total * 0.60))
+    cuota_lib = max(1, int(total * 0.25))
+    cuota_rep = max(1, total - cuota_art - cuota_lib)
+
+    seleccion = (
+        articulos[:cuota_art] +
+        libros[:cuota_lib] +
+        reportes[:cuota_rep]
+    )
+
+    # Si aún no llegamos al total, rellenar con lo que quede (mayor score primero)
+    usados = {id(r) for r in seleccion}
+    resto = [r for r in refs if id(r) not in usados]
+    seleccion.extend(resto[:total - len(seleccion)])
+
+    return seleccion[:total]
+
+
 
 def _puntaje_relevancia(titulo: str, tema: str) -> float:
     """
@@ -704,9 +735,19 @@ def _puntaje_relevancia(titulo: str, tema: str) -> float:
             "mientras", "tanto", "muy", "puede", "pueden", "debe", "deben", "tiene",
             "tienen", "the", "and", "for", "with", "from", "into", "that", "this",
             "are", "was", "has", "have", "been", "its", "their", "which",
+            # Términos estructurales de informe — nunca discriminan el tema real
             "informe", "según", "mediante", "además", "objetivo", "desarrollo",
             "conclusion", "introducción", "marco", "metodología", "general",
             "análisis", "estudio", "revisión", "impacto", "efectos", "caso",
+            # Palabras académicas vacías — frecuentes en cualquier informe
+            "proceso", "sistema", "modelo", "nivel", "factor", "forma", "parte",
+            "través", "manera", "dicho", "dichos", "dichas", "dicha", "mismo",
+            "misma", "mismos", "siendo", "partir", "tanto", "cuanto", "cuales",
+            "papel", "tipo", "tipos", "base", "dado", "hacer", "hecho", "hechos",
+            "permite", "permiten", "presente", "diferentes", "importante",
+            "process", "system", "model", "level", "factor", "approach", "method",
+            "methods", "paper", "based", "using", "used", "results", "found",
+            "shows", "showed", "provide", "provides", "important", "different",
         }
         muestra = re.sub(r'\([^)]{0,60}\)', ' ', tema[:4000]).lower()
         muestra = re.sub(r'\d+', ' ', muestra)
@@ -815,8 +856,8 @@ def _puntaje_relevancia(titulo: str, tema: str) -> float:
     if palabras_titulo:
         ajenas = sum(1 for p in palabras_titulo if p not in todas_variantes_tema)
         ratio_ajenas = ajenas / len(palabras_titulo)
-        if ratio_ajenas > 0.85:
-            score *= max(0.1, 1 - (ratio_ajenas - 0.85) * 3)
+        if ratio_ajenas > 0.70:
+            score *= max(0.1, 1 - (ratio_ajenas - 0.70) * 3)
 
     return min(score, 1.0)
 
@@ -845,10 +886,10 @@ def _filtrar_por_relevancia(refs: list, tema: str, umbral: float = 0.25) -> list
 
     relevantes = [(s, r) for s, r in puntuadas if s >= umbral]
 
-    # Si quedan pocas, bajar gradualmente — pero nunca por debajo de 0.15
+    # Si quedan pocas, bajar gradualmente — pero nunca por debajo de 0.20
     # para no incluir referencias sin relación real con el tema
     if len(relevantes) < 6:
-        for umbral_reducido in (0.25, 0.15):
+        for umbral_reducido in (0.28, 0.20):
             relevantes = [(s, r) for s, r in puntuadas if s >= umbral_reducido]
             if len(relevantes) >= 4:
                 logger.warning(f"Umbral reducido a {umbral_reducido} — {len(relevantes)} refs")
