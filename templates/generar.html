@@ -351,7 +351,7 @@ select option { background: var(--surface); }
                 <div class="card-ico">⚙️</div>
                 <div>
                     <div class="card-ttl">Modo de uso</div>
-                    <div class="card-sub">¿Tienes apuntes propios?</div>
+                    <div class="card-sub" id="modoSubtitulo">¿Tienes apuntes propios?</div>
                 </div>
             </div>
             <div class="mode-tabs" id="modoTabs">
@@ -570,11 +570,28 @@ document.querySelectorAll('#modoTabs .mode-tab').forEach(btn => {
     if (modo !== 'rapido') wrap.classList.remove('hidden');
     else wrap.classList.add('hidden');
     const descs = {
-      rapido:     'Escribe solo el tema y la IA construye el informe completo.',
-      automatico: 'Pega tus apuntes y la IA los organiza en un informe profesional.',
-      manual:     'Escribe información detallada y la IA la convierte en redacción académica formal.'
+      rapido:     'Escribe solo el tema y la IA construye el informe completo desde cero.',
+      automatico: 'Pega tus apuntes o notas. La IA los usa como base y complementa con conocimiento académico.',
+      manual:     'Escribe tu propio texto. La IA lo formaliza y enriquece con citas y lenguaje académico, sin inventar hechos nuevos.'
+    };
+    const subtitulos = {
+      rapido:     '¿Tienes apuntes propios?',
+      automatico: 'Pega tus apuntes aquí abajo',
+      manual:     'Escribe tu texto — la IA lo formaliza'
     };
     document.getElementById('modoDesc').innerText = descs[modo];
+    document.getElementById('modoSubtitulo').innerText = subtitulos[modo];
+    // Update textoUsuario label and placeholder
+    const ta = document.getElementById('textoUsuario');
+    if (ta) {
+      if (modo === 'automatico') {
+        ta.placeholder = 'Pega aquí tus apuntes, resúmenes o notas del tema. La IA los usará como base del informe...';
+        ta.previousElementSibling && (ta.previousElementSibling.textContent = '📎 Tus apuntes / notas');
+      } else if (modo === 'manual') {
+        ta.placeholder = 'Escribe aquí tu propio texto o borradores de cada sección. La IA lo formalizará en redacción académica sin cambiar tus ideas...';
+        ta.previousElementSibling && (ta.previousElementSibling.textContent = '✏️ Tu texto a formalizar');
+      }
+    }
   };
 });
 
@@ -685,10 +702,11 @@ document.getElementById('generarBtn').onclick = async () => {
 
   const payload = {
     tema,
+    modo,
     nivel:         document.getElementById('nivel').value,
     tipo_informe:  tipoActual,
     norma:         normaActual,
-    texto_usuario: document.getElementById('textoUsuario')?.value || '',
+    texto_usuario: modo !== 'rapido' ? (document.getElementById('textoUsuario')?.value || '') : '',
     refs_manuales: refsManuales,
     autores:       [{ nombre: nombrePrincipal }, ...autores]
   };
@@ -841,11 +859,12 @@ document.getElementById('regenerarSeccionBtn').onclick = async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         seccion:       clave,
+        modo,
         tema:          datosUsuario.tema,
         nivel:         document.getElementById('nivel').value,
         tipo_informe:  tipoActual,
         norma:         normaActual,
-        texto_usuario: document.getElementById('textoUsuario')?.value || '',
+        texto_usuario: modo !== 'rapido' ? (document.getElementById('textoUsuario')?.value || '') : '',
         refs_manuales: refsManuales
       })
     });
