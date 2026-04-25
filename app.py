@@ -232,7 +232,7 @@ ESTILO DE REDACCIÓN:
 - Incluye interpretaciones o valoraciones propias del autor en las secciones analíticas.
 """
 
-def build_prompt(seccion, tema, info, tipo, norma, nivel, refs_manuales='', modo='rapido'):
+def build_prompt(seccion, tema, info, tipo, norma, nivel, refs_manuales='', modo='rapido', objetivos_texto=''):
     instruccion_norma = NORMAS_INSTRUCCIONES.get(norma, NORMAS_INSTRUCCIONES['APA 7'])
     instruccion_tipo  = TIPOS_INSTRUCCIONES.get(tipo, TIPOS_INSTRUCCIONES['academico'])
 
@@ -251,13 +251,59 @@ def build_prompt(seccion, tema, info, tipo, norma, nivel, refs_manuales='', modo
     }
     instruccion_modo = _MODOS_INSTRUCCION.get(modo, "")
 
+    # FIX 5: Detect subject area for domain-specific depth
+    _AREAS_TEMATICAS = {
+        'tecnologia': ['inteligencia artificial', 'ia ', ' ia,', 'machine learning', 'software', 'programacion',
+                       'digital', 'internet', 'ciberseguridad', 'blockchain', 'datos', 'tic', 'algoritmo',
+                       'automatizacion', 'robotica', 'computacion', 'redes', 'cloud', 'nube'],
+        'salud':      ['salud', 'medicina', 'enfermedad', 'clinico', 'hospital', 'farmaco', 'vacuna',
+                       'epidemia', 'pandemia', 'covid', 'paciente', 'quirurgico', 'terapia', 'diagnostico',
+                       'nutricion', 'mental', 'psicologia', 'biologico', 'genetico', 'celula'],
+        'educacion':  ['educacion', 'aprendizaje', 'enseñanza', 'pedagogia', 'curriculo', 'docente',
+                       'universidad', 'colegio', 'estudiante', 'escuela', 'formacion', 'competencia',
+                       'didactica', 'evaluacion', 'inclusion', 'desercion', 'alfabetizacion'],
+        'medio_ambiente': ['ambiente', 'ecologia', 'sostenibilidad', 'cambio climatico', 'contaminacion',
+                           'biodiversidad', 'residuos', 'energia renovable', 'deforestacion', 'agua',
+                           'emisiones', 'carbono', 'mineria', 'petroleo', 'recurso natural'],
+        'economia':   ['economia', 'finanzas', 'mercado', 'empresa', 'emprendimiento', 'inflacion',
+                       'pib', 'comercio', 'exportacion', 'inversion', 'fiscal', 'tributario', 'banco',
+                       'creditio', 'desempleo', 'laboral', 'productividad', 'competitividad'],
+        'ciencias':   ['quimica', 'fisica', 'biologia', 'laboratorio', 'experimento', 'reaccion',
+                       'molecula', 'atomo', 'celular', 'organico', 'inorganico', 'termodinamica',
+                       'electromagnetismo', 'genetica', 'evolucion', 'taxonomia'],
+        'derecho':    ['derecho', 'juridico', 'ley', 'norma', 'constitucion', 'penal', 'civil',
+                       'contrato', 'litigio', 'jurisprudencia', 'tribunal', 'regulacion', 'politica publica'],
+        'social':     ['sociedad', 'cultura', 'comunidad', 'migracion', 'genero', 'pobreza',
+                       'desigualdad', 'violencia', 'paz', 'conflicto', 'derechos humanos', 'inclusion',
+                       'diversidad', 'familia', 'poblacion'],
+    }
+    _AREA_INSTRUCCIONES = {
+        'tecnologia':     "Área TECNOLOGÍA/IA: incluye arquitecturas, métricas técnicas (precisión, recall, F1), estándares ISO/IEEE aplicables, comparación de herramientas y casos de uso reales en Colombia (sector público y privado).",
+        'salud':          "Área SALUD/MEDICINA: usa nomenclatura clínica correcta (CIE-10 si aplica), cifras epidemiológicas del INS o MinSalud, protocolos clínicos vigentes en Colombia, y referencias de revistas indexadas (PubMed, Scielo).",
+        'educacion':      "Área EDUCACIÓN: referencia el sistema educativo colombiano (MEN, ICFES, SENA), incluye estadísticas de calidad educativa del DANE y MinEducación, y vincula con políticas como Ser Pilo Paga o modelos pedagógicos actuales.",
+        'medio_ambiente': "Área MEDIO AMBIENTE: cita el IDEAM, MADS, CAR y acuerdos internacionales ratificados por Colombia (Acuerdo de París, COP28). Incluye datos de temperatura, deforestación o contaminación con fuente.",
+        'economia':       "Área ECONOMÍA/FINANZAS: usa datos macroeconómicos del DANE, Banco de la República o DNP. Menciona sectores estratégicos colombianos (minería, agro, servicios, manufactura) con cifras del PIB sectoriales.",
+        'ciencias':       "Área CIENCIAS NATURALES/LABORATORIO: usa nomenclatura IUPAC si aplica, describe procedimientos con precisión técnica, incluye ecuaciones o fórmulas cuando corresponda, y cita artículos de revistas científicas con DOI.",
+        'derecho':        "Área DERECHO/JURÍDICO: cita la Constitución Política de Colombia de 1991, leyes, decretos y jurisprudencia real de la Corte Constitucional o Corte Suprema. Usa lenguaje jurídico técnico correcto.",
+        'social':         "Área CIENCIAS SOCIALES: incluye perspectivas interseccionales cuando aplique, cita investigaciones cualitativas y cuantitativas, y contextualiza en la realidad sociopolítica colombiana (post-conflicto, desplazamiento, paz total).",
+    }
+    tema_lower = tema.lower()
+    area_detectada = None
+    max_matches = 0
+    for area, keywords in _AREAS_TEMATICAS.items():
+        matches = sum(1 for kw in keywords if kw in tema_lower)
+        if matches > max_matches:
+            max_matches = matches
+            area_detectada = area
+    instruccion_area = ("\n" + _AREA_INSTRUCCIONES[area_detectada] + "\n") if area_detectada else ""
+
     base = f"""Tipo de informe: {instruccion_tipo}
 {instruccion_nivel}
 Norma bibliográfica activa: {norma}.
 {instruccion_norma}
 {_CONTEXTO_COLOMBIA}
 {_ESTILO_NATURAL}
-{instruccion_modo}"""
+{instruccion_area}{instruccion_modo}"""
     if seccion == 'introduccion':
         return base + f"""Escribe ÚNICAMENTE la INTRODUCCIÓN del informe sobre: "{tema}".
 Estructura obligatoria (4-5 párrafos):
@@ -297,39 +343,95 @@ Estructura obligatoria (mínimo 5 párrafos):
 - Incluye autores latinoamericanos o colombianos cuando existan."""
 
     elif seccion == 'metodologia':
-        return base + f"""Escribe ÚNICAMENTE la METODOLOGÍA del informe de tipo "{tipo}" sobre: "{tema}".
-Adecua la complejidad metodológica al nivel educativo indicado arriba.
+        # FIX 1: Metodología adaptada según tipo de informe real
+        _METODO_POR_TIPO = {
+            'laboratorio': f"""Este informe es un INFORME DE LABORATORIO sobre: "{tema}".
+La metodología DEBE describir el procedimiento experimental real con estos 5 elementos:
+1. Enfoque experimental: hipótesis planteada, variables independientes y dependientes, grupos de control.
+2. Materiales y equipos: lista detallada de materiales usados (reactivos, instrumentos, software de medición).
+3. Procedimiento paso a paso: descripción cronológica de los pasos del experimento con precisión técnica.
+4. Técnicas de recolección de datos: cómo se midieron los resultados (tablas, gráficas, análisis estadístico).
+5. Criterios de validez y limitaciones: posibles fuentes de error, condiciones del laboratorio, repetibilidad.
+- Usa terminología técnica del área (química, biología, física, etc.) correctamente.
+- Menciona al menos 2 protocolos o normas técnicas que apliquen al experimento.""",
 
-REGLA DE ORO — CREDIBILIDAD METODOLÓGICA:
-Este informe es un trabajo académico de consulta y análisis, NO una investigación de campo real.
-Por tanto, la metodología DEBE basarse en REVISIÓN DOCUMENTAL y ANÁLISIS DE FUENTES SECUNDARIAS.
-NO inventes encuestas, entrevistas, muestras de participantes ni trabajo de campo que el estudiante
-no realizó, porque un docente puede detectar esto fácilmente y bajar la nota.
+            'pasantia': f"""Este informe es un INFORME DE PASANTÍA sobre: "{tema}".
+La metodología describe el marco de trabajo de la práctica con estos 4 elementos:
+1. Modalidad y duración: tipo de vinculación, empresa/entidad, horas totales, período.
+2. Método de trabajo: metodologías usadas en la empresa (Scrum, Kanban, PMBOK, etc.) y cómo el pasante se integró.
+3. Fuentes de información: documentos internos, manuales técnicos, capacitaciones recibidas, supervisión.
+4. Evaluación y seguimiento: indicadores con los que se midió el desempeño del pasante, informes de avance.
+- NO inventes trabajo de campo externo: la pasantía ocurrió dentro de la empresa.""",
 
-Estructura obligatoria (4 párrafos concisos y creíbles):
-1. Enfoque: cualitativo-documental o descriptivo, justificando por qué es adecuado para este tema.
+            'proyecto': f"""Este informe es un INFORME DE PROYECTO sobre: "{tema}".
+La metodología describe el marco de gestión del proyecto con estos 5 elementos:
+1. Marco metodológico de gestión: enfoque usado (PMI/PMBOK, PRINCE2, metodología ágil, etc.) con justificación.
+2. Fases del proyecto y cronograma: etapas definidas, hitos y entregables asociados a cada fase.
+3. Técnicas de recolección y análisis: cómo se recopiló información para tomar decisiones (reuniones, informes, KPIs).
+4. Gestión de riesgos: metodología para identificar y mitigar riesgos durante la ejecución.
+5. Criterios de éxito y control de calidad: indicadores de desempeño definidos al inicio del proyecto.""",
+
+            'ejecutivo': f"""Este informe es un INFORME EJECUTIVO sobre: "{tema}".
+La metodología es concisa y orientada a la toma de decisiones con estos 3 elementos:
+1. Fuentes consultadas: bases de datos empresariales, reportes del sector, benchmarks y analistas de referencia.
+2. Criterios de análisis: variables clave evaluadas, período temporal, alcance geográfico (Colombia / Latam).
+3. Limitaciones: acceso a información confidencial, oportunidad de los datos disponibles.""",
+
+            'tesis': f"""Este informe tiene estructura de TESIS/MONOGRAFÍA sobre: "{tema}".
+La metodología es el núcleo del trabajo académico y DEBE incluir estos 6 elementos:
+1. Paradigma investigativo: positivista, interpretativo o socio-crítico — con fundamentación teórica.
+2. Enfoque: cuantitativo, cualitativo o mixto — justificado epistemológicamente.
+3. Tipo y alcance: exploratorio, descriptivo, correlacional o explicativo.
+4. Población, muestra y muestreo: si aplica revisión sistemática, describe el protocolo PRISMA.
+5. Instrumentos y técnicas: encuestas (con validación), entrevistas semiestructuradas, análisis documental, etc.
+6. Procedimiento de análisis: software estadístico, análisis de contenido, triangulación, etc.""",
+        }
+
+        # Default para académico, investigativo y otros
+        _metodo_default = f"""Este informe es de REVISIÓN DOCUMENTAL Y ANÁLISIS sobre: "{tema}".
+REGLA DE CREDIBILIDAD: Este informe NO incluye investigación de campo real.
+Basa la metodología en análisis de fuentes secundarias — NO inventes encuestas ni muestras.
+Estructura obligatoria (4 párrafos):
+1. Enfoque cualitativo-documental o descriptivo con justificación académica.
 2. Tipo y alcance: investigación descriptiva basada en análisis de fuentes secundarias (informes
-   oficiales del DANE, MinTIC, CRC, artículos académicos, documentos de política pública).
-3. Proceso de recolección y análisis: describe cómo se seleccionaron, revisaron y contrastaron
-   las fuentes oficiales y académicas. Menciona 3-4 fuentes concretas reales (sin inventar muestra).
-4. Criterios éticos y limitaciones: uso honesto de fuentes, acceso limitado a datos primarios,
-   temporalidad de la información disponible.
-{"5. Si aplica: materiales o procedimientos del laboratorio." if tipo == 'laboratorio' else ""}
-- Tono honesto y académico. SIN cifras de muestra (384 encuestados, 12 entrevistas, etc.) a menos
-  que el autor haya indicado que realmente las realizó en la información adicional."""
+   del DANE, MinTIC, CRC, artículos de revistas indexadas, documentos de política pública).
+3. Proceso de selección y análisis de fuentes: criterios de inclusión/exclusión, bases de datos
+   consultadas (Scopus, Redalyc, Scielo, Google Scholar), período temporal cubierto.
+4. Limitaciones honestas: acceso a datos primarios, actualización de fuentes, sesgo de publicación."""
+
+        metodo_especifico = _METODO_POR_TIPO.get(tipo, _metodo_default)
+        return base + f"""Escribe ÚNICAMENTE la METODOLOGÍA del informe sobre: "{tema}".
+Adecua la complejidad al nivel educativo indicado.
+
+{metodo_especifico}
+
+- Al menos 2 citas en formato {norma} sobre metodología de investigación o del área específica.
+- Tono académico, honesto y específico. NUNCA menciones datos de muestra inventados."""
 
     elif seccion == 'desarrollo':
+        # FIX 2: Inject the actual generated objectives so the development directly addresses them
+        bloque_objetivos = ""
+        if objetivos_texto and objetivos_texto.strip():
+            bloque_objetivos = f"""
+OBJETIVOS DEL INFORME (YA GENERADOS — ÚSALOS COMO GUÍA OBLIGATORIA):
+{objetivos_texto.strip()}
+
+REGLA CRÍTICA: El desarrollo DEBE responder explícitamente a cada objetivo específico listado arriba.
+Dedica al menos un párrafo sustancial a demostrar cómo se cumplió cada objetivo específico.
+Usa frases de conexión directa como: "En relación con el objetivo específico N, que planteaba [objetivo]..."
+NO puedes concluir el desarrollo sin haber abordado todos los objetivos específicos.
+"""
         return base + f"""Escribe ÚNICAMENTE el DESARROLLO del informe de tipo "{tipo}" sobre: "{tema}".
+{bloque_objetivos}
 Estructura obligatoria (mínimo 7 párrafos):
-1. Presentación de resultados principales con datos, cifras o ejemplos concretos.
-2. Para cumplir el Objetivo Específico 1 se realizó... [explícita vinculación con objetivos].
-3. Para cumplir el Objetivo Específico 2 se realizó... [análisis de segundo hallazgo].
-4. Comparación con el marco teórico: ¿los resultados confirman o contradicen la teoría?
+1. Presentación del contexto y resultados principales con datos concretos y citas en formato {norma}.
+2. Respuesta al Objetivo Específico 1: [desarrollar el hallazgo central con evidencia y citas].
+3. Respuesta al Objetivo Específico 2: [segundo hallazgo con análisis comparativo].
+4. Respuesta al Objetivo Específico 3: [tercer hallazgo con perspectiva crítica].
 5. Análisis del contexto colombiano: aplica los resultados a la realidad de Colombia.
-   - Menciona datos del DANE, MinTIC, CRC u otras entidades si aplican al tema.
-   - Nombra empresas, sectores o casos reales del país.
-6. Tablas o datos estructurados: incluye al menos UNA tabla con datos relevantes.
-   FORMATO OBLIGATORIO DE TABLA (usa EXACTAMENTE este formato con ##TABLE## y ##ENDTABLE##):
+   - Cita datos del DANE, MinTIC, CRC u otras entidades institucionales relevantes.
+   - Nombra empresas, sectores o casos reales del país con sus respectivas fuentes.
+6. Tabla de datos estructurada — FORMATO OBLIGATORIO (usa EXACTAMENTE ##TABLE##/##ENDTABLE##):
    ##TABLE##
    TITULO: [Nombre descriptivo de la tabla]
    CABECERAS: Categoría | Valor | Año | Fuente
@@ -337,11 +439,10 @@ Estructura obligatoria (mínimo 7 párrafos):
    FILA: [dato] | [dato] | [año] | [fuente]
    FILA: [dato] | [dato] | [año] | [fuente]
    FILA: [dato] | [dato] | [año] | [fuente]
-   FILA: [dato] | [dato] | [año] | [fuente]
    ##ENDTABLE##
-   NO uses markdown (| col | col |) para la tabla. Usa SOLO el formato ##TABLE## indicado arriba.
-7. Análisis crítico y opinión del autor: ¿qué implican estos resultados? ¿qué limitaciones existen?
-- Al menos 4 citas en formato {norma}. Fuentes entre 2021 y 2025."""
+7. Análisis crítico del autor: ¿los hallazgos confirman la teoría?, ¿qué limitaciones existen?
+- Al menos 5 citas en formato {norma} distribuidas en el texto. Fuentes entre 2021 y 2025.
+- TODA cifra o estadística debe ir acompañada de su cita inmediatamente."""
 
     elif seccion == 'conclusiones':
         return base + f"""Escribe ÚNICAMENTE las CONCLUSIONES del informe sobre: "{tema}".
@@ -519,8 +620,8 @@ Sin título de sección, sin preámbulo, sin explicación. Solo las referencias.
 # ============================================================
 # GENERAR SECCIÓN
 # ============================================================
-def generar_seccion(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_manuales='', modo='rapido'):
-    prompt = build_prompt(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_manuales, modo)
+def generar_seccion(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_manuales='', modo='rapido', objetivos_texto=''):
+    prompt = build_prompt(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_manuales, modo, objetivos_texto)
     if not prompt:
         return None
 
@@ -541,14 +642,27 @@ def generar_seccion(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_
         f"Eres un experto en redacción académica en español, especializado en norma {norma} "
         f"y profundo conocedor del contexto colombiano y latinoamericano. "
         f"Escribes {_nivel_sistema}.{_modo_sistema} "
+
+        # FIX 4: Citas obligatorias dentro del texto
+        f"REGLA CRÍTICA DE CITAS: TODA afirmación factual, estadística o concepto teórico "
+        f"DEBE tener una cita en el texto en formato {norma}. "
+        f"Por ejemplo en APA: (MinTIC, 2023), (García & López, 2022), (DANE, 2024). "
+        f"No puedes escribir un dato o afirmación sin su respectiva cita inmediatamente después. "
+        f"Las secciones de introducción, marco teórico y desarrollo deben tener al menos "
+        f"una cita por párrafo. "
+
+        # FIX 7: No inventar datos
+        "REGLA CRÍTICA DE VERACIDAD: NUNCA inventes datos, cifras, estadísticas ni nombres de estudios. "
+        "Si no tienes el dato exacto de una fuente real, escribe: "
+        "'según estimaciones recientes' o 'de acuerdo con reportes del sector (año aproximado)'. "
+        "NUNCA uses porcentajes con decimales inventados (ej: 23,7% o 41,3%) — usa rangos: 'entre el 20 y 25%'. "
+        "Si citas a MinTIC, DANE, CRC u otra entidad colombiana, el dato debe ser real y verificable. "
+
         "Cuando aplique al tema, incluyes datos de Colombia citando fuentes como MinTIC, DANE, CRC o MinCiencias. "
-        "IMPORTANTE SOBRE CIFRAS: usa solo datos de fuentes reales. Cuando no tengas un dato exacto confirmado, "
-        "usa rangos o expresiones como 'según estimaciones'. NUNCA inventes porcentajes con decimales precisos "
-        "(ej: 23,7%) sin fuente real. "
         "Usas referencias de años 2021-2025. "
         f"Para referencias en norma {norma}: aplica formato estrictamente correcto. "
         "Balanceas el análisis técnico con interpretaciones propias del autor. "
-        "Respondes SOLO con el contenido solicitado, sin títulos de sección, sin preámbulos, sin '**', sin markdown."
+        "Respondes SOLO con el contenido solicitado, sin títulos de sección, sin preámbulos, sin asteriscos (**), sin markdown."
     )
 
     contenido = llamar_deepseek(prompt, system_prompt=system_prompt, max_tokens=3000)
@@ -559,19 +673,23 @@ def generar_seccion(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_
 
 def generar_informe_completo(tema, info_extra, tipo_informe, norma, nivel, modo='rapido'):
     """
-    Genera las 8 secciones en paralelo (hasta 4 simultáneas) para reducir
-    tiempos de espera y minimizar fallos por timeout secuencial.
+    FIX 2: Genera objetivos PRIMERO, luego inyecta esos objetivos en el prompt
+    del desarrollo para que el contenido responda directamente a ellos.
+    El resto de secciones se genera en paralelo.
     """
     claves = ['introduccion', 'objetivos', 'marco_teorico', 'metodologia',
               'desarrollo', 'conclusiones', 'recomendaciones', 'referencias']
     secciones = {c: '' for c in claves}
+
+    # Paso 1: Generar todo excepto 'desarrollo' en paralelo
+    claves_paralelas = [c for c in claves if c != 'desarrollo']
 
     def _generar(clave):
         resultado = generar_seccion(clave, tema, info_extra, tipo_informe, norma, nivel, modo=modo)
         return clave, resultado or ''
 
     with ThreadPoolExecutor(max_workers=4) as executor:
-        futuros = {executor.submit(_generar, c): c for c in claves}
+        futuros = {executor.submit(_generar, c): c for c in claves_paralelas}
         for futuro in as_completed(futuros):
             try:
                 clave, contenido = futuro.result()
@@ -580,6 +698,15 @@ def generar_informe_completo(tema, info_extra, tipo_informe, norma, nivel, modo=
             except Exception as e:
                 clave = futuros[futuro]
                 logger.error(f"❌ Error en sección '{clave}': {e}")
+
+    # Paso 2: Generar 'desarrollo' con los objetivos ya disponibles
+    objetivos_generados = secciones.get('objetivos', '')
+    logger.info(f"🎯 Generando desarrollo con objetivos inyectados ({len(objetivos_generados)} chars)")
+    secciones['desarrollo'] = generar_seccion(
+        'desarrollo', tema, info_extra, tipo_informe, norma, nivel,
+        modo=modo, objetivos_texto=objetivos_generados
+    ) or ''
+    logger.info(f"✅ Sección 'desarrollo' completada ({len(secciones['desarrollo'])} chars)")
 
     return secciones
 
@@ -1075,12 +1202,14 @@ def api_generar_seccion():
         norma     = data.get('norma', 'APA 7')
         info      = data.get('texto_usuario', '')
         refs_man  = data.get('refs_manuales', '')
+        # FIX 2: Accept objetivos_texto from frontend when regenerating 'desarrollo'
+        objetivos_texto = data.get('objetivos_texto', '')
 
         if not seccion or not tema:
             return jsonify({'success': False, 'error': 'Faltan parámetros'}), 400
 
         modo      = data.get('modo', 'rapido')
-        contenido = generar_seccion(seccion, tema, info, tipo, norma, nivel, refs_man, modo)
+        contenido = generar_seccion(seccion, tema, info, tipo, norma, nivel, refs_man, modo, objetivos_texto)
 
         if contenido:
             return jsonify({'success': True, 'seccion': seccion, 'contenido': contenido})
