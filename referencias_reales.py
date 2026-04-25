@@ -269,8 +269,10 @@ def buscar_referencias_reales(tema: str, cantidad_total: int = 12,
     # ── Filtrar por relevancia ──────────────────────────────────
     # Si hay contenido del informe, puntuar contra él (más preciso).
     # Si no, puntuar solo contra el tema (comportamiento anterior).
+    # Umbral 0.35: exige que el título comparta al menos 2 conceptos
+    # con el informe, descartando referencias temáticamente ajenas.
     texto_referencia = contenido_informe if contenido_informe.strip() else tema
-    unicas = _filtrar_por_relevancia(unicas, texto_referencia, umbral=0.20)
+    unicas = _filtrar_por_relevancia(unicas, texto_referencia, umbral=0.35)
     unicas = _balancear_tipos(unicas, cantidad_total)
     logger.info(f"Total referencias reales: {len(unicas)}")
     return unicas[:cantidad_total]
@@ -682,20 +684,75 @@ def _puntaje_relevancia(titulo: str, tema: str) -> float:
     """
     Puntúa la relevancia de un título respecto al tema del informe.
 
-    Lógica completamente dinámica — no depende de blacklists estáticas.
-    Funciona igual para cualquier tema (ciencias, derecho, economía, etc.).
-
-    Criterios:
-      1. Extrae conceptos clave del tema (palabras sustantivas > 4 chars).
-      2. Para cada concepto, verifica si el título contiene esa palabra
-         O cualquiera de sus sinónimos/variantes conocidas.
-      3. Score = fracción de conceptos del tema cubiertos en el título.
-      4. Bonus por bigramas exactos (frases de 2 palabras).
-      5. Penalty si la mayoría de palabras del título son completamente
-         ajenas a todos los conceptos del tema.
+    Funciona en dos modos:
+    - Texto corto (tema ≤ 200 chars): usa todas las palabras del tema como conceptos.
+    - Texto largo (contenido del informe): extrae los conceptos más frecuentes
+      para no generar ruido con palabras irrelevantes del cuerpo del texto.
     """
     titulo_lower = titulo.lower()
-    palabras_es, palabras_en = _palabras_clave_tema(tema)
+
+    # ── Modo contenido largo: extraer conceptos del texto ──────
+    if len(tema) > 200:
+        # Reusar _extraer_conceptos_de_contenido si está disponible,
+        # o hacer una extracción rápida aquí mismo
+        stopwords_ext = {
+            "de", "del", "la", "el", "los", "las", "en", "y", "a", "para", "con",
+            "por", "que", "una", "un", "su", "se", "es", "al", "lo", "como", "más",
+            "sus", "desde", "hacia", "entre", "sobre", "este", "esta", "estos",
+            "estas", "hay", "son", "fue", "han", "ser", "sido", "también", "donde",
+            "cuando", "pero", "sin", "bien", "así", "ante", "bajo", "cada",
+            "mientras", "tanto", "muy", "puede", "pueden", "debe", "deben", "tiene",
+            "tienen", "the", "and", "for", "with", "from", "into", "that", "this",
+            "are", "was", "has", "have", "been", "its", "their", "which",
+            "informe", "según", "mediante", "además", "objetivo", "desarrollo",
+            "conclusion", "introducción", "marco", "metodología", "general",
+            "análisis", "estudio", "revisión", "impacto", "efectos", "caso",
+        }
+        muestra = re.sub(r'\([^)]{0,60}\)', ' ', tema[:4000]).lower()
+        muestra = re.sub(r'\d+', ' ', muestra)
+        palabras = re.split(r'\W+', muestra)
+        freq: dict = {}
+        for p in palabras:
+            if p and len(p) > 4 and p not in stopwords_ext:
+                freq[p] = freq.get(p, 0) + 1
+        # Tomar los 12 términos más frecuentes como conceptos del informe
+        conceptos_tema = [p for p, c in sorted(freq.items(), key=lambda x: -x[1])
+                         if c >= 2][:12]
+        if not conceptos_tema:
+            return 0.5
+
+        # Score: fracción de conceptos del informe presentes en el título
+        cubiertos = 0
+        for c in conceptos_tema:
+            vars_es = []
+            vars_en = []
+            for clave, variantes in _SINONIMOS_ES.items():
+                if c == clave or c in variantes:
+                    vars_es = [clave] + variantes
+                    break
+            for clave, variantes in _SINONIMOS_EN.items():
+                if c == clave or c in variantes:
+                    vars_en = [clave] + variantes
+                    break
+            todas_vars = set(vars_es + vars_en + [c])
+            if any(v in titulo_lower for v in todas_vars):
+                cubiertos += 1
+
+        score = cubiertos / len(conceptos_tema)
+
+        # Penalty: si el título no comparte ningún término con los conceptos
+        if cubiertos == 0:
+            return 0.0
+
+        # Bonus por bigramas
+        conceptos_list = conceptos_tema
+        for i in range(len(conceptos_list) - 1):
+            if conceptos_list[i] + " " + conceptos_list[i+1] in titulo_lower:
+                score += 0.2
+
+        return min(score, 1.0)
+
+    # ── Modo tema corto: lógica original ───────────────────────
 
     # Conceptos = palabras base del tema (sin sinónimos aún), > 4 chars
     # Excluir términos geográficos/genéricos que no discriminan el área temática
@@ -788,9 +845,10 @@ def _filtrar_por_relevancia(refs: list, tema: str, umbral: float = 0.25) -> list
 
     relevantes = [(s, r) for s, r in puntuadas if s >= umbral]
 
-    # Si quedan pocas, bajar gradualmente
+    # Si quedan pocas, bajar gradualmente — pero nunca por debajo de 0.15
+    # para no incluir referencias sin relación real con el tema
     if len(relevantes) < 6:
-        for umbral_reducido in (0.15, 0.10):
+        for umbral_reducido in (0.25, 0.15):
             relevantes = [(s, r) for s, r in puntuadas if s >= umbral_reducido]
             if len(relevantes) >= 4:
                 logger.warning(f"Umbral reducido a {umbral_reducido} — {len(relevantes)} refs")
