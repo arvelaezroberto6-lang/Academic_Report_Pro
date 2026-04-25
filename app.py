@@ -649,7 +649,7 @@ Sin título de sección, sin preámbulo, sin explicación. Solo las referencias.
 # ============================================================
 # GENERAR SECCIÓN
 # ============================================================
-def generar_seccion(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_manuales='', modo='rapido', objetivos_texto=''):
+def generar_seccion(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_manuales='', modo='rapido', objetivos_texto='', contexto_refs=''):
     prompt = build_prompt(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_manuales, modo, objetivos_texto)
     if not prompt:
         return None
@@ -666,6 +666,15 @@ def generar_seccion(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_
         'automatico': " El autor te proporcionó sus apuntes o notas; úsalos como base y complementa con conocimiento académico.",
         'manual':     " El autor te proporcionó su propio texto; tu tarea es formalizarlo y enriquecerlo con lenguaje académico y citas, sin inventar hechos nuevos.",
     }.get(modo, "")
+
+    # Bloque de fuentes reales: se inyecta cuando hay papers verificados disponibles
+    _bloque_refs = ""
+    if contexto_refs and contexto_refs.strip() and seccion not in ('referencias',):
+        _bloque_refs = (
+            f"\n\n{contexto_refs}\n"
+            f"IMPORTANTE: Para las citas dentro del texto usa ÚNICAMENTE los autores y años "
+            f"de la lista anterior. No inventes autores adicionales."
+        )
 
     system_prompt = (
         f"Eres un experto en redacción académica en español, especializado en norma {norma} "
@@ -691,7 +700,8 @@ def generar_seccion(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_
         "Usas referencias de años 2021-2025. "
         f"Para referencias en norma {norma}: aplica formato estrictamente correcto. "
         "Balanceas el análisis técnico con interpretaciones propias del autor. "
-        "Respondes SOLO con el contenido solicitado, sin títulos de sección, sin preámbulos, sin asteriscos (**), sin markdown."
+        f"Respondes SOLO con el contenido solicitado, sin títulos de sección, sin preámbulos, sin asteriscos (**), sin markdown."
+        f"{_bloque_refs}"
     )
 
     contenido = llamar_deepseek(prompt, system_prompt=system_prompt, max_tokens=3000)
@@ -729,63 +739,98 @@ def generar_seccion(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_
     logger.info(f"Seccion '{seccion}' generada: {len(contenido)} chars")
     return contenido
 
+def _construir_contexto_refs(refs: list, norma: str) -> str:
+    """
+    Convierte la lista de papers reales en un bloque de texto que DeepSeek
+    puede usar como fuentes al redactar. Incluye autor, año, título y DOI
+    para que las citas en el texto sean verificables.
+    """
+    if not refs:
+        return ""
+    lineas = ["FUENTES REALES VERIFICADAS (úsalas para las citas del texto):"]
+    for i, r in enumerate(refs, 1):
+        autores = r.get("autores", [])
+        if autores:
+            apellidos = ", ".join(a["apellido"] for a in autores[:3])
+            if len(autores) > 3:
+                apellidos += " et al."
+        else:
+            apellidos = "Autor desconocido"
+        anio   = r.get("anio", "s.f.")
+        titulo = r.get("titulo", "")[:120]
+        doi    = r.get("doi", "")
+        revista = r.get("revista", "") or r.get("editorial", "")
+        linea = f"[{i}] {apellidos} ({anio}). {titulo}."
+        if revista:
+            linea += f" {revista}."
+        if doi:
+            linea += f" DOI: {doi}"
+        lineas.append(linea)
+    lineas.append(
+        "\nREGLA CRÍTICA: Cita SOLO los autores listados arriba. "
+        "Usa su apellido y año exactos (ej: García, 2023). "
+        "NO inventes autores, apellidos ni años que no aparezcan en esta lista."
+    )
+    return "\n".join(lineas)
+
+
 def generar_informe_completo(tema, info_extra, tipo_informe, norma, nivel, modo='rapido'):
     """
-    Genera el informe con referencias reales de CrossRef/OpenAlex en paralelo.
-    Orden: secciones principales en paralelo → desarrollo con objetivos → referencias reales.
+    Genera el informe con referencias reales de CrossRef/OpenAlex.
+    Orden: 1) buscar papers reales → 2) inyectarlos en cada sección → 3) generar texto.
+    Así las citas en el texto corresponden a fuentes reales verificadas.
     """
     claves = ['introduccion', 'objetivos', 'marco_teorico', 'metodologia',
               'desarrollo', 'conclusiones', 'recomendaciones', 'referencias']
     secciones = {c: '' for c in claves}
 
+    # ── PASO 1: buscar papers reales ANTES de generar cualquier sección ──
+    logger.info(f"Buscando referencias reales para '{tema[:50]}'...")
+    refs_reales = []
+    refs_texto  = None
+    refs_total  = 0
+    try:
+        refs_reales = buscar_referencias_reales(tema, cantidad_total=12)
+        if refs_reales:
+            refs_texto = formatear_referencias(refs_reales, norma)
+            refs_total = len(refs_reales)
+            logger.info(f"Referencias reales obtenidas: {refs_total}")
+    except Exception as e:
+        logger.error(f"Error buscando referencias reales: {e}")
+
+    # Construir bloque de contexto que se inyectará en cada prompt
+    contexto_refs = _construir_contexto_refs(refs_reales, norma)
+
+    # ── PASO 2: generar secciones con las fuentes reales como contexto ──
     claves_ia = [c for c in claves if c not in ('desarrollo', 'referencias')]
 
     def _generar(clave):
-        resultado = generar_seccion(clave, tema, info_extra, tipo_informe, norma, nivel, modo=modo)
+        resultado = generar_seccion(
+            clave, tema, info_extra, tipo_informe, norma, nivel,
+            modo=modo, contexto_refs=contexto_refs
+        )
         return clave, resultado or ''
 
-    def _buscar_refs_reales():
-        try:
-            refs = buscar_referencias_reales(tema, cantidad_total=12)
-            if refs:
-                return formatear_referencias(refs, norma), len(refs), 'crossref_openalex'
-            return None, 0, 'sin_resultados'
-        except Exception as e:
-            logger.error(f"Error buscando referencias reales: {e}")
-            return None, 0, 'error'
-
-    refs_texto = None
-    refs_total = 0
-
     with ThreadPoolExecutor(max_workers=5) as executor:
-        futuros_ia  = {executor.submit(_generar, c): c for c in claves_ia}
-        futuro_refs = executor.submit(_buscar_refs_reales)
+        futuros_ia = {executor.submit(_generar, c): c for c in claves_ia}
+        for futuro in as_completed(futuros_ia):
+            try:
+                clave, contenido = futuro.result()
+                secciones[clave] = contenido
+                logger.info(f"Seccion '{clave}' completada ({len(contenido)} chars)")
+            except Exception as e:
+                clave = futuros_ia[futuro]
+                logger.error(f"Error en seccion '{clave}': {e}")
 
-        for futuro in as_completed(list(futuros_ia.keys()) + [futuro_refs]):
-            if futuro is futuro_refs:
-                try:
-                    refs_texto, refs_total, refs_fuente = futuro.result()
-                    logger.info(f"Referencias reales: {refs_total} ({refs_fuente})")
-                except Exception as e:
-                    logger.error(f"Error en futuro_refs: {e}")
-            else:
-                try:
-                    clave, contenido = futuro.result()
-                    secciones[clave] = contenido
-                    logger.info(f"Seccion '{clave}' completada ({len(contenido)} chars)")
-                except Exception as e:
-                    clave = futuros_ia[futuro]
-                    logger.error(f"Error en seccion '{clave}': {e}")
-
-    # Desarrollo con objetivos inyectados
+    # Desarrollo con objetivos inyectados + contexto de fuentes reales
     objetivos_generados = secciones.get('objetivos', '')
     secciones['desarrollo'] = generar_seccion(
         'desarrollo', tema, info_extra, tipo_informe, norma, nivel,
-        modo=modo, objetivos_texto=objetivos_generados
+        modo=modo, objetivos_texto=objetivos_generados, contexto_refs=contexto_refs
     ) or ''
     logger.info(f"Seccion 'desarrollo' completada ({len(secciones['desarrollo'])} chars)")
 
-    # Referencias: reales si hay suficientes, IA con aviso si no
+    # ── PASO 3: referencias — usar las reales si hay suficientes ──
     if refs_texto and refs_total >= 3:
         secciones['referencias'] = refs_texto
         logger.info(f"Referencias reales asignadas: {refs_total}")
@@ -1402,7 +1447,8 @@ def api_generar_seccion():
             return jsonify({'success': False, 'error': 'Faltan parámetros'}), 400
 
         modo      = data.get('modo', 'rapido')
-        contenido = generar_seccion(seccion, tema, info, tipo, norma, nivel, refs_man, modo, objetivos_texto)
+        contenido = generar_seccion(seccion, tema, info, tipo, norma, nivel, refs_man, modo, objetivos_texto,
+                                    contexto_refs=data.get('contexto_refs', ''))
 
         if contenido:
             return jsonify({'success': True, 'seccion': seccion, 'contenido': contenido})
