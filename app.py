@@ -1430,8 +1430,21 @@ def api_referencias_reales():
 
         logger.info(f"🔬 Buscando referencias reales para: '{tema[:50]}'")
 
-        # Buscar en CrossRef + OpenAlex
-        refs = buscar_referencias_reales(tema, cantidad_total=12)
+        # Extraer contenido relevante del informe para mejorar la relevancia
+        # Usamos introducción + marco teórico + desarrollo si están disponibles
+        contenido_informe = data.get('contenido_informe', '')
+        if not contenido_informe:
+            # Intentar reconstruir desde secciones si el frontend las envía
+            secciones_recibidas = data.get('secciones', {})
+            partes = []
+            for sec in ('introduccion', 'marco_teorico', 'desarrollo'):
+                if secciones_recibidas.get(sec):
+                    partes.append(secciones_recibidas[sec][:1500])
+            contenido_informe = ' '.join(partes)
+
+        # Buscar en CrossRef + OpenAlex, usando el contenido para mejorar relevancia
+        refs = buscar_referencias_reales(tema, cantidad_total=12,
+                                         contenido_informe=contenido_informe)
 
         if not refs:
             # Fallback: usar DeepSeek para generar referencias plausibles
