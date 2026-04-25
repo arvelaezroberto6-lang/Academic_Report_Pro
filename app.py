@@ -67,8 +67,8 @@ TIPOS_INSTRUCCIONES = {
     'laboratorio':"Informe de laboratorio: hipótesis, materiales, procedimiento, resultados con datos/tablas, análisis de error.",
     'ejecutivo':  "Informe ejecutivo: lenguaje conciso, KPIs, análisis costo-beneficio, recomendaciones accionables.",
     'tesis':      "Tesis académica: argumentación profunda, revisión exhaustiva de literatura, marco metodológico robusto.",
-    'pasantia':   "Informe de pasantía: descripción de la empresa, actividades, competencias, aprendizajes.",
-    'proyecto':   "Informe de proyecto: cronograma, recursos, entregables, gestión de riesgos, estado de avance.",
+    'pasantia':   "Informe de pasantía/práctica empresarial: describe la organización, el rol del practicante, actividades realizadas por etapas, competencias desarrolladas, herramientas usadas y lecciones aprendidas. Tono reflexivo y profesional.",
+    'proyecto':   "Informe de proyecto (gestión de proyectos): describe alcance, fases, recursos, entregables, gestión de riesgos, indicadores de éxito (KPIs), estado de avance y lecciones aprendidas. Estructura orientada a resultados medibles.",
 }
 
 # ============================================================
@@ -232,20 +232,34 @@ ESTILO DE REDACCIÓN:
 - Incluye interpretaciones o valoraciones propias del autor en las secciones analíticas.
 """
 
-def build_prompt(seccion, tema, info, tipo, norma, nivel, refs_manuales=''):
+def build_prompt(seccion, tema, info, tipo, norma, nivel, refs_manuales='', modo='rapido'):
     instruccion_norma = NORMAS_INSTRUCCIONES.get(norma, NORMAS_INSTRUCCIONES['APA 7'])
     instruccion_tipo  = TIPOS_INSTRUCCIONES.get(tipo, TIPOS_INSTRUCCIONES['academico'])
 
+    _NIVELES_INSTRUCCION = {
+        'colegio':       "NIVEL COLEGIO/SECUNDARIA: Usa lenguaje claro y accesible. Oraciones cortas. Explica los conceptos desde cero sin asumir conocimiento previo. Evita tecnicismos; cuando los uses, defínelos. Extensión moderada.",
+        'tecnico':       "NIVEL TÉCNICO/TECNOLÓGICO: Lenguaje práctico y orientado a la aplicación. Relaciona la teoría con ejemplos concretos del campo técnico. Incluye procedimientos y estándares cuando aplique. Evita abstracción excesiva.",
+        'universitario': "NIVEL UNIVERSITARIO: Lenguaje académico formal con análisis crítico. Usa terminología disciplinar correctamente. Argumenta con citas y evidencias. Integra perspectivas teóricas y prácticas.",
+        'posgrado':      "NIVEL POSGRADO/MAESTRÍA/DOCTORADO: Lenguaje altamente especializado. Profundidad teórica máxima. Discute debates académicos, limitaciones epistemológicas y brechas en la literatura. Cita fuentes primarias recientes (2022-2025). Análisis crítico riguroso.",
+    }
+    instruccion_nivel = _NIVELES_INSTRUCCION.get(nivel, _NIVELES_INSTRUCCION['universitario'])
+
+    _MODOS_INSTRUCCION = {
+        'rapido':     "",
+        'automatico': f"\nINFORMACIÓN DEL AUTOR (apuntes/notas): Usa esta información como base y complementa con tu conocimiento académico:\n{info}\n",
+        'manual':     f"\nINFORMACIÓN DEL AUTOR (texto propio para convertir): Toma este texto como el contenido central de la sección. Tu tarea es restructurarlo, formalizarlo y enriquecerlo con citas y lenguaje académico, SIN inventar hechos nuevos ni contradecir al autor:\n{info}\n",
+    }
+    instruccion_modo = _MODOS_INSTRUCCION.get(modo, "")
+
     base = f"""Tipo de informe: {instruccion_tipo}
-Nivel educativo: {nivel}.
+{instruccion_nivel}
 Norma bibliográfica activa: {norma}.
 {instruccion_norma}
 {_CONTEXTO_COLOMBIA}
 {_ESTILO_NATURAL}
-"""
+{instruccion_modo}"""
     if seccion == 'introduccion':
         return base + f"""Escribe ÚNICAMENTE la INTRODUCCIÓN del informe sobre: "{tema}".
-Info adicional del autor: {info or 'Ninguna'}.
 Estructura obligatoria (4-5 párrafos):
 1. Contexto general del tema con datos estadísticos concretos y referencia a Colombia.
 2. Justificación: por qué es relevante este tema en el panorama colombiano y latinoamericano.
@@ -273,7 +287,6 @@ Cada objetivo específico debe ser verificable y conectarse con una sección del
 
     elif seccion == 'marco_teorico':
         return base + f"""Escribe ÚNICAMENTE el MARCO TEÓRICO del informe sobre: "{tema}".
-Info adicional del autor: {info or 'Ninguna'}.
 Estructura obligatoria (mínimo 5 párrafos):
 1. Antecedentes históricos o evolución del tema.
 2. Definiciones y conceptos clave con citas de autores reconocidos.
@@ -285,8 +298,7 @@ Estructura obligatoria (mínimo 5 párrafos):
 
     elif seccion == 'metodologia':
         return base + f"""Escribe ÚNICAMENTE la METODOLOGÍA del informe de tipo "{tipo}" sobre: "{tema}".
-Info adicional del autor: {info or 'Ninguna'}.
-Nivel educativo real del autor: {nivel}. Adecua la complejidad metodológica a ese nivel.
+Adecua la complejidad metodológica al nivel educativo indicado arriba.
 
 REGLA DE ORO — CREDIBILIDAD METODOLÓGICA:
 Este informe es un trabajo académico de consulta y análisis, NO una investigación de campo real.
@@ -308,7 +320,6 @@ Estructura obligatoria (4 párrafos concisos y creíbles):
 
     elif seccion == 'desarrollo':
         return base + f"""Escribe ÚNICAMENTE el DESARROLLO del informe de tipo "{tipo}" sobre: "{tema}".
-Info adicional del autor: {info or 'Ninguna'}.
 Estructura obligatoria (mínimo 7 párrafos):
 1. Presentación de resultados principales con datos, cifras o ejemplos concretos.
 2. Para cumplir el Objetivo Específico 1 se realizó... [explícita vinculación con objetivos].
@@ -353,9 +364,116 @@ Usa este formato (5 recomendaciones numeradas):
 5. [Para futuras investigaciones: pregunta de investigación abierta o metodología a explorar]
 - Cada recomendación debe ser accionable, dirigida a un actor específico y justificada."""
 
+    # ── Secciones específicas para PASANTÍA ──────────────────────
+    elif tipo == 'pasantia' and seccion == 'desarrollo':
+        return base + f"""Escribe ÚNICAMENTE el DESARROLLO del INFORME DE PASANTÍA sobre: "{tema}".
+Estructura obligatoria (7 párrafos mínimo):
+1. Descripción de la empresa/organización: nombre, sector, misión, ubicación, tamaño y contexto en Colombia.
+2. Rol y funciones del pasante: cargo, dependencia, supervisor y responsabilidades asignadas.
+3. Actividades realizadas semana a semana o por etapas: descripción detallada de tareas ejecutadas.
+4. Proyectos específicos en los que participó: objetivos del proyecto, contribución del pasante, resultado.
+5. Herramientas, tecnologías y metodologías utilizadas durante la pasantía.
+6. Competencias desarrolladas: habilidades técnicas, blandas y profesionales adquiridas.
+7. Análisis crítico: ¿qué funcionó bien?, ¿qué desafíos enfrentó?, ¿qué aprendió que no está en los libros?
+- Incluye al menos UNA tabla con cronograma de actividades o resumen de logros en formato ##TABLE##.
+- Al menos 3 citas en formato {norma} sobre el área profesional o sector de la empresa."""""
+
+    elif tipo == 'pasantia' and seccion == 'recomendaciones':
+        return base + f"""Escribe ÚNICAMENTE las RECOMENDACIONES del INFORME DE PASANTÍA sobre: "{tema}".
+Usa este formato (5 recomendaciones numeradas, con destinatario explícito):
+1. [Para la empresa/organización donde se realizó la pasantía: mejora de proceso, área o práctica concreta que el pasante identificó]
+2. [Para futuros pasantes que vayan a la misma área: preparación, actitud o conocimientos recomendados]
+3. [Para la institución educativa: ajustes al pensum o preparación previa que facilite la práctica]
+4. [Para el área o dependencia específica: cambio operativo o de gestión que mejoraría el desempeño del equipo]
+5. [Para el propio autor: plan de desarrollo profesional personal a partir de esta experiencia]
+- Cada recomendación debe ser específica, accionable y basada en la experiencia descrita."""""
+
+    elif tipo == 'proyecto' and seccion == 'desarrollo':
+        return base + f"""Escribe ÚNICAMENTE el DESARROLLO del INFORME DE PROYECTO sobre: "{tema}".
+Estructura obligatoria (7 párrafos mínimo):
+1. Descripción general del proyecto: alcance, justificación y contexto organizacional o académico.
+2. Fases o etapas del proyecto con fechas clave: planificación, ejecución, seguimiento, cierre.
+3. Recursos utilizados: humanos (roles del equipo), tecnológicos, financieros y materiales.
+4. Entregables principales: qué se produjo en cada etapa y cuál fue su estado de completitud.
+5. Gestión de riesgos: riesgos identificados, probabilidad, impacto y medidas de mitigación aplicadas.
+6. Estado de avance y resultados: ¿se cumplieron los hitos?, indicadores de éxito o KPIs del proyecto.
+7. Lecciones aprendidas y análisis crítico: desviaciones del plan original y cómo se gestionaron.
+- Incluye al menos UNA tabla en formato ##TABLE## con hitos, fechas y estado (completado/en progreso/pendiente).
+- Al menos 3 citas en formato {norma} sobre gestión de proyectos o el área del proyecto."""""
+
+    elif tipo == 'proyecto' and seccion == 'recomendaciones':
+        return base + f"""Escribe ÚNICAMENTE las RECOMENDACIONES del INFORME DE PROYECTO sobre: "{tema}".
+Usa este formato (5 recomendaciones numeradas):
+1. [Para el equipo del proyecto: mejora de proceso, comunicación o metodología en futuros proyectos similares]
+2. [Para la dirección o patrocinador: decisión estratégica sobre continuación, escalamiento o replicación]
+3. [Para la gestión de riesgos: riesgos no contemplados que deberían incluirse en proyectos similares]
+4. [Para la gestión de recursos: optimización de tiempos, costos o asignación de roles]
+5. [Para futuras investigaciones o proyectos relacionados: líneas de acción o preguntas abiertas]
+- Cada recomendación debe ser específica, accionable y vinculada a los hallazgos del proyecto."""""
+
     elif seccion == 'referencias':
         refs_extra = f"\nIncluye o adapta estas referencias del autor:\n{refs_manuales}" if refs_manuales else ""
-        return base + f"""Genera ÚNICAMENTE la lista de REFERENCIAS BIBLIOGRÁFICAS sobre: "{tema}".
+
+        # Instrucciones de formato específicas por norma
+        _FORMATO_REFS = {
+            'APA 7': """FORMATO APA 7 ESTRICTO:
+   - Entidades: Sigla. (año). Título del documento. Nombre completo de la entidad. URL
+   - Personas: Apellido, I. I. (año). Título. Revista, vol(num), págs. https://doi.org/...
+   - Orden: ALFABÉTICO por primer apellido o sigla de entidad
+   - Sin numeración. Sin negrita. DOI en formato https://doi.org/xxxxx""",
+            'APA 6': """FORMATO APA 6 ESTRICTO:
+   - Entidades: Nombre Entidad. (año). Título del documento. Ciudad: Editorial. Recuperado de URL
+   - Personas: Apellido, I. I. (año). Título. Revista, vol(num), págs.
+   - Orden: ALFABÉTICO. Sin numeración. Sin negrita.""",
+            'ICONTEC': """FORMATO ICONTEC (NTC 5613) ESTRICTO:
+   - Entidades: NOMBRE ENTIDAD. Título del documento. Ciudad: Editorial, año. Disponible en: URL
+   - Personas: APELLIDO, Nombre. Título en cursiva. Ed. Ciudad: Editorial, año.
+   - Orden: ORDEN DE APARICIÓN en el texto (numeradas 1, 2, 3...)
+   - Separador entre autores: punto y coma (;)""",
+            'IEEE': """FORMATO IEEE ESTRICTO:
+   - Artículos: [N] I. Apellido, "Título," Nombre Revista, vol. X, no. X, pp. XX-XX, año. doi: ...
+   - Libros: [N] I. Apellido, Título del libro. Ciudad: Editorial, año.
+   - Entidades: [N] Nombre Entidad, "Título del documento," año. [Online]. Available: URL
+   - Orden: NUMÉRICO por orden de aparición en el texto""",
+            'Vancouver': """FORMATO VANCOUVER ESTRICTO:
+   - Artículos: N. Apellido AB, Apellido CD. Título del artículo. Abrev Revista. año;vol(num):págs.
+   - Libros: N. Apellido AB. Título. Edición. Ciudad: Editorial; año.
+   - Entidades: N. Nombre Entidad. Título [Internet]. Ciudad: Entidad; año [citado año mes día]. Disponible en: URL
+   - Orden: NUMÉRICO por orden de aparición. Máximo 6 autores, luego "et al."
+   - Sin negrita. Sin DOI en formato URL, usar: doi:xxxxxxxxx""",
+            'Chicago': """FORMATO CHICAGO 17ª EDICIÓN ESTRICTO:
+   - Artículos: Apellido, Nombre. año. "Título del artículo." Nombre Revista vol, no. num: págs. URL/DOI.
+   - Libros: Apellido, Nombre. año. Título en cursiva. Ciudad: Editorial.
+   - Entidades: Nombre Entidad. año. "Título del documento." URL.
+   - Orden: ALFABÉTICO por apellido""",
+            'MLA': """FORMATO MLA 9ª EDICIÓN ESTRICTO:
+   - Artículos: Apellido, Nombre. "Título del artículo." Nombre Revista, vol. X, no. X, año, pp. XX-XX. DOI/URL.
+   - Libros: Apellido, Nombre. Título en cursiva. Editorial, año.
+   - Entidades: Nombre Entidad. "Título del documento." Año, URL.
+   - Sección: Works Cited (no "Referencias")
+   - Orden: ALFABÉTICO""",
+            'Harvard': """FORMATO HARVARD ESTRICTO:
+   - Artículos: Apellido, I. (año) 'Título del artículo', Nombre Revista, vol. X, no. X, pp. XX-XX.
+   - Libros: Apellido, I. (año) Título en cursiva. Ciudad: Editorial.
+   - Entidades: Nombre Entidad (año) Título del documento. Ciudad: Entidad. Available at: URL (Accessed: fecha).
+   - Orden: ALFABÉTICO por apellido""",
+        }
+        formato_norma = _FORMATO_REFS.get(norma, _FORMATO_REFS['APA 7'])
+
+        # Ejemplos de entidades colombianas adaptados por norma
+        _EJEMPLOS_COLOMBIA = {
+            'APA 7':    "DANE. (2023). Nombre del informe relevante al tema. Departamento Administrativo Nacional de Estadística. https://www.dane.gov.co",
+            'APA 6':    "DANE. (2023). Nombre del informe relevante al tema. Bogotá: DANE. Recuperado de https://www.dane.gov.co",
+            'ICONTEC':  "DEPARTAMENTO ADMINISTRATIVO NACIONAL DE ESTADÍSTICA (DANE). Nombre del informe relevante al tema. Bogotá: DANE, 2023. Disponible en: https://www.dane.gov.co",
+            'IEEE':     '[N] DANE, "Nombre del informe relevante al tema," 2023. [Online]. Available: https://www.dane.gov.co',
+            'Vancouver':"N. DANE. Nombre del informe [Internet]. Bogotá: DANE; 2023. Disponible en: https://www.dane.gov.co",
+            'Chicago':  "DANE. 2023. \"Nombre del informe relevante al tema.\" https://www.dane.gov.co.",
+            'MLA':      'DANE. "Nombre del informe relevante al tema." 2023, https://www.dane.gov.co.',
+            'Harvard':  "DANE (2023) Nombre del informe relevante al tema. Bogotá: DANE. Available at: https://www.dane.gov.co",
+        }
+        ejemplo_colombia = _EJEMPLOS_COLOMBIA.get(norma, _EJEMPLOS_COLOMBIA['APA 7'])
+
+        return base + f"""Genera ÚNICAMENTE la lista de REFERENCIAS BIBLIOGRÁFICAS en norma {norma} sobre: "{tema}".
 {refs_extra}
 CRITERIOS OBLIGATORIOS — cumple TODOS sin excepción:
 
@@ -363,52 +481,72 @@ CRITERIOS OBLIGATORIOS — cumple TODOS sin excepción:
 
 2. COHERENCIA: Las referencias deben corresponder EXACTAMENTE a las fuentes citadas en el informe.
    Si el texto menciona DANE, MinTIC, CRC, SENA, DNP, MinCiencias u otras entidades colombianas,
-   su referencia DEBE aparecer en la lista. No puedes citar en texto algo que no está en referencias.
+   su referencia DEBE aparecer en la lista.
 
-3. ENTIDADES COLOMBIANAS (mínimo 3), con este formato APA 7 exacto:
-   DANE. (2023). Encuesta de Tecnologías de la Información y las Comunicaciones en hogares. Departamento Administrativo Nacional de Estadística. https://www.dane.gov.co
-   MinTIC. (2023). Política Nacional de Inteligencia Artificial: Hoja de ruta 2022-2026. Ministerio de TIC. https://mintic.gov.co
-   CRC. (2023). Informe de industria: Conectividad y telecomunicaciones en Colombia. Comisión de Regulación de Comunicaciones. https://www.crcom.gov.co
+3. ENTIDADES COLOMBIANAS (mínimo 3): Adapta el formato a la norma {norma}.
+   Ejemplo de cómo citar el DANE en norma {norma}:
+   {ejemplo_colombia}
+   Haz lo mismo con MinTIC, CRC, DNP u otras entidades pertinentes al tema "{tema}".
 
 4. ARTÍCULOS ACADÉMICOS (mínimo 4): con revista, volumen, número, páginas y DOI real.
-   Deben ser sobre el tema del informe, NO sobre temas ajenos como cambio climático o idiomas.
+   Deben ser directamente sobre el tema del informe.
 
 5. ORGANISMO INTERNACIONAL (mínimo 1): CEPAL, BID, UNESCO, OCDE u otro, con URL oficial.
+   Formatea también este organismo en norma {norma}.
 
-6. FORMATO APA 7 ESTRICTO:
-   - Autores: Apellido, I. I. (para personas) o Sigla. (para entidades)
-   - Orden: alfabético por primer apellido o sigla
-   - Tildes y caracteres especiales correctos (Á, É, Í, Ó, Ú, Ñ)
-   - DOI en formato: https://doi.org/xxxxx
-   - Sin numeración de las referencias
-   - Sin negrita, sin subrayado
-   - Sangría francesa (el formato lo aplica el sistema al renderizar)
+6. {formato_norma}
 
 7. NO incluyas referencias de temas NO relacionados con el informe.
+   NO mezcles formatos de otras normas. Aplica SOLO {norma} en todas las referencias.
 
 Sin título de sección, sin preámbulo, sin explicación. Solo las referencias."""
+
+    # ── Tipos especiales: Pasantía ──────────────────────────────
+    elif tipo == 'pasantia' and seccion in ('introduccion', 'objetivos', 'marco_teorico',
+                                             'metodologia', 'desarrollo', 'conclusiones',
+                                             'recomendaciones'):
+        # Para pasantía, si no hay un prompt de sección específico arriba, usar estructura de pasantía
+        pass  # los prompts anteriores ya manejan las secciones, la diferencia viene de instruccion_tipo
+
+    # ── Tipos especiales: Proyecto ──────────────────────────────
+    elif tipo == 'proyecto' and seccion in ('introduccion', 'objetivos', 'marco_teorico',
+                                             'metodologia', 'desarrollo', 'conclusiones',
+                                             'recomendaciones'):
+        pass  # ídem
 
     return ""
 
 # ============================================================
 # GENERAR SECCIÓN
 # ============================================================
-def generar_seccion(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_manuales=''):
-    prompt = build_prompt(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_manuales)
+def generar_seccion(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_manuales='', modo='rapido'):
+    prompt = build_prompt(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_manuales, modo)
     if not prompt:
         return None
 
+    _nivel_sistema = {
+        'colegio':       "para un estudiante de colegio/secundaria: usa lenguaje simple, claro y accesible, sin tecnicismos innecesarios",
+        'tecnico':       "para un estudiante técnico/tecnológico: lenguaje práctico, orientado a la aplicación profesional",
+        'universitario': "para un estudiante universitario: lenguaje académico formal con análisis crítico y terminología disciplinar",
+        'posgrado':      "para un estudiante de posgrado/maestría/doctorado: máxima profundidad teórica, debate académico y análisis epistemológico",
+    }.get(nivel, "para un estudiante universitario")
+
+    _modo_sistema = {
+        'rapido':     "",
+        'automatico': " El autor te proporcionó sus apuntes o notas; úsalos como base y complementa con conocimiento académico.",
+        'manual':     " El autor te proporcionó su propio texto; tu tarea es formalizarlo y enriquecerlo con lenguaje académico y citas, sin inventar hechos nuevos.",
+    }.get(modo, "")
+
     system_prompt = (
-        f"Eres un experto en redacción académica universitaria en español con especialización en norma {norma} "
-        "y profundo conocimiento del contexto colombiano y latinoamericano. "
-        "Escribes contenido sustancial, formal y bien estructurado, con voz propia y análisis crítico. "
+        f"Eres un experto en redacción académica en español, especializado en norma {norma} "
+        f"y profundo conocedor del contexto colombiano y latinoamericano. "
+        f"Escribes {_nivel_sistema}.{_modo_sistema} "
         "Cuando aplique al tema, incluyes datos de Colombia citando fuentes como MinTIC, DANE, CRC o MinCiencias. "
-        "IMPORTANTE SOBRE CIFRAS: usa solo datos que puedan venir de fuentes reales. Cuando no tengas "
-        "un dato exacto confirmado, usa rangos aproximados o expresiones como 'según estimaciones' o "
-        "'alrededor de'. NUNCA inventes porcentajes con decimales precisos (ej: 23,7%) sin fuente real. "
+        "IMPORTANTE SOBRE CIFRAS: usa solo datos de fuentes reales. Cuando no tengas un dato exacto confirmado, "
+        "usa rangos o expresiones como 'según estimaciones'. NUNCA inventes porcentajes con decimales precisos "
+        "(ej: 23,7%) sin fuente real. "
         "Usas referencias de años 2021-2025. "
-        f"Para referencias en norma {norma}: aplica formato estrictamente correcto con tildes, "
-        "orden alfabético, DOI en https://doi.org/ y sin numeración. "
+        f"Para referencias en norma {norma}: aplica formato estrictamente correcto. "
         "Balanceas el análisis técnico con interpretaciones propias del autor. "
         "Respondes SOLO con el contenido solicitado, sin títulos de sección, sin preámbulos, sin '**', sin markdown."
     )
@@ -419,7 +557,7 @@ def generar_seccion(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_
         logger.info(f"Sección '{seccion}' generada: {len(contenido)} chars")
     return contenido
 
-def generar_informe_completo(tema, info_extra, tipo_informe, norma, nivel):
+def generar_informe_completo(tema, info_extra, tipo_informe, norma, nivel, modo='rapido'):
     """
     Genera las 8 secciones en paralelo (hasta 4 simultáneas) para reducir
     tiempos de espera y minimizar fallos por timeout secuencial.
@@ -429,7 +567,7 @@ def generar_informe_completo(tema, info_extra, tipo_informe, norma, nivel):
     secciones = {c: '' for c in claves}
 
     def _generar(clave):
-        resultado = generar_seccion(clave, tema, info_extra, tipo_informe, norma, nivel)
+        resultado = generar_seccion(clave, tema, info_extra, tipo_informe, norma, nivel, modo=modo)
         return clave, resultado or ''
 
     with ThreadPoolExecutor(max_workers=4) as executor:
@@ -902,7 +1040,7 @@ def api_generar():
             return jsonify({'success': False, 'error': 'El tema es requerido'}), 400
 
         logger.info(f"📨 Generando informe — Tema: {tema[:50]}...")
-        secciones = generar_informe_completo(tema, texto_usuario, tipo_informe, norma, nivel)
+        secciones = generar_informe_completo(tema, texto_usuario, tipo_informe, norma, nivel, modo=data.get('modo', 'rapido'))
 
         if not secciones:
             return jsonify({'success': False, 'error': 'No se pudo generar el informe'}), 500
@@ -941,7 +1079,8 @@ def api_generar_seccion():
         if not seccion or not tema:
             return jsonify({'success': False, 'error': 'Faltan parámetros'}), 400
 
-        contenido = generar_seccion(seccion, tema, info, tipo, norma, nivel, refs_man)
+        modo      = data.get('modo', 'rapido')
+        contenido = generar_seccion(seccion, tema, info, tipo, norma, nivel, refs_man, modo)
 
         if contenido:
             return jsonify({'success': True, 'seccion': seccion, 'contenido': contenido})
