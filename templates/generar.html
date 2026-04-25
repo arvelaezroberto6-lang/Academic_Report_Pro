@@ -730,10 +730,15 @@ document.getElementById('generarBtn').onclick = async () => {
     document.getElementById('progressFill').style.width   = ((i / SECCIONES_INFO.length) * 100) + '%';
 
     try {
+      // FIX 2: Pass objetivos already generated when generating 'desarrollo'
+      const extraPayload = {};
+      if (clave === 'desarrollo' && seccionesGeneradas['objetivos']) {
+        extraPayload.objetivos_texto = seccionesGeneradas['objetivos'];
+      }
       const res  = await fetch('/api/generar-seccion', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...payload, seccion: clave })
+        body: JSON.stringify({ ...payload, seccion: clave, ...extraPayload })
       });
       const data = await res.json();
       if (data.success && data.contenido) {
@@ -858,14 +863,16 @@ document.getElementById('regenerarSeccionBtn').onclick = async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        seccion:       clave,
+        seccion:         clave,
         modo,
-        tema:          datosUsuario.tema,
-        nivel:         document.getElementById('nivel').value,
-        tipo_informe:  tipoActual,
-        norma:         normaActual,
-        texto_usuario: modo !== 'rapido' ? (document.getElementById('textoUsuario')?.value || '') : '',
-        refs_manuales: refsManuales
+        tema:            datosUsuario.tema,
+        nivel:           document.getElementById('nivel').value,
+        tipo_informe:    tipoActual,
+        norma:           normaActual,
+        texto_usuario:   modo !== 'rapido' ? (document.getElementById('textoUsuario')?.value || '') : '',
+        refs_manuales:   refsManuales,
+        // FIX 2: pass objectives when regenerating desarrollo manually
+        objetivos_texto: clave === 'desarrollo' ? (seccionesGeneradas['objetivos'] || '') : ''
       })
     });
     const data = await res.json();
