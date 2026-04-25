@@ -780,7 +780,16 @@ document.getElementById('generarBtn').onclick = async () => {
       const refsRes  = await fetch('/api/referencias-reales', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tema, norma: normaActual, refs_manuales: refsManuales })
+        body: JSON.stringify({
+          tema,
+          norma: normaActual,
+          refs_manuales: refsManuales,
+          secciones: {
+            introduccion:  seccionesGeneradas['introduccion']  || '',
+            marco_teorico: seccionesGeneradas['marco_teorico'] || '',
+            desarrollo:    seccionesGeneradas['desarrollo']    || ''
+          }
+        })
       });
       const refsData = await refsRes.json();
       if (refsData.success && refsData.contenido) {
@@ -903,7 +912,16 @@ document.getElementById('buscarRefsRealesBtn').onclick = async () => {
     const res  = await fetch('/api/referencias-reales', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tema: datosUsuario.tema, norma: normaActual, refs_manuales: refsManuales })
+      body: JSON.stringify({
+        tema: datosUsuario.tema,
+        norma: normaActual,
+        refs_manuales: refsManuales,
+        secciones: {
+          introduccion:  seccionesGeneradas['introduccion']  || '',
+          marco_teorico: seccionesGeneradas['marco_teorico'] || '',
+          desarrollo:    seccionesGeneradas['desarrollo']    || ''
+        }
+      })
     });
     const data = await res.json();
     if (data.success && data.contenido) {
