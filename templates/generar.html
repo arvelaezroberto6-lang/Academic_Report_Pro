@@ -815,6 +815,32 @@ document.getElementById('generarBtn').onclick = async () => {
 
   btn.disabled = false;
   btn.innerHTML = '🚀 Generar informe completo';
+
+  // Guardar informe en la base de datos si el usuario está autenticado
+  try {
+    const arpRaw = localStorage.getItem('arp_user');
+    if (arpRaw) {
+      const arpUser = JSON.parse(arpRaw);
+      await fetch('/api/guardar-informe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Id': arpUser.user_id
+        },
+        body: JSON.stringify({
+          secciones:     seccionesGeneradas,
+          datos_usuario: datosUsuario,
+          refs_reales:   window._refsInfo ? (window._refsInfo.refs_reales || []) : [],
+          tipo_informe:  tipoActual || 'academico',
+          norma:         normaActual,
+          nivel:         document.getElementById('nivel')?.value || 'universitario',
+          modo:          modo || 'rapido'
+        })
+      });
+    }
+  } catch(e) {
+    console.warn('No se pudo guardar el informe:', e);
+  }
 };
 
 // ═══ MOSTRAR EDITOR ═══
