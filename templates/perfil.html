@@ -1,14 +1,385 @@
 {% extends "base.html" %}
+{% block title %}Mi Perfil — Academic Report Pro{% endblock %}
 
-{% block title %}Mi Perfil - Academic Report Pro{% endblock %}
+{% block extra_css %}
+<style>
+.page-wrap { max-width: 640px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+
+.page-hd { margin-bottom: 2rem; }
+.page-hd h1 { font-family: 'Playfair Display', serif; font-size: 1.7rem; font-weight: 700; }
+.page-hd p  { font-size: .83rem; color: var(--text2); margin-top: .2rem; }
+
+/* Avatar */
+.avatar-row {
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+    margin-bottom: 1.8rem;
+    padding: 1.3rem 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+}
+.avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--gold) 0%, #8b6412 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 700;
+    color: #000;
+    flex-shrink: 0;
+    font-family: 'Playfair Display', serif;
+}
+.avatar-info strong { display: block; font-size: .95rem; }
+.avatar-info span   { font-size: .78rem; color: var(--text2); }
+
+/* Card */
+.pcard {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+.pcard-hd {
+    font-weight: 700;
+    font-size: .88rem;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin-bottom: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+/* Fields */
+.field { margin-bottom: 1rem; }
+.field label {
+    display: block;
+    font-size: .75rem;
+    font-weight: 600;
+    color: var(--text2);
+    margin-bottom: .4rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+.field input, .field select {
+    width: 100%;
+    padding: .7rem 1rem;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: .88rem;
+    transition: border-color .18s;
+    outline: none;
+}
+.field input:focus, .field select:focus { border-color: var(--gold); }
+.field select option { background: var(--surface2); }
+
+.g2c { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
+@media (max-width:520px) { .g2c { grid-template-columns: 1fr; } }
+
+.btn-save {
+    width: 100%;
+    padding: .8rem;
+    background: linear-gradient(135deg, var(--gold) 0%, #9a6e18 100%);
+    color: #000;
+    font-weight: 700;
+    font-size: .88rem;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all .2s;
+    font-family: 'DM Sans', sans-serif;
+    margin-top: .5rem;
+}
+.btn-save:hover { transform: translateY(-1px); box-shadow: 0 6px 24px var(--gold-glow); }
+.btn-save:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+.msg-ok  { font-size:.8rem; color: var(--green); text-align:center; margin-top:.5rem; display:none; }
+.msg-err { font-size:.8rem; color: var(--red);   text-align:center; margin-top:.5rem; display:none; }
+
+/* Logout */
+.btn-logout {
+    width: 100%;
+    padding: .75rem;
+    background: transparent;
+    color: var(--red);
+    font-weight: 600;
+    font-size: .85rem;
+    border: 1px solid rgba(224,92,92,.3);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all .2s;
+    font-family: 'DM Sans', sans-serif;
+}
+.btn-logout:hover { background: rgba(224,92,92,.08); border-color: var(--red); }
+
+/* No auth */
+.no-auth {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+}
+.no-auth .ico { font-size: 2.5rem; margin-bottom: 1rem; }
+.no-auth h3   { margin-bottom: .5rem; }
+.no-auth p    { font-size: .85rem; color: var(--text2); margin-bottom: 1.5rem; }
+
+/* Stat row */
+.stat-row { display: flex; gap: .8rem; margin-bottom: 1rem; }
+.stat-box {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: .9rem 1rem;
+    text-align: center;
+}
+.stat-box strong { display: block; font-size: 1.4rem; font-family: 'Playfair Display', serif; color: var(--gold); }
+.stat-box span   { font-size: .72rem; color: var(--text2); }
+</style>
+{% endblock %}
 
 {% block content %}
-<section class="container" style="padding:6rem 0 4rem;">
-    <h1 class="hero-title" style="font-size:2rem; text-align:center; margin-bottom:2rem;">👤 Mi Perfil</h1>
-    <div class="card" style="max-width:600px; margin:0 auto; text-align:center;">
-        <div style="font-size:3rem; margin-bottom:1rem;">🔧</div>
-        <h3 style="margin-bottom:.5rem;">En desarrollo</h3>
-        <p style="color:var(--text2);">Configura tu perfil y preferencias. Próximamente.</p>
+<div class="page-wrap">
+    <div class="page-hd">
+        <h1>👤 Mi Perfil</h1>
+        <p>Configura tus datos para que aparezcan automáticamente en cada informe.</p>
     </div>
-</section>
+
+    <div id="contenido">
+        <div style="text-align:center; padding:3rem; color:var(--text2);">Cargando perfil...</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const raw  = localStorage.getItem('arp_user');
+const user = raw ? JSON.parse(raw) : null;
+
+function inicialLetra(nombre) {
+    return nombre ? nombre.charAt(0).toUpperCase() : '?';
+}
+
+async function cargarPerfil() {
+    if (!user) {
+        document.getElementById('contenido').innerHTML = `
+            <div class="no-auth">
+                <div class="ico">🔐</div>
+                <h3>Inicia sesión para ver tu perfil</h3>
+                <p>Con una cuenta puedes guardar tus datos y acceder a todos tus informes.</p>
+                <a href="/auth?next=/perfil" class="btn-gold" style="display:inline-flex; font-size:.85rem;">
+                    Iniciar sesión →
+                </a>
+            </div>`;
+        return;
+    }
+
+    // Mostrar nombre/email mientras carga
+    document.getElementById('contenido').innerHTML = construirUI({
+        nombre:        user.nombre || '',
+        email:         user.email  || '',
+        institucion:   '',
+        carrera:       '',
+        ciudad:        '',
+        telefono:      '',
+        norma_favorita: 'APA 7',
+        nivel_favorito: 'universitario',
+    }, 0);
+
+    // Intentar obtener datos reales del servidor
+    try {
+        const [resPerfil, resInformes] = await Promise.all([
+            fetch('/api/perfil', { headers: { 'X-User-Id': user.user_id } }),
+            fetch('/api/mis-informes', { headers: { 'X-User-Id': user.user_id } }),
+        ]);
+        const dataPerfil   = await resPerfil.json();
+        const dataInformes = await resInformes.json();
+
+        const perfil  = dataPerfil.success  ? dataPerfil.perfil   : {};
+        const nInformes = dataInformes.success ? (dataInformes.informes || []).length : 0;
+
+        document.getElementById('contenido').innerHTML = construirUI({
+            nombre:         perfil.nombre        || user.nombre || '',
+            email:          user.email           || '',
+            institucion:    perfil.institucion   || '',
+            carrera:        perfil.carrera       || '',
+            ciudad:         perfil.ciudad        || '',
+            telefono:       perfil.telefono      || '',
+            norma_favorita: perfil.norma_favorita || 'APA 7',
+            nivel_favorito: perfil.nivel_favorito || 'universitario',
+        }, nInformes);
+
+    } catch(e) {
+        // Seguir con los datos de localStorage sin mostrar error
+    }
+}
+
+function construirUI(p, nInformes) {
+    const normas  = ['APA 7','APA 6','ICONTEC','IEEE','Vancouver','Chicago','MLA','Harvard'];
+    const niveles = [
+        { v:'colegio',       l:'Colegio / Secundaria' },
+        { v:'tecnico',       l:'Técnico / Tecnológico' },
+        { v:'universitario', l:'Universitario' },
+        { v:'posgrado',      l:'Posgrado / Maestría / Doctorado' },
+    ];
+
+    return `
+    <div class="avatar-row">
+        <div class="avatar">${inicialLetra(p.nombre)}</div>
+        <div class="avatar-info">
+            <strong>${p.nombre || 'Sin nombre'}</strong>
+            <span>${p.email}</span>
+        </div>
+    </div>
+
+    <div class="stat-row">
+        <div class="stat-box">
+            <strong>${nInformes}</strong>
+            <span>Informes generados</span>
+        </div>
+        <div class="stat-box">
+            <strong>${p.norma_favorita}</strong>
+            <span>Norma favorita</span>
+        </div>
+    </div>
+
+    <div class="pcard">
+        <div class="pcard-hd">✏️ Datos personales</div>
+        <div class="field">
+            <label>Nombre completo</label>
+            <input type="text" id="pNombre" value="${p.nombre}" placeholder="Tu nombre completo">
+        </div>
+        <div class="g2c">
+            <div class="field">
+                <label>Ciudad</label>
+                <input type="text" id="pCiudad" value="${p.ciudad}" placeholder="Ej: Bogotá">
+            </div>
+            <div class="field">
+                <label>Teléfono (opcional)</label>
+                <input type="text" id="pTelefono" value="${p.telefono}" placeholder="Ej: 300 000 0000">
+            </div>
+        </div>
+    </div>
+
+    <div class="pcard">
+        <div class="pcard-hd">🏛️ Datos académicos</div>
+        <div class="field">
+            <label>Institución / Universidad</label>
+            <input type="text" id="pInstitucion" value="${p.institucion}" placeholder="Nombre de tu institución">
+        </div>
+        <div class="field">
+            <label>Programa / Carrera</label>
+            <input type="text" id="pCarrera" value="${p.carrera}" placeholder="Ej: Ingeniería de Sistemas">
+        </div>
+        <div class="g2c">
+            <div class="field">
+                <label>Norma favorita</label>
+                <select id="pNorma">
+                    ${normas.map(n => `<option value="${n}" ${n === p.norma_favorita ? 'selected' : ''}>${n}</option>`).join('')}
+                </select>
+            </div>
+            <div class="field">
+                <label>Nivel académico</label>
+                <select id="pNivel">
+                    ${niveles.map(n => `<option value="${n.v}" ${n.v === p.nivel_favorito ? 'selected' : ''}>${n.l}</option>`).join('')}
+                </select>
+            </div>
+        </div>
+        <button class="btn-save" id="btnGuardar" onclick="guardarPerfil()">
+            💾 Guardar cambios
+        </button>
+        <div class="msg-ok"  id="msgOk">✅ Perfil actualizado correctamente.</div>
+        <div class="msg-err" id="msgErr"></div>
+    </div>
+
+    <div class="pcard">
+        <div class="pcard-hd">🔐 Sesión</div>
+        <p style="font-size:.83rem; color:var(--text2); margin-bottom:1rem;">
+            Sesión activa como <strong>${p.email}</strong>
+        </p>
+        <button class="btn-logout" onclick="cerrarSesion()">
+            Cerrar sesión
+        </button>
+    </div>`;
+}
+
+async function guardarPerfil() {
+    if (!user) return;
+    const btn = document.getElementById('btnGuardar');
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+
+    const nombre      = document.getElementById('pNombre').value.trim();
+    const ciudad      = document.getElementById('pCiudad').value.trim();
+    const telefono    = document.getElementById('pTelefono').value.trim();
+    const institucion = document.getElementById('pInstitucion').value.trim();
+    const carrera     = document.getElementById('pCarrera').value.trim();
+    const norma       = document.getElementById('pNorma').value;
+    const nivel       = document.getElementById('pNivel').value;
+
+    try {
+        const res  = await fetch('/api/perfil', {
+            method:  'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-User-Id':    user.user_id
+            },
+            body: JSON.stringify({ nombre, ciudad, telefono, institucion, carrera,
+                                   norma_favorita: norma, nivel_favorito: nivel })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            // Actualizar localStorage con el nuevo nombre
+            user.nombre = nombre;
+            localStorage.setItem('arp_user', JSON.stringify(user));
+            document.getElementById('msgOk').style.display  = 'block';
+            document.getElementById('msgErr').style.display = 'none';
+            setTimeout(() => { document.getElementById('msgOk').style.display = 'none'; }, 3000);
+        } else {
+            document.getElementById('msgErr').textContent    = data.error || 'No se pudo guardar.';
+            document.getElementById('msgErr').style.display  = 'block';
+            document.getElementById('msgOk').style.display   = 'none';
+        }
+    } catch(e) {
+        document.getElementById('msgErr').textContent   = 'Error de conexión.';
+        document.getElementById('msgErr').style.display = 'block';
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '💾 Guardar cambios';
+    }
+}
+
+function cerrarSesion() {
+    Swal.fire({
+        title: '¿Cerrar sesión?',
+        icon:  'question',
+        showCancelButton:  true,
+        confirmButtonText: 'Sí, salir',
+        cancelButtonText:  'Cancelar',
+        background: '#0e1118',
+        color: '#eae8e1',
+        confirmButtonColor: '#e05c5c',
+        cancelButtonColor:  '#3d3c38',
+    }).then(r => {
+        if (r.isConfirmed) {
+            localStorage.removeItem('arp_user');
+            location.href = '/';
+        }
+    });
+}
+
+cargarPerfil();
+</script>
 {% endblock %}
