@@ -254,9 +254,12 @@
             <a href="/perfil" class="nav-link {% if request.endpoint == 'perfil' %}active{% endif %}">Perfil</a>
         </div>
 
-        <a href="/generar" class="nav-cta" {% if request.endpoint == 'generar_page' %}style="display:none;"{% endif %}>
-            ✦ Crear informe
-        </a>
+        <!-- Estado de sesión (lo rellena JS) -->
+        <div id="navAuthArea" style="display:flex; align-items:center; gap:.5rem;">
+            <a href="/generar" class="nav-cta" {% if request.endpoint == 'generar_page' %}style="display:none;"{% endif %} id="navCta">
+                ✦ Crear informe
+            </a>
+        </div>
 
         <button class="nav-hamburger" onclick="toggleMobileNav()" aria-label="Menú">
             <span></span><span></span><span></span>
@@ -276,10 +279,42 @@
     </main>
 
     <footer>
-        <strong>Academic Report Pro v3.2</strong> &nbsp;·&nbsp; 8 normas &nbsp;·&nbsp; 6 tipos de informe &nbsp;·&nbsp; PDF + Word &nbsp;·&nbsp; Referencias reales (CrossRef / OpenAlex)
+        <strong>Academic Report Pro v3.3</strong> &nbsp;·&nbsp; 8 normas &nbsp;·&nbsp; 6 tipos de informe &nbsp;·&nbsp; PDF + Word &nbsp;·&nbsp; Referencias reales (CrossRef / OpenAlex) &nbsp;·&nbsp; Contexto Colombia
     </footer>
 
     <script>
+        // ── Auth state en navbar ──────────────────────────────
+        (function() {
+            const raw = localStorage.getItem('arp_user');
+            if (!raw) return;
+            try {
+                const user = JSON.parse(raw);
+                const area = document.getElementById('navAuthArea');
+                const inicial = user.nombre ? user.nombre.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase();
+                area.innerHTML = `
+                    <a href="/perfil" title="Mi perfil" style="
+                        display:inline-flex; align-items:center; gap:.5rem;
+                        padding:.35rem .75rem .35rem .4rem;
+                        background: var(--gold-dim);
+                        border: 1px solid rgba(212,168,67,.25);
+                        border-radius:8px;
+                        text-decoration:none;
+                        color: var(--gold);
+                        font-size:.82rem;
+                        font-weight:600;
+                    ">
+                        <span style="
+                            width:22px; height:22px; border-radius:6px;
+                            background: linear-gradient(135deg,var(--gold),#8b6412);
+                            color:#000; font-weight:700; font-size:.75rem;
+                            display:inline-flex; align-items:center; justify-content:center;
+                            font-family:'Playfair Display',serif;
+                        ">${inicial}</span>
+                        ${user.nombre ? user.nombre.split(' ')[0] : 'Mi cuenta'}
+                    </a>`;
+            } catch(e) {}
+        })();
+
         function toggleMobileNav() {
             document.getElementById('navMobile').classList.toggle('open');
         }
