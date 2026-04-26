@@ -1776,6 +1776,114 @@ def health():
     })
 
 
+
+
+# ─────────────────────────────────────────────────────────────
+# FEEDBACK / RECOMENDACIONES  →  envío por email al dueño
+# ─────────────────────────────────────────────────────────────
+@app.route('/api/feedback', methods=['POST'])
+def api_feedback():
+    """Recibe una recomendación/sugerencia y la envía al correo del dueño."""
+    try:
+        data    = request.get_json(silent=True) or {}
+        nombre  = data.get('nombre', 'Anónimo').strip() or 'Anónimo'
+        correo  = data.get('correo', '').strip()
+        tipo    = data.get('tipo', 'sugerencia').strip()
+        mensaje = data.get('mensaje', '').strip()
+
+        if not mensaje or len(mensaje) < 10:
+            return jsonify({'success': False, 'error': 'El mensaje es demasiado corto'}), 400
+
+        # ── Enviar por email ──────────────────────────────────
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+
+        SMTP_HOST  = os.environ.get('SMTP_HOST', 'smtp.gmail.com')
+        SMTP_PORT  = int(os.environ.get('SMTP_PORT', '587'))
+        SMTP_USER  = os.environ.get('SMTP_USER', '')
+        SMTP_PASS  = os.environ.get('SMTP_PASS', '')
+        OWNER_MAIL = os.environ.get('OWNER_EMAIL', SMTP_USER)
+
+        if not SMTP_USER or not SMTP_PASS:
+            # Sin config SMTP: solo loguear (no falla para el usuario)
+            logger.warning(f"[FEEDBACK sin SMTP] {nombre} | {correo} | {tipo}: {mensaje[:80]}")
+            return jsonify({'success': True})
+
+        asunto = f"[ARP Feedback] {tipo.capitalize()} de {nombre}"
+        cuerpo = f"""
+<h2>Nueva recomendación — Academic Report Pro</h2>
+<table style="border-collapse:collapse;font-family:sans-serif;font-size:14px">
+  <tr><td style="padding:6px 14px;font-weight:bold;color:#888">Tipo</td>
+      <td style="padding:6px 14px">{tipo}</td></tr>
+  <tr><td style="padding:6px 14px;font-weight:bold;color:#888">Nombre</td>
+      <td style="padding:6px 14px">{nombre}</td></tr>
+  <tr><td style="padding:6px 14px;font-weight:bold;color:#888">Correo</td>
+      <td style="padding:6px 14px">{correo or 'No proporcionado'}</td></tr>
+</table>
+<h3 style="margin-top:20px">Mensaje</h3>
+<div style="background:#f5f5f5;padding:16px;border-radius:8px;font-size:14px;line-height:1.6">
+  {mensaje.replace(chr(10), '<br>')}
+</div>
+<p style="font-size:12px;color:#aaa;margin-top:20px">
+  Enviado desde Academic Report Pro · {__import__('datetime').datetime.now().strftime('%d/%m/%Y %H:%M')}
+</p>
+"""
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = asunto
+        msg['From']    = SMTP_USER
+        msg['To']      = OWNER_MAIL
+        if correo:
+            msg['Reply-To'] = correo
+        msg.attach(MIMEText(cuerpo, 'html', 'utf-8'))
+
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASS)
+            server.sendmail(SMTP_USER, OWNER_MAIL, msg.as_string())
+
+        logger.info(f"Feedback enviado de {nombre} ({correo}): {tipo}")
+        return jsonify({'success': True})
+
+    except Exception as e:
+        logger.error(f"Error enviando feedback: {e}")
+        # No exponemos el error SMTP al usuario
+        return jsonify({'success': True})   # igual marcamos éxito para no confundir
+
+
+# ─────────────────────────────────────────────────────────────
+# RECUPERACIÓN DE CONTRASEÑA  (Supabase lo maneja)
+# ─────────────────────────────────────────────────────────────
+@app.route('/api/auth/recuperar', methods=['POST'])
+def api_recuperar_password():
+    """Envía email de recuperación a través de Supabase."""
+    try:
+        from database import supabase, DB_DISPONIBLE
+        data  = request.get_json(silent=True) or {}
+        email = data.get('email', '').strip()
+        if not email:
+            return jsonify({'success': False, 'error': 'Ingresa tu correo'}), 400
+        if not DB_DISPONIBLE or supabase is None:
+            return jsonify({'success': False, 'error': 'Base de datos no disponible'}), 503
+
+        redirect_url = data.get('redirect_url', '')
+        opts = {'redirect_to': redirect_url} if redirect_url else {}
+        supabase.auth.reset_password_email(email, opts)
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"Error recuperando contraseña: {e}")
+        # Siempre éxito para no revelar si el email existe
+        return jsonify({'success': True})
+
+
+@app.route('/recuperar')
+def recuperar_page():
+    return render_template('recuperar.html')
+
+@app.route('/sugerencias')
+def sugerencias_page():
+    return render_template('sugerencias.html')
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port, debug=False)
