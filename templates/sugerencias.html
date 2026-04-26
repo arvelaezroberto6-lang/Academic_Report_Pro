@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}Sugerencias — Academic Report Pro{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-wrap { max-width:640px; margin:0 auto; padding:3rem 1.5rem 5rem; }
+.page-hd { margin-bottom:2rem; }
+.page-hd h1 { font-family:'Playfair Display',serif; font-size:1.7rem; font-weight:700; }
+.page-hd p  { font-size:.84rem; color:var(--text2); margin-top:.3rem; line-height:1.5; }
+
+.fcard { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1.8rem; }
+
+.tipo-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:.5rem; margin-bottom:1.4rem; }
+@media(max-width:480px) { .tipo-grid { grid-template-columns:1fr 1fr; } }
+.tipo-btn {
+  padding:.65rem .8rem; border:1px solid var(--border2); border-radius:10px;
+  background:var(--surface2); color:var(--text2); font-family:'DM Sans',sans-serif;
+  font-size:.8rem; font-weight:500; cursor:pointer; transition:all .18s;
+  display:flex; align-items:center; gap:.4rem; text-align:left;
+}
+.tipo-btn:hover  { border-color:rgba(212,168,67,.4); color:var(--gold); }
+.tipo-btn.active { background:var(--gold-dim); border-color:rgba(212,168,67,.35); color:var(--gold); font-weight:600; }
+
+.field { margin-bottom:1rem; }
+.field label { display:block; font-size:.73rem; font-weight:600; color:var(--text2); margin-bottom:.4rem; text-transform:uppercase; letter-spacing:.04em; }
+.field input, .field textarea {
+  width:100%; padding:.8rem 1rem; background:var(--surface2); border:1px solid var(--border2);
+  border-radius:var(--radius); color:var(--text); font-family:'DM Sans',sans-serif;
+  font-size:.9rem; outline:none; transition:border-color .18s, box-shadow .18s;
+  -webkit-appearance:none;
+}
+.field input:focus, .field textarea:focus { border-color:var(--gold); box-shadow:0 0 0 3px var(--gold-dim); }
+.field input::placeholder, .field textarea::placeholder { color:var(--text3); }
+.field textarea { resize:vertical; min-height:130px; line-height:1.6; }
+.char-hint { font-size:.68rem; color:var(--text3); text-align:right; margin-top:.3rem; }
+
+.g2c { display:grid; grid-template-columns:1fr 1fr; gap:.8rem; }
+@media(max-width:480px) { .g2c { grid-template-columns:1fr; } }
+
+.btn-send {
+  width:100%; padding:.9rem; background:linear-gradient(135deg,var(--gold) 0%,#9a6e18 100%);
+  color:#000; font-weight:700; font-size:.92rem; border:none; border-radius:var(--radius);
+  cursor:pointer; transition:all .2s; font-family:'DM Sans',sans-serif; margin-top:.5rem;
+  display:flex; align-items:center; justify-content:center; gap:.5rem;
+}
+.btn-send:hover { transform:translateY(-2px); box-shadow:0 8px 28px var(--gold-glow); }
+.btn-send:disabled { opacity:.5; cursor:not-allowed; transform:none; box-shadow:none; }
+.btn-spinner { display:none; width:16px; height:16px; border:2px solid rgba(0,0,0,.3); border-top-color:#000; border-radius:50%; animation:spin .6s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+.msg-ok  { background:rgba(82,196,138,.12); border:1px solid rgba(82,196,138,.3); border-radius:var(--radius); padding:1rem 1.2rem; font-size:.88rem; color:var(--green); display:none; text-align:center; line-height:1.6; }
+.msg-err { background:rgba(224,92,92,.12); border:1px solid rgba(224,92,92,.3); border-radius:var(--radius); padding:.7rem 1rem; font-size:.82rem; color:var(--red); display:none; margin-bottom:1rem; }
+
+.note { font-size:.72rem; color:var(--text3); margin-top:.8rem; text-align:center; line-height:1.5; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+  <div class="page-hd">
+    <h1>💬 Sugerencias</h1>
+    <p>¿Tienes una idea, encontraste un error o quieres pedir una función nueva? Escríbenos directamente. Leemos todo.</p>
+  </div>
+
+  <div id="msgOk" class="msg-ok" style="margin-bottom:1.5rem">
+    <div style="font-size:2rem;margin-bottom:.5rem">✅</div>
+    <strong>¡Recibido! Muchas gracias.</strong><br>
+    Tu mensaje llegó directo al equipo. Lo leeremos pronto.
+  </div>
+
+  <div class="fcard" id="formCard">
+    <!-- Tipo -->
+    <div class="field" style="margin-bottom:1.2rem">
+      <label>Tipo de mensaje</label>
+      <div class="tipo-grid">
+        <button class="tipo-btn active" data-val="sugerencia" onclick="selTipo(this)">💡 Sugerencia</button>
+        <button class="tipo-btn"        data-val="error"       onclick="selTipo(this)">🐛 Reporte de error</button>
+        <button class="tipo-btn"        data-val="funcion"     onclick="selTipo(this)">🚀 Función nueva</button>
+        <button class="tipo-btn"        data-val="otro"        onclick="selTipo(this)">💬 Otro</button>
+      </div>
+    </div>
+
+    <div id="msgErr" class="msg-err"></div>
+
+    <div class="g2c">
+      <div class="field">
+        <label>Tu nombre (opcional)</label>
+        <input type="text" id="fbNombre" placeholder="Ej: Juan Pérez">
+      </div>
+      <div class="field">
+        <label>Tu correo (opcional)</label>
+        <input type="email" id="fbCorreo" placeholder="para responderte" inputmode="email">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Tu mensaje *</label>
+      <textarea id="fbMensaje" placeholder="Cuéntanos qué mejorarías, qué no funciona bien, o qué te gustaría ver en la plataforma..." maxlength="1000" oninput="updateChar()"></textarea>
+      <div class="char-hint"><span id="charCount">0</span>/1000</div>
+    </div>
+
+    <button class="btn-send" id="btnEnviar" onclick="enviarFeedback()">
+      <span id="btnTxt">Enviar mensaje</span>
+      <span class="btn-spinner" id="btnSpn"></span>
+      <span id="btnArrow">→</span>
+    </button>
+    <p class="note">Tu mensaje se envía directamente al equipo. Si dejaste tu correo te responderemos.</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let tipoSeleccionado = 'sugerencia';
+
+function selTipo(btn) {
+  document.querySelectorAll('.tipo-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  tipoSeleccionado = btn.dataset.val;
+}
+
+function updateChar() {
+  document.getElementById('charCount').textContent = document.getElementById('fbMensaje').value.length;
+}
+
+async function enviarFeedback() {
+  const mensaje = document.getElementById('fbMensaje').value.trim();
+  const nombre  = document.getElementById('fbNombre').value.trim();
+  const correo  = document.getElementById('fbCorreo').value.trim();
+  const errEl   = document.getElementById('msgErr');
+
+  errEl.style.display = 'none';
+  if (!mensaje || mensaje.length < 10) {
+    errEl.textContent = 'Por favor escribe un mensaje de al menos 10 caracteres.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const btn = document.getElementById('btnEnviar');
+  btn.disabled = true;
+  document.getElementById('btnSpn').style.display   = 'block';
+  document.getElementById('btnArrow').style.display = 'none';
+  document.getElementById('btnTxt').textContent     = 'Enviando...';
+
+  try {
+    await fetch('/api/feedback', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ nombre, correo, tipo: tipoSeleccionado, mensaje })
+    });
+    // Siempre mostrar éxito (el backend nunca falla visible)
+    document.getElementById('formCard').style.display = 'none';
+    document.getElementById('msgOk').style.display    = 'block';
+  } catch(e) {
+    errEl.textContent = 'Error de conexión. Intenta de nuevo.';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    document.getElementById('btnSpn').style.display   = 'none';
+    document.getElementById('btnArrow').style.display = '';
+    document.getElementById('btnTxt').textContent     = 'Enviar mensaje';
+  }
+}
+</script>
+{% endblock %}
