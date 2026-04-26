@@ -1626,14 +1626,7 @@ def api_registro():
 
         resultado = registrar_usuario(nombre, email, password)
         if resultado['success']:
-            return jsonify({
-                'success':      True,
-                'user_id':      resultado.get('user_id'),
-                'email':        resultado.get('email', email),
-                'nombre':       resultado.get('nombre', nombre),
-                'access_token': resultado.get('access_token'),
-                'auto_login':   resultado.get('auto_login', False),
-            })
+            return jsonify({'success': True, 'user_id': resultado['user_id']})
         else:
             return jsonify({'success': False, 'error': resultado['error']}), 400
 
@@ -1873,19 +1866,51 @@ def api_recuperar_password():
         if not DB_DISPONIBLE or supabase is None:
             return jsonify({'success': False, 'error': 'Base de datos no disponible'}), 503
 
-        redirect_url = data.get('redirect_url', '')
-        opts = {'redirect_to': redirect_url} if redirect_url else {}
-        supabase.auth.reset_password_email(email, opts)
+        # Siempre redirigir a /nueva-contrasena para que el usuario pueda cambiarla
+        base_url = data.get('redirect_url', '').replace('/auth', '').replace('/recuperar', '').rstrip('/')
+        if not base_url:
+            base_url = 'https://academic-report-pro-r93m.onrender.com'
+        redirect_url = f"{base_url}/nueva-contrasena"
+        supabase.auth.reset_password_email(email, {'redirect_to': redirect_url})
         return jsonify({'success': True})
     except Exception as e:
         logger.error(f"Error recuperando contraseña: {e}")
-        # Siempre éxito para no revelar si el email existe
         return jsonify({'success': True})
 
 
 @app.route('/recuperar')
 def recuperar_page():
     return render_template('recuperar.html')
+
+
+@app.route('/nueva-contrasena')
+def nueva_contrasena_page():
+    return render_template('nueva-contrasena.html')
+
+
+@app.route('/api/auth/nueva-contrasena', methods=['POST'])
+def api_nueva_contrasena():
+    """Cambia la contraseña usando el access_token de Supabase."""
+    try:
+        from database import supabase, DB_DISPONIBLE
+        data         = request.get_json(silent=True) or {}
+        access_token = data.get('access_token', '').strip()
+        nueva_pass   = data.get('password', '').strip()
+
+        if not access_token or not nueva_pass:
+            return jsonify({'success': False, 'error': 'Datos incompletos'}), 400
+        if len(nueva_pass) < 6:
+            return jsonify({'success': False, 'error': 'La contraseña debe tener al menos 6 caracteres'}), 400
+        if not DB_DISPONIBLE or supabase is None:
+            return jsonify({'success': False, 'error': 'Base de datos no disponible'}), 503
+
+        # Establecer la sesión con el token recibido del link
+        supabase.auth.set_session(access_token, access_token)
+        supabase.auth.update_user({'password': nueva_pass})
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"Error cambiando contraseña: {e}")
+        return jsonify({'success': False, 'error': 'El enlace expiró o no es válido. Solicita uno nuevo.'}), 400
 
 @app.route('/sugerencias')
 def sugerencias_page():
