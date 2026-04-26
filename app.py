@@ -40,6 +40,12 @@ logger.info("🚀 ACADEMIC REPORT PRO - VERSIÓN 3.3")
 logger.info(f"🔑 API Key: {'SÍ ✅' if DEEPSEEK_API_KEY else 'NO ❌'}")
 logger.info("=" * 60)
 
+from database import (
+    registrar_usuario, login_usuario, obtener_perfil,
+    actualizar_perfil, guardar_informe, obtener_mis_informes,
+    obtener_informe, eliminar_informe, DB_DISPONIBLE
+)
+
 # ============================================================
 # NORMAS Y TIPOS
 # ============================================================
