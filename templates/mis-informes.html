@@ -1,15 +1,325 @@
 {% extends "base.html" %}
+{% block title %}Mis Informes — Academic Report Pro{% endblock %}
 
-{% block title %}Mis Informes - Academic Report Pro{% endblock %}
+{% block extra_css %}
+<style>
+.page-wrap { max-width: 900px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+
+.page-hd {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+.page-hd h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.7rem;
+    font-weight: 700;
+}
+.page-hd p { font-size: .83rem; color: var(--text2); margin-top: .2rem; }
+
+/* Estado vacío */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    border: 1px dashed var(--border2);
+    border-radius: var(--radius-lg);
+}
+.empty-state .ico { font-size: 3rem; margin-bottom: 1rem; }
+.empty-state h3 { font-size: 1.1rem; margin-bottom: .5rem; }
+.empty-state p { font-size: .85rem; color: var(--text2); }
+
+/* Skeleton loader */
+.skeleton-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.3rem 1.5rem;
+    margin-bottom: .8rem;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+.skel-line {
+    height: 12px;
+    border-radius: 6px;
+    background: var(--surface2);
+    margin-bottom: .6rem;
+}
+@keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.4 } }
+
+/* Informe card */
+.informe-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.2rem 1.5rem;
+    margin-bottom: .8rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    transition: border-color .2s, transform .2s;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+}
+.informe-card:hover { border-color: rgba(212,168,67,.35); transform: translateY(-1px); }
+
+.inf-ico {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: var(--gold-dim);
+    border: 1px solid rgba(212,168,67,.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+.inf-body { flex: 1; min-width: 0; }
+.inf-tema {
+    font-weight: 700;
+    font-size: .93rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: .3rem;
+}
+.inf-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+    align-items: center;
+}
+.inf-badge {
+    padding: .18rem .6rem;
+    border-radius: 100px;
+    font-size: .67rem;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text2);
+}
+.inf-badge.gold { background: var(--gold-dim); border-color: rgba(212,168,67,.25); color: var(--gold); }
+.inf-fecha { font-size: .72rem; color: var(--text3); margin-left: auto; white-space: nowrap; }
+
+.inf-actions {
+    display: flex;
+    gap: .4rem;
+    flex-shrink: 0;
+    align-items: center;
+}
+.btn-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all .18s;
+}
+.btn-icon:hover { border-color: var(--red); color: var(--red); background: rgba(224,92,92,.08); }
+
+/* No auth banner */
+.no-auth {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+}
+.no-auth .ico { font-size: 2.5rem; margin-bottom: 1rem; }
+.no-auth h3 { margin-bottom: .5rem; }
+.no-auth p { font-size: .85rem; color: var(--text2); margin-bottom: 1.5rem; }
+</style>
+{% endblock %}
 
 {% block content %}
-<section class="container" style="padding:6rem 0 4rem;">
-    <h1 class="hero-title" style="font-size:2rem; text-align:center; margin-bottom:2rem;">📁 Mis Informes</h1>
-    <div class="card" style="max-width:600px; margin:0 auto; text-align:center;">
-        <div style="font-size:3rem; margin-bottom:1rem;">📭</div>
-        <h3 style="margin-bottom:.5rem;">Próximamente</h3>
-        <p style="color:var(--text2);">Aquí aparecerán tus informes guardados.</p>
-        <a href="/generar" class="btn-gold" style="margin-top:1.5rem; display:inline-flex;">➕ Crear mi primer informe</a>
+<div class="page-wrap">
+    <div class="page-hd">
+        <div>
+            <h1>📁 Mis Informes</h1>
+            <p id="subtitulo">Cargando...</p>
+        </div>
+        <a href="/generar" class="btn-gold" style="font-size:.83rem; padding:.65rem 1.4rem;">
+            ➕ Nuevo informe
+        </a>
     </div>
-</section>
+
+    <div id="contenido">
+        <!-- Skeleton -->
+        <div class="skeleton-card">
+            <div class="skel-line" style="width:60%"></div>
+            <div class="skel-line" style="width:35%"></div>
+        </div>
+        <div class="skeleton-card">
+            <div class="skel-line" style="width:75%"></div>
+            <div class="skel-line" style="width:40%"></div>
+        </div>
+        <div class="skeleton-card">
+            <div class="skel-line" style="width:50%"></div>
+            <div class="skel-line" style="width:30%"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const ICONOS_TIPO = {
+    academico:   '📄',
+    laboratorio: '🔬',
+    ejecutivo:   '📊',
+    tesis:       '🎓',
+    pasantia:    '🏢',
+    proyecto:    '📋',
+};
+
+function formatearFecha(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' });
+}
+
+async function cargarInformes() {
+    const raw = localStorage.getItem('arp_user');
+    if (!raw) {
+        document.getElementById('subtitulo').textContent = '';
+        document.getElementById('contenido').innerHTML = `
+            <div class="no-auth">
+                <div class="ico">🔐</div>
+                <h3>Inicia sesión para ver tus informes</h3>
+                <p>Crea una cuenta gratis y todos tus informes se guardarán automáticamente.</p>
+                <a href="/auth?next=/mis-informes" class="btn-gold" style="display:inline-flex; font-size:.85rem;">
+                    Iniciar sesión →
+                </a>
+            </div>`;
+        return;
+    }
+
+    const user = JSON.parse(raw);
+
+    try {
+        const res  = await fetch('/api/mis-informes', {
+            headers: { 'X-User-Id': user.user_id }
+        });
+        const data = await res.json();
+
+        if (!data.success) throw new Error(data.error);
+
+        const informes = data.informes || [];
+        document.getElementById('subtitulo').textContent =
+            informes.length > 0
+                ? `${informes.length} informe${informes.length !== 1 ? 's' : ''} guardado${informes.length !== 1 ? 's' : ''}`
+                : 'Sin informes aún';
+
+        if (informes.length === 0) {
+            document.getElementById('contenido').innerHTML = `
+                <div class="empty-state">
+                    <div class="ico">📭</div>
+                    <h3>Todavía no has generado ningún informe</h3>
+                    <p>Genera tu primer informe y aparecerá aquí automáticamente.</p>
+                    <a href="/generar" class="btn-gold" style="display:inline-flex; margin-top:1.5rem; font-size:.85rem;">
+                        ✦ Crear mi primer informe
+                    </a>
+                </div>`;
+            return;
+        }
+
+        document.getElementById('contenido').innerHTML = informes.map(inf => `
+            <div class="informe-card" onclick="abrirInforme('${inf.id}')">
+                <div class="inf-ico">${ICONOS_TIPO[inf.tipo_informe] || '📄'}</div>
+                <div class="inf-body">
+                    <div class="inf-tema">${inf.tema}</div>
+                    <div class="inf-meta">
+                        <span class="inf-badge gold">${inf.norma}</span>
+                        <span class="inf-badge">${inf.tipo_informe}</span>
+                        <span class="inf-badge">${inf.nivel || 'universitario'}</span>
+                        ${inf.asignatura ? `<span class="inf-badge">${inf.asignatura}</span>` : ''}
+                        ${inf.refs_total > 0 ? `<span class="inf-badge">📚 ${inf.refs_total} refs</span>` : ''}
+                        <span class="inf-fecha">${formatearFecha(inf.created_at)}</span>
+                    </div>
+                </div>
+                <div class="inf-actions" onclick="event.stopPropagation()">
+                    <button class="btn-icon" title="Eliminar" onclick="eliminar('${inf.id}', this)">🗑</button>
+                </div>
+            </div>`).join('');
+
+    } catch(e) {
+        document.getElementById('subtitulo').textContent = '';
+        document.getElementById('contenido').innerHTML = `
+            <div class="empty-state">
+                <div class="ico">⚠️</div>
+                <h3>Error al cargar informes</h3>
+                <p style="color:var(--red)">${e.message}</p>
+            </div>`;
+    }
+}
+
+function abrirInforme(id) {
+    // Por ahora abre el generador — en v2 podría abrir una vista de detalle
+    Swal.fire({
+        title: 'Ver informe',
+        text: 'Próximamente podrás ver y re-exportar tus informes guardados. Por ahora puedes eliminarlo si lo deseas.',
+        icon: 'info',
+        confirmButtonText: 'Entendido',
+        background: '#0e1118',
+        color: '#eae8e1',
+        confirmButtonColor: '#d4a843',
+    });
+}
+
+async function eliminar(id, btn) {
+    const confirmado = await Swal.fire({
+        title: '¿Eliminar informe?',
+        text: 'Esta acción no se puede deshacer.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        background: '#0e1118',
+        color: '#eae8e1',
+        confirmButtonColor: '#e05c5c',
+        cancelButtonColor: '#3d3c38',
+    });
+    if (!confirmado.isConfirmed) return;
+
+    const user = JSON.parse(localStorage.getItem('arp_user'));
+    try {
+        const res  = await fetch(`/api/informe/${id}`, {
+            method: 'DELETE',
+            headers: { 'X-User-Id': user.user_id }
+        });
+        const data = await res.json();
+        if (data.success) {
+            // Quitar la card del DOM sin recargar
+            btn.closest('.informe-card').style.transition = 'opacity .3s';
+            btn.closest('.informe-card').style.opacity = '0';
+            setTimeout(() => {
+                btn.closest('.informe-card').remove();
+                // Actualizar contador
+                const cards = document.querySelectorAll('.informe-card');
+                document.getElementById('subtitulo').textContent =
+                    cards.length > 0
+                        ? `${cards.length} informe${cards.length !== 1 ? 's' : ''} guardado${cards.length !== 1 ? 's' : ''}`
+                        : 'Sin informes aún';
+                if (cards.length === 0) cargarInformes();
+            }, 300);
+        } else {
+            Swal.fire({ title: 'Error', text: data.error, icon: 'error', background: '#0e1118', color: '#eae8e1' });
+        }
+    } catch(e) {
+        Swal.fire({ title: 'Error de conexión', text: e.message, icon: 'error', background: '#0e1118', color: '#eae8e1' });
+    }
+}
+
+cargarInformes();
+</script>
 {% endblock %}
