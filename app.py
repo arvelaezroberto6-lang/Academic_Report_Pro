@@ -667,47 +667,72 @@ def generar_seccion(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_
         'manual':     " El autor te proporcionó su propio texto; tu tarea es formalizarlo y enriquecerlo con lenguaje académico y citas, sin inventar hechos nuevos.",
     }.get(modo, "")
 
-    # Bloque de fuentes reales: se inyecta cuando hay papers verificados disponibles
-    _bloque_refs = ""
+    # Bloque de fuentes reales — va al INICIO del prompt de usuario (más peso que system)
+    _prefijo_refs = ""
     if contexto_refs and contexto_refs.strip() and seccion not in ('referencias',):
-        _bloque_refs = (
-            f"\n\n{contexto_refs}\n"
-            f"IMPORTANTE: Para las citas dentro del texto usa ÚNICAMENTE los autores y años "
-            f"de la lista anterior. No inventes autores adicionales."
+        _prefijo_refs = (
+            f"{contexto_refs}\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"INSTRUCCIÓN OBLIGATORIA ANTES DE ESCRIBIR:\n"
+            f"Lee la lista de fuentes verificadas de arriba. "
+            f"Cuando cites en el texto, usa ÚNICAMENTE esos autores y años. "
+            f"Ejemplo: si la lista tiene 'Balanyà, De Oliveira (2022)', cita así: (Balanyà & De Oliveira, 2022). "
+            f"PROHIBIDO usar autores que NO estén en esa lista. "
+            f"PROHIBIDO inventar García, López, Martínez, Hernández ni ningún otro autor.\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
         )
 
     system_prompt = (
         f"Eres un experto en redacción académica en español, especializado en norma {norma} "
         f"y profundo conocedor del contexto colombiano y latinoamericano. "
         f"Escribes {_nivel_sistema}.{_modo_sistema} "
-
-        # FIX 4: Citas obligatorias dentro del texto
         f"REGLA CRÍTICA DE CITAS: TODA afirmación factual, estadística o concepto teórico "
         f"DEBE tener una cita en el texto en formato {norma}. "
         f"Por ejemplo en APA: (MinTIC, 2023), (García & López, 2022), (DANE, 2024). "
         f"No puedes escribir un dato o afirmación sin su respectiva cita inmediatamente después. "
         f"Las secciones de introducción, marco teórico y desarrollo deben tener al menos "
         f"una cita por párrafo. "
-
-        # FIX 7: No inventar datos
         "REGLA CRÍTICA DE VERACIDAD: NUNCA inventes datos, cifras, estadísticas ni nombres de estudios. "
         "Si no tienes el dato exacto de una fuente real, escribe: "
         "'según estimaciones recientes' o 'de acuerdo con reportes del sector (año aproximado)'. "
         "NUNCA uses porcentajes con decimales inventados (ej: 23,7% o 41,3%) — usa rangos: 'entre el 20 y 25%'. "
         "Si citas a MinTIC, DANE, CRC u otra entidad colombiana, el dato debe ser real y verificable. "
-
         "Cuando aplique al tema, incluyes datos de Colombia citando fuentes como MinTIC, DANE, CRC o MinCiencias. "
         "Usas referencias de años 2021-2025. "
         f"Para referencias en norma {norma}: aplica formato estrictamente correcto. "
         "Balanceas el análisis técnico con interpretaciones propias del autor. "
-        f"Respondes SOLO con el contenido solicitado, sin títulos de sección, sin preámbulos, sin asteriscos (**), sin markdown."
-        f"{_bloque_refs}"
+        "Respondes SOLO con el contenido solicitado, sin títulos de sección, sin preámbulos, sin asteriscos (**), sin markdown."
     )
+
+    # Inyectar el prefijo de fuentes reales AL INICIO del prompt de usuario
+    prompt = _prefijo_refs + prompt
 
     contenido = llamar_deepseek(prompt, system_prompt=system_prompt, max_tokens=3000)
     if not contenido:
         return None
     contenido = contenido.strip()
+
+    # ── Validar que usó los autores reales (si se inyectaron) ──
+    if contexto_refs and contexto_refs.strip() and seccion not in ('referencias',):
+        # Extraer apellidos de la lista de fuentes reales
+        apellidos_reales = re.findall(r'\[\d+\]\s+([A-ZÁÉÍÓÚÑa-záéíóúñ\-]+)', contexto_refs)
+        apellidos_usados = sum(1 for ap in apellidos_reales if ap.lower() in contenido.lower())
+        if apellidos_reales and apellidos_usados == 0:
+            logger.warning(f"Seccion '{seccion}': DeepSeek ignoró las fuentes reales. Reintentando...")
+            prompt_retry = (
+                f"{contexto_refs}\n\n"
+                f"ATENCIÓN: En tu respuesta anterior NO usaste ninguno de los autores de la lista anterior. "
+                f"Eso es un error grave. Reescribe la sección usando OBLIGATORIAMENTE al menos 3 autores "
+                f"de la lista como citas en el texto. Los autores disponibles son: "
+                f"{', '.join(apellidos_reales[:8])}.\n\n"
+                f"Sección a reescribir:\n{prompt.split('━━━')[-1] if '━━━' in prompt else prompt}"
+            )
+            contenido2 = llamar_deepseek(prompt_retry, system_prompt=system_prompt, max_tokens=3000)
+            if contenido2:
+                apellidos_usados2 = sum(1 for ap in apellidos_reales if ap.lower() in contenido2.lower())
+                if apellidos_usados2 > apellidos_usados:
+                    contenido = contenido2.strip()
+                    logger.info(f"Reintento mejoró uso de fuentes reales: {apellidos_usados2} autores")
 
     # Validar citas — 1 reintento si faltan
     val = validar_citas(contenido, seccion, norma)
