@@ -41,9 +41,10 @@ except ImportError:
 # USUARIOS
 # ============================================================
 
-def registrar_usuario(email: str, password: str, nombre: str = "") -> dict:
+def registrar_usuario(nombre: str = "", email: str = "", password: str = "") -> dict:
     """
     Registra un nuevo usuario con email y contraseña.
+    Acepta argumentos posicionales como (nombre, email, password) o por nombre.
     Supabase crea automáticamente el perfil via trigger.
     """
     if not DB_DISPONIBLE:
@@ -72,11 +73,16 @@ def login_usuario(email: str, password: str) -> dict:
             "password": password
         })
         if res.session:
+            # Intentar obtener el nombre desde user_metadata
+            nombre = ""
+            if res.user and res.user.user_metadata:
+                nombre = res.user.user_metadata.get("nombre", "")
             return {
                 "success":      True,
                 "access_token": res.session.access_token,
                 "user_id":      res.user.id,
                 "email":        res.user.email,
+                "nombre":       nombre,
             }
         return {"success": False, "error": "Credenciales incorrectas"}
     except Exception as e:
@@ -96,20 +102,45 @@ def obtener_perfil(user_id: str) -> dict | None:
         return None
 
 
-def actualizar_perfil(user_id: str, datos: dict) -> bool:
-    """Actualiza nombre, institución, ciudad, norma y nivel favorito."""
+def actualizar_perfil(user_id: str, nombre_o_datos=None, institucion: str = "",
+                      carrera: str = "", ciudad: str = "", telefono: str = "") -> dict:
+    """
+    Actualiza el perfil del usuario.
+    Acepta dos formas de llamada:
+      - actualizar_perfil(user_id, datos_dict)          ← desde database.py original
+      - actualizar_perfil(user_id, nombre, inst, carr, ciudad, tel) ← desde app.py
+    Devuelve siempre {"success": bool, "error": str (opcional)}.
+    """
     if not DB_DISPONIBLE:
-        return False
-    campos_permitidos = {"nombre", "institucion", "ciudad", "norma_favorita", "nivel_favorito"}
+        return {"success": False, "error": "Base de datos no disponible"}
+
+    # Normalizar argumentos
+    if isinstance(nombre_o_datos, dict):
+        datos = nombre_o_datos
+    else:
+        datos = {}
+        if nombre_o_datos is not None:
+            datos["nombre"] = nombre_o_datos
+        if institucion:
+            datos["institucion"] = institucion
+        if carrera:
+            datos["carrera"] = carrera
+        if ciudad:
+            datos["ciudad"] = ciudad
+        if telefono:
+            datos["telefono"] = telefono
+
+    campos_permitidos = {"nombre", "institucion", "carrera", "ciudad", "telefono",
+                         "norma_favorita", "nivel_favorito"}
     datos_limpios = {k: v for k, v in datos.items() if k in campos_permitidos}
     if not datos_limpios:
-        return False
+        return {"success": False, "error": "No hay datos válidos para actualizar"}
     try:
         supabase.table("usuarios").update(datos_limpios).eq("id", user_id).execute()
-        return True
+        return {"success": True}
     except Exception as e:
         logger.error(f"Error actualizando perfil: {e}")
-        return False
+        return {"success": False, "error": str(e)}
 
 
 # ============================================================
@@ -201,7 +232,7 @@ def _guardar_referencias(informe_id: str, refs: list):
         logger.error(f"Error guardando referencias individuales: {e}")
 
 
-def obtener_mis_informes(user_id: str, limite: int = 20) -> list:
+def obtener_mis_informes(user_id: str, limite: int = 20, offset: int = 0) -> list:
     """
     Devuelve los informes del usuario ordenados por fecha descendente.
     Solo trae los campos necesarios para el listado (no el texto completo).
@@ -209,15 +240,17 @@ def obtener_mis_informes(user_id: str, limite: int = 20) -> list:
     if not DB_DISPONIBLE:
         return []
     try:
-        res = (
+        query = (
             supabase.table("informes")
             .select("id, tema, tipo_informe, norma, nivel, nombre_autor, "
                     "asignatura, institucion, refs_total, estado, created_at")
             .eq("user_id", user_id)
             .order("created_at", desc=True)
             .limit(limite)
-            .execute()
         )
+        if offset:
+            query = query.range(offset, offset + limite - 1)
+        res = query.execute()
         return res.data or []
     except Exception as e:
         logger.error(f"Error obteniendo informes: {e}")
@@ -246,16 +279,16 @@ def obtener_informe(informe_id: str, user_id: str) -> dict | None:
         return None
 
 
-def eliminar_informe(informe_id: str, user_id: str) -> bool:
-    """Elimina un informe (y sus referencias por CASCADE)."""
+def eliminar_informe(informe_id: str, user_id: str) -> dict:
+    """Elimina un informe (y sus referencias por CASCADE). Devuelve dict con success."""
     if not DB_DISPONIBLE:
-        return False
+        return {"success": False, "error": "Base de datos no disponible"}
     try:
         supabase.table("informes").delete().eq("id", informe_id).eq("user_id", user_id).execute()
-        return True
+        return {"success": True}
     except Exception as e:
         logger.error(f"Error eliminando informe: {e}")
-        return False
+        return {"success": False, "error": str(e)}
 
 
 # ============================================================
