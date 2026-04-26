@@ -204,7 +204,9 @@ async function hacerLogin() {
       mostrarOk('✅ ¡Bienvenido! Redirigiendo...');
       setTimeout(() => { location.href = new URLSearchParams(location.search).get('next') || '/'; }, 600);
     } else {
-      mostrarErr((d.error || 'Correo o contraseña incorrectos.') + ' <a href="/recuperar" style="color:var(--gold)">¿Olvidaste tu contraseña?</a>');
+      const errMsg = d.error || 'Correo o contraseña incorrectos.';
+      const esCredencial = errMsg.toLowerCase().includes('invalid') || errMsg.toLowerCase().includes('incorrectos') || errMsg.toLowerCase().includes('email') || errMsg.toLowerCase().includes('password');
+      mostrarErr(errMsg + (esCredencial ? ' <a href="/recuperar" style="color:var(--gold)">¿Olvidaste tu contraseña?</a>' : ''));
       setLoad('btnLogin','spnLogin','btnLoginArrow', false);
       document.getElementById('btnLoginTxt').textContent = 'Entrar';
     }
@@ -234,8 +236,14 @@ async function hacerRegistro() {
     });
     const d = await r.json();
     if (d.success) {
-      mostrarOk('✅ ¡Cuenta creada! Revisa tu correo para confirmarla, luego inicia sesión.');
-      setTimeout(() => setTab('login'), 2800);
+      if (d.auto_login && d.user_id) {
+        // Supabase sin confirmación de email → sesión inmediata
+        guardarSesionYRedirigir(d, nombre, email);
+      } else {
+        // Supabase con confirmación de email → pedir que confirmen
+        mostrarOk('✅ ¡Cuenta creada! Revisa tu correo para confirmarla y luego inicia sesión.');
+        setTimeout(() => setTab('login'), 3000);
+      }
     } else {
       mostrarErr(d.error || 'No se pudo crear la cuenta. Intenta con otro correo.');
       setLoad('btnReg','spnReg', null, false);
@@ -246,6 +254,18 @@ async function hacerRegistro() {
     setLoad('btnReg','spnReg', null, false);
     document.getElementById('btnRegTxt').textContent = 'Crear cuenta gratis';
   }
+}
+
+function guardarSesionYRedirigir(d, nombre, email) {
+  localStorage.setItem('arp_user', JSON.stringify({
+    user_id: d.user_id,
+    email:   d.email || email,
+    nombre:  d.nombre || nombre.split(' ')[0]
+  }));
+  mostrarOk('✅ ¡Cuenta creada! Iniciando sesión...');
+  setTimeout(() => {
+    location.href = new URLSearchParams(location.search).get('next') || '/';
+  }, 800);
 }
 
 document.addEventListener('keydown', e => {
