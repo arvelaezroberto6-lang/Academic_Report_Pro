@@ -25,6 +25,13 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 # ── Importar módulo de referencias reales ──────────────────────
 from referencias_reales import buscar_referencias_reales, formatear_referencias
 
+# CAMBIO 1: Importar funciones de base de datos
+from database import (
+    registrar_usuario, login_usuario, obtener_perfil,
+    actualizar_perfil, guardar_informe, obtener_mis_informes,
+    obtener_informe, eliminar_informe, DB_DISPONIBLE
+)
+
 app = Flask(__name__)
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -39,12 +46,6 @@ logger.info("=" * 60)
 logger.info("🚀 ACADEMIC REPORT PRO - VERSIÓN 3.3")
 logger.info(f"🔑 API Key: {'SÍ ✅' if DEEPSEEK_API_KEY else 'NO ❌'}")
 logger.info("=" * 60)
-
-from database import (
-    registrar_usuario, login_usuario, obtener_perfil,
-    actualizar_perfil, guardar_informe, obtener_mis_informes,
-    obtener_informe, eliminar_informe, DB_DISPONIBLE
-)
 
 # ============================================================
 # NORMAS Y TIPOS
@@ -880,7 +881,8 @@ def generar_informe_completo(tema, info_extra, tipo_informe, norma, nivel, modo=
 
     # Revisión de coherencia final
     secciones = _revisar_coherencia(secciones, tema, norma)
-    return secciones
+    # CAMBIO 2: Devolver también las referencias reales
+    return secciones, refs_reales
 
 
 def _revisar_coherencia(secciones: dict, tema: str, norma: str) -> dict:
@@ -1052,7 +1054,7 @@ def generar_pdf(datos_usuario, secciones):
     if profesor:
         story.append(Paragraph(f"<b>Docente:</b> {profesor}", styles['TextoCentrado']))
     if institucion:
-        story.append(Paragraph(f"<b>Institución:</b> {institucion}", styles['TextoCentrado']))
+        story.append(Paragraph(f"<b>Institución:</b> {institucion}', styles['TextoCentrado']))
     if ciudad:
         story.append(Paragraph(f"<b>Ciudad:</b> {ciudad}", styles['TextoCentrado']))
     story.append(Paragraph(f"<b>Fecha:</b> {fecha}", styles['TextoCentrado']))
@@ -1436,7 +1438,8 @@ def api_generar():
             return jsonify({'success': False, 'error': 'El tema es requerido'}), 400
 
         logger.info(f"📨 Generando informe — Tema: {tema[:50]}...")
-        secciones = generar_informe_completo(tema, texto_usuario, tipo_informe, norma, nivel, modo=data.get('modo', 'rapido'))
+        # CAMBIO 2: Capturar también las referencias reales
+        secciones, refs_reales = generar_informe_completo(tema, texto_usuario, tipo_informe, norma, nivel, modo=data.get('modo', 'rapido'))
 
         if not secciones:
             return jsonify({'success': False, 'error': 'No se pudo generar el informe'}), 500
@@ -1452,6 +1455,24 @@ def api_generar():
             'fecha':       datetime.now().strftime('%d/%m/%Y'),
             'norma':       norma
         }
+
+        # CAMBIO 2: Guardar el informe en la base de datos si hay usuario autenticado
+        user_id = request.headers.get('X-User-Id')
+        if user_id and DB_DISPONIBLE:
+            try:
+                guardar_informe(
+                    user_id=user_id,
+                    datos_usuario=datos_usuario,
+                    secciones=secciones,
+                    refs_reales=refs_reales,
+                    tipo_informe=tipo_informe,
+                    norma=norma,
+                    nivel=nivel,
+                    modo=data.get('modo', 'rapido')
+                )
+                logger.info(f"Informe guardado para usuario {user_id}")
+            except Exception as e:
+                logger.error(f"Error guardando informe: {e}")
 
         return jsonify({'success': True, 'secciones': secciones, 'datos_usuario': datos_usuario})
 
@@ -1584,6 +1605,161 @@ def exportar_word():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+# ============================================================
+# RUTAS DE AUTENTICACIÓN Y PERFIL (CAMBIO 3)
+# ============================================================
+@app.route('/api/auth/registro', methods=['POST'])
+def api_registro():
+    """Registrar un nuevo usuario"""
+    try:
+        data = request.json
+        nombre = data.get('nombre', '').strip()
+        email = data.get('email', '').strip()
+        password = data.get('password', '')
+
+        if not nombre or not email or not password:
+            return jsonify({'success': False, 'error': 'Nombre, email y contraseña son requeridos'}), 400
+
+        resultado = registrar_usuario(nombre, email, password)
+        if resultado['success']:
+            return jsonify({'success': True, 'user_id': resultado['user_id']})
+        else:
+            return jsonify({'success': False, 'error': resultado['error']}), 400
+
+    except Exception as e:
+        logger.error(f"Error en registro: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/auth/login', methods=['POST'])
+def api_login():
+    """Iniciar sesión"""
+    try:
+        data = request.json
+        email = data.get('email', '').strip()
+        password = data.get('password', '')
+
+        if not email or not password:
+            return jsonify({'success': False, 'error': 'Email y contraseña son requeridos'}), 400
+
+        resultado = login_usuario(email, password)
+        if resultado['success']:
+            return jsonify({
+                'success': True,
+                'user_id': resultado['user_id'],
+                'nombre': resultado['nombre'],
+                'email': resultado['email']
+            })
+        else:
+            return jsonify({'success': False, 'error': resultado['error']}), 401
+
+    except Exception as e:
+        logger.error(f"Error en login: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/perfil', methods=['GET'])
+def api_obtener_perfil():
+    """Obtener perfil de usuario"""
+    try:
+        user_id = request.headers.get('X-User-Id')
+        if not user_id:
+            return jsonify({'success': False, 'error': 'Usuario no autenticado'}), 401
+
+        perfil = obtener_perfil(user_id)
+        if perfil:
+            return jsonify({'success': True, 'perfil': perfil})
+        else:
+            return jsonify({'success': False, 'error': 'Usuario no encontrado'}), 404
+
+    except Exception as e:
+        logger.error(f"Error obteniendo perfil: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/perfil', methods=['PUT'])
+def api_actualizar_perfil():
+    """Actualizar perfil de usuario"""
+    try:
+        user_id = request.headers.get('X-User-Id')
+        if not user_id:
+            return jsonify({'success': False, 'error': 'Usuario no autenticado'}), 401
+
+        data = request.json
+        nombre = data.get('nombre', '')
+        institucion = data.get('institucion', '')
+        carrera = data.get('carrera', '')
+        ciudad = data.get('ciudad', '')
+        telefono = data.get('telefono', '')
+
+        resultado = actualizar_perfil(user_id, nombre, institucion, carrera, ciudad, telefono)
+        if resultado['success']:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'success': False, 'error': resultado['error']}), 400
+
+    except Exception as e:
+        logger.error(f"Error actualizando perfil: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/mis-informes', methods=['GET'])
+def api_mis_informes():
+    """Obtener lista de informes del usuario"""
+    try:
+        user_id = request.headers.get('X-User-Id')
+        if not user_id:
+            return jsonify({'success': False, 'error': 'Usuario no autenticado'}), 401
+
+        limit = request.args.get('limit', 50, type=int)
+        offset = request.args.get('offset', 0, type=int)
+
+        informes = obtener_mis_informes(user_id, limit, offset)
+        return jsonify({'success': True, 'informes': informes, 'total': len(informes)})
+
+    except Exception as e:
+        logger.error(f"Error obteniendo informes: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/informe/<informe_id>', methods=['GET'])
+def api_obtener_informe(informe_id):
+    """Obtener un informe específico por ID"""
+    try:
+        user_id = request.headers.get('X-User-Id')
+        if not user_id:
+            return jsonify({'success': False, 'error': 'Usuario no autenticado'}), 401
+
+        informe = obtener_informe(informe_id, user_id)
+        if informe:
+            return jsonify({'success': True, 'informe': informe})
+        else:
+            return jsonify({'success': False, 'error': 'Informe no encontrado'}), 404
+
+    except Exception as e:
+        logger.error(f"Error obteniendo informe: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/informe/<informe_id>', methods=['DELETE'])
+def api_eliminar_informe(informe_id):
+    """Eliminar un informe"""
+    try:
+        user_id = request.headers.get('X-User-Id')
+        if not user_id:
+            return jsonify({'success': False, 'error': 'Usuario no autenticado'}), 401
+
+        resultado = eliminar_informe(informe_id, user_id)
+        if resultado['success']:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'success': False, 'error': resultado['error']}), 400
+
+    except Exception as e:
+        logger.error(f"Error eliminando informe: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @app.route('/health')
 def health():
     return jsonify({
@@ -1591,7 +1767,8 @@ def health():
         'api_configured':      bool(DEEPSEEK_API_KEY),
         'normas_disponibles':  list(NORMAS_INSTRUCCIONES.keys()),
         'tipos_disponibles':   list(TIPOS_INSTRUCCIONES.keys()),
-        'version':             '3.3'
+        'version':             '3.3',
+        'database_available':  DB_DISPONIBLE
     })
 
 
