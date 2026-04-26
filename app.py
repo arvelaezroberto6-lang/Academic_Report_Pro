@@ -1406,6 +1406,10 @@ def index():
 def generar_page():
     return render_template('generar.html')
 
+@app.route('/auth')
+def auth_page():
+    return render_template('auth.html')
+
 @app.route('/mis-informes')
 def mis_informes():
     return render_template('mis-informes.html')
