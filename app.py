@@ -1866,51 +1866,63 @@ def api_recuperar_password():
         if not DB_DISPONIBLE or supabase is None:
             return jsonify({'success': False, 'error': 'Base de datos no disponible'}), 503
 
-        # Siempre redirigir a /nueva-contrasena para que el usuario pueda cambiarla
-        base_url = data.get('redirect_url', '').replace('/auth', '').replace('/recuperar', '').rstrip('/')
-        if not base_url:
-            base_url = 'https://academic-report-pro-r93m.onrender.com'
-        redirect_url = f"{base_url}/nueva-contrasena"
-        supabase.auth.reset_password_email(email, {'redirect_to': redirect_url})
+        redirect_url = data.get('redirect_url', '')
+        opts = {'redirect_to': redirect_url} if redirect_url else {}
+        supabase.auth.reset_password_email(email, opts)
         return jsonify({'success': True})
     except Exception as e:
         logger.error(f"Error recuperando contraseña: {e}")
+        # Siempre éxito para no revelar si el email existe
         return jsonify({'success': True})
+
+
+
+@app.route('/api/guardar-informe', methods=['POST'])
+def api_guardar_informe():
+    """Guarda el informe completo generado por secciones."""
+    try:
+        user_id = request.headers.get('X-User-Id')
+        if not user_id:
+            return jsonify({'success': False, 'error': 'No autenticado'}), 401
+        if not DB_DISPONIBLE:
+            return jsonify({'success': False, 'error': 'Base de datos no disponible'}), 503
+
+        data          = request.get_json(silent=True) or {}
+        secciones     = data.get('secciones', {})
+        datos_usuario = data.get('datos_usuario', {})
+        refs_reales   = data.get('refs_reales', [])
+        tipo_informe  = data.get('tipo_informe', 'academico')
+        norma         = data.get('norma', 'APA 7')
+        nivel         = data.get('nivel', 'universitario')
+        modo          = data.get('modo', 'rapido')
+
+        if not secciones or not datos_usuario.get('tema'):
+            return jsonify({'success': False, 'error': 'Datos incompletos'}), 400
+
+        informe_id = guardar_informe(
+            user_id=user_id,
+            datos_usuario=datos_usuario,
+            secciones=secciones,
+            refs_reales=refs_reales,
+            tipo_informe=tipo_informe,
+            norma=norma,
+            nivel=nivel,
+            modo=modo
+        )
+        if informe_id:
+            logger.info(f"Informe guardado via /api/guardar-informe: {informe_id}")
+            return jsonify({'success': True, 'informe_id': informe_id})
+        else:
+            return jsonify({'success': False, 'error': 'No se pudo guardar'}), 500
+
+    except Exception as e:
+        logger.error(f"Error en /api/guardar-informe: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/recuperar')
 def recuperar_page():
     return render_template('recuperar.html')
-
-
-@app.route('/nueva-contrasena')
-def nueva_contrasena_page():
-    return render_template('nueva-contrasena.html')
-
-
-@app.route('/api/auth/nueva-contrasena', methods=['POST'])
-def api_nueva_contrasena():
-    """Cambia la contraseña usando el access_token de Supabase."""
-    try:
-        from database import supabase, DB_DISPONIBLE
-        data         = request.get_json(silent=True) or {}
-        access_token = data.get('access_token', '').strip()
-        nueva_pass   = data.get('password', '').strip()
-
-        if not access_token or not nueva_pass:
-            return jsonify({'success': False, 'error': 'Datos incompletos'}), 400
-        if len(nueva_pass) < 6:
-            return jsonify({'success': False, 'error': 'La contraseña debe tener al menos 6 caracteres'}), 400
-        if not DB_DISPONIBLE or supabase is None:
-            return jsonify({'success': False, 'error': 'Base de datos no disponible'}), 503
-
-        # Establecer la sesión con el token recibido del link
-        supabase.auth.set_session(access_token, access_token)
-        supabase.auth.update_user({'password': nueva_pass})
-        return jsonify({'success': True})
-    except Exception as e:
-        logger.error(f"Error cambiando contraseña: {e}")
-        return jsonify({'success': False, 'error': 'El enlace expiró o no es válido. Solicita uno nuevo.'}), 400
 
 @app.route('/sugerencias')
 def sugerencias_page():
