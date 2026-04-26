@@ -1626,7 +1626,14 @@ def api_registro():
 
         resultado = registrar_usuario(nombre, email, password)
         if resultado['success']:
-            return jsonify({'success': True, 'user_id': resultado['user_id']})
+            return jsonify({
+                'success':      True,
+                'user_id':      resultado.get('user_id'),
+                'email':        resultado.get('email', email),
+                'nombre':       resultado.get('nombre', nombre),
+                'access_token': resultado.get('access_token'),
+                'auto_login':   resultado.get('auto_login', False),
+            })
         else:
             return jsonify({'success': False, 'error': resultado['error']}), 400
 
