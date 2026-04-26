@@ -1054,7 +1054,7 @@ def generar_pdf(datos_usuario, secciones):
     if profesor:
         story.append(Paragraph(f"<b>Docente:</b> {profesor}", styles['TextoCentrado']))
     if institucion:
-        story.append(Paragraph(f"<b>Institución:</b> {institucion}', styles['TextoCentrado']))
+        story.append(Paragraph(f"<b>Institución:</b> {institucion}", styles['TextoCentrado']))
     if ciudad:
         story.append(Paragraph(f"<b>Ciudad:</b> {ciudad}", styles['TextoCentrado']))
     story.append(Paragraph(f"<b>Fecha:</b> {fecha}", styles['TextoCentrado']))
