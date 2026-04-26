@@ -44,7 +44,7 @@ except ImportError:
 def registrar_usuario(nombre: str = "", email: str = "", password: str = "") -> dict:
     """
     Registra un nuevo usuario con email y contraseña.
-    Acepta argumentos posicionales como (nombre, email, password) o por nombre.
+    Si Supabase tiene confirmación de email desactivada, devuelve sesión directamente.
     Supabase crea automáticamente el perfil via trigger.
     """
     if not DB_DISPONIBLE:
@@ -55,12 +55,31 @@ def registrar_usuario(nombre: str = "", email: str = "", password: str = "") -> 
             "password": password,
             "options": {"data": {"nombre": nombre}}
         })
-        if res.user:
-            return {"success": True, "user_id": res.user.id}
-        return {"success": False, "error": "No se pudo crear el usuario"}
+        if not res.user:
+            return {"success": False, "error": "No se pudo crear el usuario"}
+
+        # Si Supabase tiene confirmación desactivada, ya hay sesión activa
+        if res.session:
+            return {
+                "success":      True,
+                "user_id":      res.user.id,
+                "email":        res.user.email,
+                "nombre":       nombre,
+                "access_token": res.session.access_token,
+                "auto_login":   True,
+            }
+        # Si requiere confirmación de email, devolver solo user_id
+        return {
+            "success":    True,
+            "user_id":    res.user.id,
+            "auto_login": False,
+        }
     except Exception as e:
         logger.error(f"Error registrando usuario: {e}")
-        return {"success": False, "error": str(e)}
+        msg = str(e)
+        if "already registered" in msg or "already been registered" in msg:
+            msg = "Este correo ya está registrado. Intenta iniciar sesión."
+        return {"success": False, "error": msg}
 
 
 def login_usuario(email: str, password: str) -> dict:
