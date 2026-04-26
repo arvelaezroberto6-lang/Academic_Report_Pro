@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+{% block title %}Iniciar sesión — Academic Report Pro{% endblock %}
+
+{% block extra_css %}
+<style>
+.auth-wrap {
+    min-height: calc(100vh - 60px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.5rem;
+}
+.auth-box {
+    width: 100%;
+    max-width: 420px;
+}
+.auth-logo {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+.auth-logo-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--gold) 0%, #8b6412 100%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    margin-bottom: .8rem;
+}
+.auth-logo h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text);
+}
+.auth-logo p {
+    font-size: .78rem;
+    color: var(--text2);
+    margin-top: .3rem;
+}
+
+.auth-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+}
+
+/* Tabs */
+.auth-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .4rem;
+    margin-bottom: 1.8rem;
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: .3rem;
+}
+.auth-tab {
+    padding: .6rem;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text2);
+    font-weight: 600;
+    font-size: .84rem;
+    cursor: pointer;
+    transition: all .18s;
+    font-family: 'DM Sans', sans-serif;
+}
+.auth-tab.active {
+    background: var(--gold-dim);
+    color: var(--gold);
+    border: 1px solid rgba(212,168,67,.25);
+}
+
+/* Fields */
+.field { margin-bottom: 1rem; }
+.field label {
+    display: block;
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--text2);
+    margin-bottom: .4rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+.field input {
+    width: 100%;
+    padding: .75rem 1rem;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: .9rem;
+    transition: border-color .18s;
+    outline: none;
+}
+.field input:focus { border-color: var(--gold); }
+.field input::placeholder { color: var(--text3); }
+
+.btn-auth {
+    width: 100%;
+    padding: .85rem;
+    background: linear-gradient(135deg, var(--gold) 0%, #9a6e18 100%);
+    color: #000;
+    font-weight: 700;
+    font-size: .9rem;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all .2s;
+    font-family: 'DM Sans', sans-serif;
+    margin-top: .5rem;
+}
+.btn-auth:hover { transform: translateY(-1px); box-shadow: 0 6px 24px var(--gold-glow); }
+.btn-auth:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+.auth-error {
+    background: rgba(224,92,92,.12);
+    border: 1px solid rgba(224,92,92,.3);
+    border-radius: var(--radius);
+    padding: .7rem 1rem;
+    font-size: .82rem;
+    color: var(--red);
+    margin-bottom: 1rem;
+    display: none;
+}
+.auth-success {
+    background: rgba(82,196,138,.12);
+    border: 1px solid rgba(82,196,138,.3);
+    border-radius: var(--radius);
+    padding: .7rem 1rem;
+    font-size: .82rem;
+    color: var(--green);
+    margin-bottom: 1rem;
+    display: none;
+}
+
+.auth-divider {
+    text-align: center;
+    font-size: .72rem;
+    color: var(--text3);
+    margin: 1.2rem 0 .8rem;
+}
+
+.guest-link {
+    display: block;
+    text-align: center;
+    font-size: .8rem;
+    color: var(--text2);
+    text-decoration: none;
+    padding: .6rem;
+    border-radius: 8px;
+    transition: color .18s;
+}
+.guest-link:hover { color: var(--gold); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+    <div class="auth-box">
+        <div class="auth-logo">
+            <div class="auth-logo-icon">📄</div>
+            <h1>Academic Report Pro</h1>
+            <p>Generador de informes académicos con IA</p>
+        </div>
+
+        <div class="auth-card">
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="setTab('login')">Iniciar sesión</button>
+                <button class="auth-tab" onclick="setTab('registro')">Registrarse</button>
+            </div>
+
+            <div id="msgError" class="auth-error"></div>
+            <div id="msgOk" class="auth-success"></div>
+
+            <!-- LOGIN -->
+            <div id="formLogin">
+                <div class="field">
+                    <label>Correo electrónico</label>
+                    <input type="email" id="loginEmail" placeholder="tucorreo@ejemplo.com" autocomplete="email">
+                </div>
+                <div class="field">
+                    <label>Contraseña</label>
+                    <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
+                </div>
+                <button class="btn-auth" id="btnLogin" onclick="hacerLogin()">
+                    Entrar →
+                </button>
+            </div>
+
+            <!-- REGISTRO -->
+            <div id="formRegistro" style="display:none;">
+                <div class="field">
+                    <label>Nombre completo</label>
+                    <input type="text" id="regNombre" placeholder="Tu nombre" autocomplete="name">
+                </div>
+                <div class="field">
+                    <label>Correo electrónico</label>
+                    <input type="email" id="regEmail" placeholder="tucorreo@ejemplo.com" autocomplete="email">
+                </div>
+                <div class="field">
+                    <label>Contraseña</label>
+                    <input type="password" id="regPass" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+                </div>
+                <button class="btn-auth" id="btnReg" onclick="hacerRegistro()">
+                    Crear cuenta →
+                </button>
+            </div>
+
+            <div class="auth-divider">o</div>
+            <a href="/generar" class="guest-link">Continuar sin cuenta →</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Si ya hay sesión, redirigir ──
+(function() {
+    const u = localStorage.getItem('arp_user');
+    if (u) {
+        const next = new URLSearchParams(location.search).get('next') || '/';
+        location.href = next;
+    }
+})();
+
+function setTab(tab) {
+    const esLogin = tab === 'login';
+    document.getElementById('formLogin').style.display    = esLogin ? '' : 'none';
+    document.getElementById('formRegistro').style.display = esLogin ? 'none' : '';
+    document.querySelectorAll('.auth-tab').forEach((t, i) => {
+        t.classList.toggle('active', esLogin ? i === 0 : i === 1);
+    });
+    limpiarMensajes();
+}
+
+function limpiarMensajes() {
+    document.getElementById('msgError').style.display = 'none';
+    document.getElementById('msgOk').style.display    = 'none';
+}
+function mostrarError(msg) {
+    const el = document.getElementById('msgError');
+    el.textContent = msg;
+    el.style.display = 'block';
+    document.getElementById('msgOk').style.display = 'none';
+}
+function mostrarOk(msg) {
+    const el = document.getElementById('msgOk');
+    el.textContent = msg;
+    el.style.display = 'block';
+    document.getElementById('msgError').style.display = 'none';
+}
+
+async function hacerLogin() {
+    limpiarMensajes();
+    const email = document.getElementById('loginEmail').value.trim();
+    const pass  = document.getElementById('loginPass').value;
+    if (!email || !pass) { mostrarError('Ingresa tu correo y contraseña.'); return; }
+
+    const btn = document.getElementById('btnLogin');
+    btn.disabled = true;
+    btn.textContent = 'Entrando...';
+
+    try {
+        const res  = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password: pass })
+        });
+        const data = await res.json();
+        if (data.success) {
+            // Guardar sesión en localStorage
+            localStorage.setItem('arp_user', JSON.stringify({
+                user_id: data.user_id,
+                email:   data.email,
+                nombre:  data.nombre || email.split('@')[0]
+            }));
+            mostrarOk('¡Bienvenido! Redirigiendo...');
+            setTimeout(() => {
+                const next = new URLSearchParams(location.search).get('next') || '/';
+                location.href = next;
+            }, 700);
+        } else {
+            mostrarError(data.error || 'Correo o contraseña incorrectos.');
+            btn.disabled = false;
+            btn.textContent = 'Entrar →';
+        }
+    } catch(e) {
+        mostrarError('Error de conexión. Intenta de nuevo.');
+        btn.disabled = false;
+        btn.textContent = 'Entrar →';
+    }
+}
+
+async function hacerRegistro() {
+    limpiarMensajes();
+    const nombre = document.getElementById('regNombre').value.trim();
+    const email  = document.getElementById('regEmail').value.trim();
+    const pass   = document.getElementById('regPass').value;
+
+    if (!nombre) { mostrarError('Ingresa tu nombre.'); return; }
+    if (!email)  { mostrarError('Ingresa tu correo.'); return; }
+    if (pass.length < 6) { mostrarError('La contraseña debe tener al menos 6 caracteres.'); return; }
+
+    const btn = document.getElementById('btnReg');
+    btn.disabled = true;
+    btn.textContent = 'Creando cuenta...';
+
+    try {
+        const res  = await fetch('/api/auth/registro', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nombre, email, password: pass })
+        });
+        const data = await res.json();
+        if (data.success) {
+            mostrarOk('✅ Cuenta creada. Revisa tu correo para confirmar (si Supabase lo requiere), luego inicia sesión.');
+            setTimeout(() => setTab('login'), 2500);
+        } else {
+            mostrarError(data.error || 'No se pudo crear la cuenta.');
+        }
+    } catch(e) {
+        mostrarError('Error de conexión. Intenta de nuevo.');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Crear cuenta →';
+    }
+}
+
+// Enter en inputs
+document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    const loginVisible = document.getElementById('formLogin').style.display !== 'none';
+    if (loginVisible) hacerLogin();
+    else hacerRegistro();
+});
+</script>
+{% endblock %}
