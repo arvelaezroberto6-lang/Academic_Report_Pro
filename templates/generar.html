@@ -540,6 +540,28 @@ select option { background: var(--surface); }
 
 {% block extra_js %}
 <script>
+// ═══ AUTH GUARD ═══
+(function() {
+    if (!localStorage.getItem('arp_user')) {
+        location.href = '/auth?next=/generar';
+    }
+})();
+const _arpRaw  = localStorage.getItem('arp_user');
+const _arpUser = _arpRaw ? JSON.parse(_arpRaw) : null;
+
+// Wrapper global para fetch — si recibe 401, redirige al login
+async function fetchAuth(url, options = {}) {
+    options.headers = options.headers || {};
+    if (_arpUser) options.headers['X-User-Id'] = _arpUser.user_id;
+    const res = await fetch(url, options);
+    if (res.status === 401) {
+        localStorage.removeItem('arp_user');  // limpiar sesión inválida
+        location.href = '/auth?next=/generar';
+        throw new Error('Sesión expirada');
+    }
+    return res;
+}
+
 // ═══ ESTADO ═══
 let modo              = 'rapido';
 let tipoActual        = 'academico';
@@ -763,7 +785,7 @@ document.getElementById('generarBtn').onclick = async () => {
         document.getElementById('progressFill').style.width = (((i + 1) / SECCIONES_INFO.length) * 100) + '%';
         continue;
       }
-      const res  = await fetch('/api/generar-seccion', {
+      const res  = await fetchAuth('/api/generar-seccion', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...payload, seccion: clave, contexto_refs: contextoRefs, ...extraPayload })
@@ -805,7 +827,7 @@ document.getElementById('generarBtn').onclick = async () => {
   if (refsModo === 'auto') {
     try {
       document.getElementById('progressMessage').textContent = '🔬 Buscando referencias reales en CrossRef…';
-      const refsRes  = await fetch('/api/referencias-reales', {
+      const refsRes  = await fetchAuth('/api/referencias-reales', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -835,9 +857,9 @@ document.getElementById('generarBtn').onclick = async () => {
     const arpRaw = localStorage.getItem('arp_user');
     if (arpRaw) {
       const arpUser = JSON.parse(arpRaw);
-      fetch('/api/guardar-informe', {
+      fetchAuth('/api/guardar-informe', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-User-Id': arpUser.user_id },
+        headers: { 'Content-Type': 'application/json'},
         body: JSON.stringify({
           secciones:     seccionesGeneradas,
           datos_usuario: datosUsuario,
@@ -922,7 +944,7 @@ document.getElementById('regenerarSeccionBtn').onclick = async () => {
   const refsManuales = refsModo === 'manual' ? (document.getElementById('referenciasManual').value.trim()) : '';
 
   try {
-    const res  = await fetch('/api/generar-seccion', {
+    const res  = await fetchAuth('/api/generar-seccion', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -963,7 +985,7 @@ document.getElementById('buscarRefsRealesBtn').onclick = async () => {
   const refsManuales = refsModo === 'manual' ? (document.getElementById('referenciasManual').value.trim()) : '';
 
   try {
-    const res  = await fetch('/api/referencias-reales', {
+    const res  = await fetchAuth('/api/referencias-reales', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
