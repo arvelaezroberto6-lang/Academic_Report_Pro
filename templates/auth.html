@@ -39,8 +39,6 @@
 .auth-divider{text-align:center;font-size:.72rem;color:var(--text3);margin:1.1rem 0 .8rem;position:relative}
 .auth-divider::before,.auth-divider::after{content:'';position:absolute;top:50%;width:42%;height:1px;background:var(--border)}
 .auth-divider::before{left:0}.auth-divider::after{right:0}
-.guest-link{display:flex;align-items:center;justify-content:center;gap:.4rem;font-size:.82rem;color:var(--text2);text-decoration:none;padding:.65rem;border-radius:8px;transition:color .18s;border:1px solid var(--border);background:var(--surface2)}
-.guest-link:hover{color:var(--gold);border-color:rgba(212,168,67,.3)}
 .privacy-note{font-size:.68rem;color:var(--text3);text-align:center;margin-top:.9rem;line-height:1.5}
 </style>
 {% endblock %}
@@ -123,8 +121,7 @@
         <p class="privacy-note">Al registrarte aceptas que tus datos se usen únicamente para guardar tus informes.</p>
       </div>
 
-      <div class="auth-divider">o continúa sin cuenta</div>
-      <a href="/generar" class="guest-link">📝 Crear informe ahora →</a>
+
     </div>
   </div>
 </div>
