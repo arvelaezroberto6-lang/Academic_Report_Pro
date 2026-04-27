@@ -1702,14 +1702,21 @@ def api_actualizar_perfil():
         if not user_id:
             return jsonify({'success': False, 'error': 'Usuario no autenticado'}), 401
 
-        data = request.json
-        nombre = data.get('nombre', '')
-        institucion = data.get('institucion', '')
-        carrera = data.get('carrera', '')
-        ciudad = data.get('ciudad', '')
-        telefono = data.get('telefono', '')
+        data = request.get_json(silent=True) or {}
 
-        resultado = actualizar_perfil(user_id, nombre, institucion, carrera, ciudad, telefono)
+        # Pasar TODOS los campos como dict — incluyendo norma_favorita y nivel_favorito
+        # que antes se perdían silenciosamente
+        campos = {
+            'nombre':         data.get('nombre', '').strip(),
+            'institucion':    data.get('institucion', '').strip(),
+            'carrera':        data.get('carrera', '').strip(),
+            'ciudad':         data.get('ciudad', '').strip(),
+            'telefono':       data.get('telefono', '').strip(),
+            'norma_favorita': data.get('norma_favorita', ''),
+            'nivel_favorito': data.get('nivel_favorito', ''),
+        }
+
+        resultado = actualizar_perfil(user_id, campos)
         if resultado['success']:
             return jsonify({'success': True})
         else:
