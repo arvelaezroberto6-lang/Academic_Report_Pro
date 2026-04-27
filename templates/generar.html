@@ -727,17 +727,17 @@ document.getElementById('generarBtn').onclick = async () => {
   let refsTextoFinal = '';
   try {
     document.getElementById('progressMessage').textContent = '🔬 Buscando referencias académicas reales…';
-    const refsRes  = await fetch('/api/refs-previas', {
+    const refsRes0  = await fetch('/api/refs-previas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tema, norma: normaActual })
     });
-    const refsData = await refsRes.json();
-    if (refsData.success && refsData.contexto_refs) {
-      contextoRefs   = refsData.contexto_refs;
-      refsTextoFinal = refsData.refs_texto || '';
-      window._refsInfo = refsData;
-      console.log(`Referencias previas: ${refsData.total} encontradas`);
+    const refsData0 = await refsRes0.json();
+    if (refsData0.success && refsData0.contexto_refs) {
+      contextoRefs   = refsData0.contexto_refs;
+      refsTextoFinal = refsData0.refs_texto || '';
+      window._refsInfo = { fuente: 'crossref_openalex', total: refsData0.total, refs_reales: refsData0.refs || [] };
+      console.log('Referencias previas:', refsData0.total);
     }
   } catch(e) {
     console.warn('No se pudieron obtener refs previas:', e);
@@ -751,15 +751,16 @@ document.getElementById('generarBtn').onclick = async () => {
     document.getElementById('progressFill').style.width   = ((i / SECCIONES_INFO.length) * 100) + '%';
 
     try {
+      // FIX 2: Pass objetivos already generated when generating 'desarrollo'
       const extraPayload = {};
       if (clave === 'desarrollo' && seccionesGeneradas['objetivos']) {
         extraPayload.objetivos_texto = seccionesGeneradas['objetivos'];
       }
-      // Si ya tenemos referencias reales, no generar la sección — usar las reales
+      // Si ya tenemos referencias reales, usarlas directamente
       if (clave === 'referencias' && refsTextoFinal) {
         seccionesGeneradas['referencias'] = refsTextoFinal;
         marcarChip('referencias', 'ok');
-        document.getElementById('progressFill').style.width = ((( i + 1) / SECCIONES_INFO.length) * 100) + '%';
+        document.getElementById('progressFill').style.width = (((i + 1) / SECCIONES_INFO.length) * 100) + '%';
         continue;
       }
       const res  = await fetch('/api/generar-seccion', {
@@ -827,6 +828,32 @@ document.getElementById('generarBtn').onclick = async () => {
     } catch (e) {
       console.warn('Referencias reales fallaron:', e);
     }
+  }
+
+  // ── Guardar informe si el usuario está autenticado ──
+  try {
+    const arpRaw = localStorage.getItem('arp_user');
+    if (arpRaw) {
+      const arpUser = JSON.parse(arpRaw);
+      fetch('/api/guardar-informe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-User-Id': arpUser.user_id },
+        body: JSON.stringify({
+          secciones:     seccionesGeneradas,
+          datos_usuario: datosUsuario,
+          refs_reales:   window._refsInfo ? (window._refsInfo.refs_reales || []) : [],
+          tipo_informe:  tipoActual  || 'academico',
+          norma:         normaActual || 'APA 7',
+          nivel:         document.getElementById('nivel')?.value || 'universitario',
+          modo:          modo || 'rapido'
+        })
+      }).then(r => r.json()).then(d => {
+        if (d.success) console.log('Informe guardado:', d.informe_id);
+        else console.warn('No se guardó el informe:', d.error);
+      });
+    }
+  } catch(e) {
+    console.warn('Error guardando informe:', e);
   }
 
   setTimeout(() => {
