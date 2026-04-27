@@ -25,17 +25,57 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 # ── Importar módulo de referencias reales ──────────────────────
 from referencias_reales import buscar_referencias_reales, formatear_referencias
 
-# CAMBIO 1: Importar funciones de base de datos
+# ── Importar funciones de base de datos ────────────────────────
 from database import (
     registrar_usuario, login_usuario, obtener_perfil,
     actualizar_perfil, guardar_informe, obtener_mis_informes,
     obtener_informe, eliminar_informe, DB_DISPONIBLE
 )
 
+# ── Importar módulo de seguridad ───────────────────────────────
+from security import (
+    requiere_auth, obtener_user_id_verificado,
+    sanitizar_texto, sanitizar_html_email, sanitizar_nombre,
+    es_uuid_valido, es_email_valido, es_password_seguro,
+    validar_params_informe, aplicar_headers_seguridad,
+    log_evento_seguridad, NORMAS_VALIDAS, TIPOS_VALIDOS,
+    NIVELES_VALIDOS, MODOS_VALIDOS
+)
+
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024  # máx 2 MB por request
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+# ── Headers de seguridad en todas las respuestas ──────────────
+app.after_request(aplicar_headers_seguridad)
+
+# ── Rate Limiter (requiere: pip install flask-limiter) ─────────
+try:
+    from flask_limiter import Limiter
+    from flask_limiter.util import get_remote_address
+    limiter = Limiter(
+        get_remote_address,
+        app=app,
+        default_limits=["500 per day", "100 per hour"],
+        storage_uri="memory://",   # cambiar a Redis en producción con: redis://localhost:6379
+        headers_enabled=True
+    )
+    LIMITER_DISPONIBLE = True
+    logger.info("✅ Rate limiter activo")
+except ImportError:
+    limiter = None
+    LIMITER_DISPONIBLE = False
+    logger.warning("⚠️ flask-limiter no instalado — sin protección de rate limit. Ejecuta: pip install flask-limiter")
+
+def limit(rule):
+    """Decorador de rate limit que falla silencioso si no hay limiter."""
+    def decorator(f):
+        if LIMITER_DISPONIBLE and limiter:
+            return limiter.limit(rule)(f)
+        return f
+    return decorator
 
 os.makedirs('informes_generados', exist_ok=True)
 
@@ -1435,47 +1475,51 @@ def perfil():
 # RUTAS — API (POST)
 # ============================================================
 @app.route('/api/generar', methods=['POST'])
-def api_generar():
+@limit("15 per hour")   # máx 15 generaciones por IP por hora (protege la API de DeepSeek)
+@requiere_auth
+def api_generar(user_id):
     try:
-        data            = request.json
-        tema            = data.get('tema', '').strip()
+        data = request.get_json(silent=True) or {}
+
+        # Validar parámetros de negocio
+        params_ok, params_err = validar_params_informe(data)
+        if not params_ok:
+            return jsonify({'success': False, 'error': params_err}), 400
+
+        tema            = sanitizar_texto(data.get('tema', '').strip(), 500)
         nivel           = data.get('nivel', 'universitario')
         tipo_informe    = data.get('tipo_informe', 'academico')
         norma           = data.get('norma', 'APA 7')
-        nombre          = data.get('nombre', 'Estudiante')
-        asignatura      = data.get('asignatura', '')
-        profesor        = data.get('profesor', '')
-        institucion     = data.get('institucion', '')
-        ciudad          = data.get('ciudad', '')
-        texto_usuario   = data.get('texto_usuario', '')
+        nombre          = sanitizar_nombre(data.get('nombre', 'Estudiante'))
+        asignatura      = sanitizar_texto(data.get('asignatura', ''), 200)
+        profesor        = sanitizar_nombre(data.get('profesor', ''))
+        institucion     = sanitizar_texto(data.get('institucion', ''), 200)
+        ciudad          = sanitizar_texto(data.get('ciudad', ''), 100)
+        texto_usuario   = sanitizar_texto(data.get('texto_usuario', ''), 10000)
         autores         = data.get('autores', [])
-        nombre_principal = autores[0].get('nombre', nombre) if autores else nombre
+        if not isinstance(autores, list):
+            autores = []
+        nombre_principal = sanitizar_nombre(autores[0].get('nombre', nombre)) if autores else nombre
 
-        if not tema:
-            return jsonify({'success': False, 'error': 'El tema es requerido'}), 400
-
-        logger.info(f"📨 Generando informe — Tema: {tema[:50]}...")
-        # CAMBIO 2: Capturar también las referencias reales
+        logger.info(f"📨 Generando informe — Tema: {tema[:50]}... | Usuario: {user_id}")
         secciones, refs_reales = generar_informe_completo(tema, texto_usuario, tipo_informe, norma, nivel, modo=data.get('modo', 'rapido'))
 
         if not secciones:
             return jsonify({'success': False, 'error': 'No se pudo generar el informe'}), 500
 
         datos_usuario = {
-            'nombre':      nombre_principal,
+            'nombre':        nombre_principal,
             'autores_extra': autores[1:] if len(autores) > 1 else [],
-            'tema':        tema,
-            'asignatura':  asignatura,
-            'profesor':    profesor,
-            'institucion': institucion,
-            'ciudad':      ciudad,
-            'fecha':       datetime.now().strftime('%d/%m/%Y'),
-            'norma':       norma
+            'tema':          tema,
+            'asignatura':    asignatura,
+            'profesor':      profesor,
+            'institucion':   institucion,
+            'ciudad':        ciudad,
+            'fecha':         datetime.now().strftime('%d/%m/%Y'),
+            'norma':         norma
         }
 
-        # CAMBIO 2: Guardar el informe en la base de datos si hay usuario autenticado
-        user_id = request.headers.get('X-User-Id')
-        if user_id and DB_DISPONIBLE:
+        if DB_DISPONIBLE:
             try:
                 guardar_informe(
                     user_id=user_id,
@@ -1495,27 +1539,39 @@ def api_generar():
 
     except Exception as e:
         logger.error(f"Error en /api/generar: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': 'Error interno al generar el informe'}), 500
 
 
 @app.route('/api/generar-seccion', methods=['POST'])
-def api_generar_seccion():
+@limit("30 per hour")
+@requiere_auth
+def api_generar_seccion(user_id):
     try:
-        data      = request.json
-        seccion   = data.get('seccion', '')
-        tema      = data.get('tema', '').strip()
+        data      = request.get_json(silent=True) or {}
+        seccion   = sanitizar_texto(data.get('seccion', ''), 50)
+        tema      = sanitizar_texto(data.get('tema', '').strip(), 500)
         nivel     = data.get('nivel', 'universitario')
         tipo      = data.get('tipo_informe', 'academico')
         norma     = data.get('norma', 'APA 7')
-        info      = data.get('texto_usuario', '')
-        refs_man  = data.get('refs_manuales', '')
-        # FIX 2: Accept objetivos_texto from frontend when regenerating 'desarrollo'
-        objetivos_texto = data.get('objetivos_texto', '')
+        info      = sanitizar_texto(data.get('texto_usuario', ''), 10000)
+        refs_man  = sanitizar_texto(data.get('refs_manuales', ''), 5000)
+        objetivos_texto = sanitizar_texto(data.get('objetivos_texto', ''), 2000)
+
+        # Validar enumeraciones
+        if nivel not in NIVELES_VALIDOS:
+            nivel = 'universitario'
+        if tipo not in TIPOS_VALIDOS:
+            tipo = 'academico'
+        if norma not in NORMAS_VALIDAS:
+            norma = 'APA 7'
 
         if not seccion or not tema:
             return jsonify({'success': False, 'error': 'Faltan parámetros'}), 400
 
         modo      = data.get('modo', 'rapido')
+        if modo not in MODOS_VALIDOS:
+            modo = 'rapido'
+
         contenido = generar_seccion(seccion, tema, info, tipo, norma, nivel, refs_man, modo, objetivos_texto,
                                     contexto_refs=data.get('contexto_refs', ''))
 
@@ -1525,7 +1581,7 @@ def api_generar_seccion():
 
     except Exception as e:
         logger.error(f"Error en /api/generar-seccion: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': 'Error interno'}), 500
 
 
 @app.route('/api/referencias-reales', methods=['POST'])
@@ -1626,166 +1682,173 @@ def exportar_word():
 # RUTAS DE AUTENTICACIÓN Y PERFIL (CAMBIO 3)
 # ============================================================
 @app.route('/api/auth/registro', methods=['POST'])
+@limit("5 per hour")   # máx 5 registros por IP por hora (anti-spam)
 def api_registro():
-    """Registrar un nuevo usuario"""
+    """Registrar un nuevo usuario con validaciones de seguridad."""
     try:
-        data = request.json
-        nombre = data.get('nombre', '').strip()
-        email = data.get('email', '').strip()
+        data = request.get_json(silent=True) or {}
+        nombre   = sanitizar_nombre(data.get('nombre', ''))
+        email    = sanitizar_texto(data.get('email', ''), 254).lower()
         password = data.get('password', '')
 
-        if not nombre or not email or not password:
-            return jsonify({'success': False, 'error': 'Nombre, email y contraseña son requeridos'}), 400
+        # Validar email
+        if not es_email_valido(email):
+            return jsonify({'success': False, 'error': 'El formato del correo no es válido'}), 400
+
+        # Validar contraseña con requisitos de seguridad
+        pwd_ok, pwd_msg = es_password_seguro(password)
+        if not pwd_ok:
+            return jsonify({'success': False, 'error': pwd_msg}), 400
+
+        if not nombre:
+            return jsonify({'success': False, 'error': 'El nombre es requerido'}), 400
 
         resultado = registrar_usuario(nombre, email, password)
         if resultado['success']:
-            return jsonify({'success': True, 'user_id': resultado['user_id']})
+            log_evento_seguridad('REGISTRO_EXITOSO', f"email={email}", request)
+            return jsonify({'success': True, 'user_id': resultado['user_id'],
+                            'auto_login': resultado.get('auto_login', False),
+                            'access_token': resultado.get('access_token', '')})
         else:
+            log_evento_seguridad('REGISTRO_FALLIDO', f"email={email}", request)
             return jsonify({'success': False, 'error': resultado['error']}), 400
 
     except Exception as e:
         logger.error(f"Error en registro: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': 'Error interno. Intenta de nuevo.'}), 500
 
 
 @app.route('/api/auth/login', methods=['POST'])
+@limit("10 per hour")   # máx 10 intentos por IP por hora (anti-brute-force)
 def api_login():
-    """Iniciar sesión"""
+    """Iniciar sesión — devuelve el access_token JWT."""
     try:
-        data = request.json
-        email = data.get('email', '').strip()
+        data = request.get_json(silent=True) or {}
+        email    = sanitizar_texto(data.get('email', ''), 254).lower()
         password = data.get('password', '')
 
         if not email or not password:
             return jsonify({'success': False, 'error': 'Email y contraseña son requeridos'}), 400
 
+        if not es_email_valido(email):
+            # Mismo mensaje que credenciales incorrectas para no revelar info
+            return jsonify({'success': False, 'error': 'Email o contraseña incorrectos'}), 401
+
         resultado = login_usuario(email, password)
         if resultado['success']:
+            log_evento_seguridad('LOGIN_EXITOSO', f"email={email}", request)
             return jsonify({
-                'success': True,
-                'user_id': resultado['user_id'],
-                'nombre': resultado['nombre'],
-                'email': resultado['email']
+                'success':      True,
+                'user_id':      resultado['user_id'],
+                'nombre':       resultado['nombre'],
+                'email':        resultado['email'],
+                'access_token': resultado.get('access_token', ''),  # JWT para verificar en el backend
             })
         else:
-            return jsonify({'success': False, 'error': resultado['error']}), 401
+            log_evento_seguridad('LOGIN_FALLIDO', f"email={email}", request)
+            # Mensaje genérico: no decir si el email existe o no
+            return jsonify({'success': False, 'error': 'Email o contraseña incorrectos'}), 401
 
     except Exception as e:
         logger.error(f"Error en login: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': 'Error interno. Intenta de nuevo.'}), 500
 
 
 @app.route('/api/perfil', methods=['GET'])
-def api_obtener_perfil():
-    """Obtener perfil de usuario"""
+@requiere_auth
+def api_obtener_perfil(user_id):
+    """Obtener perfil de usuario — requiere JWT válido."""
     try:
-        user_id = request.headers.get('X-User-Id')
-        if not user_id:
-            return jsonify({'success': False, 'error': 'Usuario no autenticado'}), 401
-
         perfil = obtener_perfil(user_id)
         if perfil:
             return jsonify({'success': True, 'perfil': perfil})
         else:
             return jsonify({'success': False, 'error': 'Usuario no encontrado'}), 404
-
     except Exception as e:
         logger.error(f"Error obteniendo perfil: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': 'Error interno'}), 500
 
 
 @app.route('/api/perfil', methods=['PUT'])
-def api_actualizar_perfil():
-    """Actualizar perfil de usuario"""
+@requiere_auth
+def api_actualizar_perfil(user_id):
+    """Actualizar perfil de usuario — requiere JWT válido."""
     try:
-        user_id = request.headers.get('X-User-Id')
-        if not user_id:
-            return jsonify({'success': False, 'error': 'Usuario no autenticado'}), 401
-
         data = request.get_json(silent=True) or {}
-
-        # Pasar TODOS los campos como dict — incluyendo norma_favorita y nivel_favorito
-        # que antes se perdían silenciosamente
-        campos = {
-            'nombre':         data.get('nombre', '').strip(),
-            'institucion':    data.get('institucion', '').strip(),
-            'carrera':        data.get('carrera', '').strip(),
-            'ciudad':         data.get('ciudad', '').strip(),
-            'telefono':       data.get('telefono', '').strip(),
-            'norma_favorita': data.get('norma_favorita', ''),
-            'nivel_favorito': data.get('nivel_favorito', ''),
+        # Sanitizar cada campo antes de guardarlo
+        datos_limpios = {
+            'nombre':      sanitizar_nombre(data.get('nombre', '')),
+            'institucion': sanitizar_texto(data.get('institucion', ''), 200),
+            'carrera':     sanitizar_texto(data.get('carrera', ''), 200),
+            'ciudad':      sanitizar_texto(data.get('ciudad', ''), 100),
+            'telefono':    re.sub(r'[^\d\+\-\s\(\)]', '', data.get('telefono', ''))[:20],
         }
-
-        resultado = actualizar_perfil(user_id, campos)
+        resultado = actualizar_perfil(user_id, datos_limpios)
         if resultado['success']:
             return jsonify({'success': True})
         else:
             return jsonify({'success': False, 'error': resultado['error']}), 400
-
     except Exception as e:
         logger.error(f"Error actualizando perfil: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': 'Error interno'}), 500
 
 
 @app.route('/api/mis-informes', methods=['GET'])
-def api_mis_informes():
-    """Obtener lista de informes del usuario"""
+@requiere_auth
+def api_mis_informes(user_id):
+    """Obtener lista de informes del usuario — requiere JWT válido."""
     try:
-        user_id = request.headers.get('X-User-Id')
-        if not user_id:
-            return jsonify({'success': False, 'error': 'Usuario no autenticado'}), 401
-
-        limit = request.args.get('limit', 50, type=int)
-        offset = request.args.get('offset', 0, type=int)
-
-        informes = obtener_mis_informes(user_id, limit, offset)
+        limit_q  = min(request.args.get('limit', 50, type=int), 100)   # máx 100
+        offset_q = max(request.args.get('offset', 0, type=int), 0)
+        informes = obtener_mis_informes(user_id, limit_q, offset_q)
         return jsonify({'success': True, 'informes': informes, 'total': len(informes)})
-
     except Exception as e:
         logger.error(f"Error obteniendo informes: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': 'Error interno'}), 500
 
 
 @app.route('/api/informe/<informe_id>', methods=['GET'])
-def api_obtener_informe(informe_id):
-    """Obtener un informe específico por ID"""
+@requiere_auth
+def api_obtener_informe(user_id, informe_id):
+    """Obtener un informe específico — requiere JWT válido y que sea del usuario."""
     try:
-        user_id = request.headers.get('X-User-Id')
-        if not user_id:
-            return jsonify({'success': False, 'error': 'Usuario no autenticado'}), 401
-
+        if not es_uuid_valido(informe_id):
+            return jsonify({'success': False, 'error': 'ID inválido'}), 400
         informe = obtener_informe(informe_id, user_id)
         if informe:
             return jsonify({'success': True, 'informe': informe})
         else:
+            # No revelar si existe pero es de otro usuario vs. no existe
             return jsonify({'success': False, 'error': 'Informe no encontrado'}), 404
-
     except Exception as e:
         logger.error(f"Error obteniendo informe: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': 'Error interno'}), 500
 
 
 @app.route('/api/informe/<informe_id>', methods=['DELETE'])
-def api_eliminar_informe(informe_id):
-    """Eliminar un informe"""
+@requiere_auth
+def api_eliminar_informe(user_id, informe_id):
+    """Eliminar un informe — requiere JWT válido y que sea del usuario."""
     try:
-        user_id = request.headers.get('X-User-Id')
-        if not user_id:
-            return jsonify({'success': False, 'error': 'Usuario no autenticado'}), 401
-
+        if not es_uuid_valido(informe_id):
+            return jsonify({'success': False, 'error': 'ID inválido'}), 400
         resultado = eliminar_informe(informe_id, user_id)
         if resultado['success']:
+            log_evento_seguridad('INFORME_ELIMINADO', f"user={user_id} informe={informe_id}", request)
             return jsonify({'success': True})
         else:
             return jsonify({'success': False, 'error': resultado['error']}), 400
-
     except Exception as e:
         logger.error(f"Error eliminando informe: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': 'Error interno'}), 500
 
 
 @app.route('/health')
 def health():
+    # En producción no revelar detalles internos
+    env = os.environ.get('FLASK_ENV', 'production')
+    if env == 'production':
+        return jsonify({'status': 'healthy', 'version': '3.3'})
     return jsonify({
         'status':              'healthy',
         'api_configured':      bool(DEEPSEEK_API_KEY),
@@ -1802,19 +1865,28 @@ def health():
 # FEEDBACK / RECOMENDACIONES  →  envío por email al dueño
 # ─────────────────────────────────────────────────────────────
 @app.route('/api/feedback', methods=['POST'])
+@limit("5 per hour")   # máx 5 feedbacks por IP por hora
 def api_feedback():
-    """Recibe una recomendación/sugerencia y la envía al correo del dueño."""
+    """Recibe una sugerencia y la envía al correo del dueño."""
     try:
         data    = request.get_json(silent=True) or {}
-        nombre  = data.get('nombre', 'Anónimo').strip() or 'Anónimo'
-        correo  = data.get('correo', '').strip()
-        tipo    = data.get('tipo', 'sugerencia').strip()
-        mensaje = data.get('mensaje', '').strip()
+        nombre  = sanitizar_nombre(data.get('nombre', 'Anónimo'))
+        correo  = sanitizar_texto(data.get('correo', ''), 254)
+        tipo    = sanitizar_texto(data.get('tipo', 'sugerencia'), 50)
+        mensaje = sanitizar_texto(data.get('mensaje', ''), 1000)
+
+        # Validar correo si se proporcionó
+        if correo and not es_email_valido(correo):
+            correo = ''  # descartar silenciosamente (no es campo requerido)
+
+        # Validar tipo contra lista permitida
+        tipos_permitidos = {'sugerencia', 'error', 'funcion', 'otro'}
+        if tipo not in tipos_permitidos:
+            tipo = 'sugerencia'
 
         if not mensaje or len(mensaje) < 10:
             return jsonify({'success': False, 'error': 'El mensaje es demasiado corto'}), 400
 
-        # ── Enviar por email ──────────────────────────────────
         import smtplib
         from email.mime.text import MIMEText
         from email.mime.multipart import MIMEMultipart
@@ -1826,34 +1898,40 @@ def api_feedback():
         OWNER_MAIL = os.environ.get('OWNER_EMAIL', SMTP_USER)
 
         if not SMTP_USER or not SMTP_PASS:
-            # Sin config SMTP: solo loguear (no falla para el usuario)
             logger.warning(f"[FEEDBACK sin SMTP] {nombre} | {correo} | {tipo}: {mensaje[:80]}")
             return jsonify({'success': True})
 
+        # ✅ SEGURO: usar sanitizar_html_email en todos los campos del usuario
+        nombre_safe  = sanitizar_html_email(nombre)
+        correo_safe  = sanitizar_html_email(correo) if correo else 'No proporcionado'
+        tipo_safe    = sanitizar_html_email(tipo)
+        mensaje_safe = sanitizar_html_email(mensaje)
+
         asunto = f"[ARP Feedback] {tipo.capitalize()} de {nombre}"
         cuerpo = f"""
-<h2>Nueva recomendación — Academic Report Pro</h2>
+<h2>Nueva sugerencia — Academic Report Pro</h2>
 <table style="border-collapse:collapse;font-family:sans-serif;font-size:14px">
   <tr><td style="padding:6px 14px;font-weight:bold;color:#888">Tipo</td>
-      <td style="padding:6px 14px">{tipo}</td></tr>
+      <td style="padding:6px 14px">{tipo_safe}</td></tr>
   <tr><td style="padding:6px 14px;font-weight:bold;color:#888">Nombre</td>
-      <td style="padding:6px 14px">{nombre}</td></tr>
+      <td style="padding:6px 14px">{nombre_safe}</td></tr>
   <tr><td style="padding:6px 14px;font-weight:bold;color:#888">Correo</td>
-      <td style="padding:6px 14px">{correo or 'No proporcionado'}</td></tr>
+      <td style="padding:6px 14px">{correo_safe}</td></tr>
 </table>
 <h3 style="margin-top:20px">Mensaje</h3>
 <div style="background:#f5f5f5;padding:16px;border-radius:8px;font-size:14px;line-height:1.6">
-  {mensaje.replace(chr(10), '<br>')}
+  {mensaje_safe}
 </div>
 <p style="font-size:12px;color:#aaa;margin-top:20px">
-  Enviado desde Academic Report Pro · {__import__('datetime').datetime.now().strftime('%d/%m/%Y %H:%M')}
+  Enviado desde Academic Report Pro · {datetime.now().strftime('%d/%m/%Y %H:%M')}
 </p>
 """
         msg = MIMEMultipart('alternative')
         msg['Subject'] = asunto
         msg['From']    = SMTP_USER
         msg['To']      = OWNER_MAIL
-        if correo:
+        # Solo agregar Reply-To si el correo es válido
+        if correo and es_email_valido(correo):
             msg['Reply-To'] = correo
         msg.attach(MIMEText(cuerpo, 'html', 'utf-8'))
 
@@ -1867,33 +1945,41 @@ def api_feedback():
 
     except Exception as e:
         logger.error(f"Error enviando feedback: {e}")
-        # No exponemos el error SMTP al usuario
-        return jsonify({'success': True})   # igual marcamos éxito para no confundir
+        return jsonify({'success': True})   # no revelar errores SMTP al usuario
 
 
 # ─────────────────────────────────────────────────────────────
 # RECUPERACIÓN DE CONTRASEÑA  (Supabase lo maneja)
 # ─────────────────────────────────────────────────────────────
 @app.route('/api/auth/recuperar', methods=['POST'])
+@limit("3 per hour")   # máx 3 recuperaciones por IP por hora
 def api_recuperar_password():
     """Envía email de recuperación a través de Supabase."""
     try:
         from database import supabase, DB_DISPONIBLE
         data  = request.get_json(silent=True) or {}
-        email = data.get('email', '').strip()
-        if not email:
-            return jsonify({'success': False, 'error': 'Ingresa tu correo'}), 400
+        email = sanitizar_texto(data.get('email', ''), 254).lower()
+
+        if not email or not es_email_valido(email):
+            # Siempre éxito: no revelar si el email existe
+            return jsonify({'success': True})
+
         if not DB_DISPONIBLE or supabase is None:
-            return jsonify({'success': False, 'error': 'Base de datos no disponible'}), 503
+            return jsonify({'success': True})   # silencioso para no revelar estado del sistema
 
         redirect_url = data.get('redirect_url', '')
+        # Validar que el redirect_url sea del propio dominio
+        dominio_permitido = os.environ.get('SITE_URL', '')
+        if redirect_url and dominio_permitido and not redirect_url.startswith(dominio_permitido):
+            redirect_url = dominio_permitido
+
         opts = {'redirect_to': redirect_url} if redirect_url else {}
         supabase.auth.reset_password_email(email, opts)
+        log_evento_seguridad('RECUPERAR_PASSWORD', f"email={email}", request)
         return jsonify({'success': True})
     except Exception as e:
         logger.error(f"Error recuperando contraseña: {e}")
-        # Siempre éxito para no revelar si el email existe
-        return jsonify({'success': True})
+        return jsonify({'success': True})   # siempre éxito para no revelar si el email existe
 
 
 
@@ -1926,11 +2012,9 @@ def api_refs_previas():
 
 
 @app.route('/api/guardar-informe', methods=['POST'])
-def api_guardar_informe():
+@requiere_auth
+def api_guardar_informe(user_id):
     try:
-        user_id = request.headers.get('X-User-Id')
-        if not user_id:
-            return jsonify({'success': False, 'error': 'No autenticado'}), 401
         if not DB_DISPONIBLE:
             return jsonify({'success': False, 'error': 'Base de datos no disponible'}), 503
         data          = request.get_json(silent=True) or {}
@@ -1941,6 +2025,13 @@ def api_guardar_informe():
         norma         = data.get('norma', 'APA 7')
         nivel         = data.get('nivel', 'universitario')
         modo          = data.get('modo', 'rapido')
+
+        # Validar enumeraciones
+        if tipo_informe not in TIPOS_VALIDOS: tipo_informe = 'academico'
+        if norma not in NORMAS_VALIDAS: norma = 'APA 7'
+        if nivel not in NIVELES_VALIDOS: nivel = 'universitario'
+        if modo not in MODOS_VALIDOS: modo = 'rapido'
+
         if not secciones or not datos_usuario.get('tema'):
             return jsonify({'success': False, 'error': 'Datos incompletos'}), 400
         informe_id = guardar_informe(
@@ -1959,7 +2050,7 @@ def api_guardar_informe():
         return jsonify({'success': False, 'error': 'No se pudo guardar'}), 500
     except Exception as e:
         logger.error(f"Error en /api/guardar-informe: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': 'Error interno'}), 500
 
 
 @app.route('/recuperar')
