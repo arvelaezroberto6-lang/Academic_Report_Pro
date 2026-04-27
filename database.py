@@ -137,25 +137,35 @@ def actualizar_perfil(user_id: str, nombre_o_datos=None, institucion: str = "",
     if isinstance(nombre_o_datos, dict):
         datos = nombre_o_datos
     else:
-        datos = {}
-        if nombre_o_datos is not None:
-            datos["nombre"] = nombre_o_datos
-        if institucion:
-            datos["institucion"] = institucion
-        if carrera:
-            datos["carrera"] = carrera
-        if ciudad:
-            datos["ciudad"] = ciudad
-        if telefono:
-            datos["telefono"] = telefono
+        # Forma legacy: actualizar_perfil(user_id, nombre, inst, carr, ciudad, tel)
+        datos = {
+            "nombre":      nombre_o_datos or "",
+            "institucion": institucion,
+            "carrera":     carrera,
+            "ciudad":      ciudad,
+            "telefono":    telefono,
+        }
 
     campos_permitidos = {"nombre", "institucion", "carrera", "ciudad", "telefono",
                          "norma_favorita", "nivel_favorito"}
-    datos_limpios = {k: v for k, v in datos.items() if k in campos_permitidos}
+
+    # BUG FIX: incluir campos aunque estén vacíos (el usuario puede querer borrarlos)
+    # Solo excluir claves que no están en campos_permitidos o que son None
+    datos_limpios = {
+        k: v for k, v in datos.items()
+        if k in campos_permitidos and v is not None
+    }
+
     if not datos_limpios:
         return {"success": False, "error": "No hay datos válidos para actualizar"}
+
     try:
-        supabase.table("usuarios").update(datos_limpios).eq("id", user_id).execute()
+        res = supabase.table("usuarios").update(datos_limpios).eq("id", user_id).execute()
+        # Verificar que la fila existe — si no hay filas afectadas, hacer upsert
+        if res.data is not None and len(res.data) == 0:
+            # La fila no existe todavía (usuario nuevo sin fila en tabla usuarios)
+            datos_limpios["id"] = user_id
+            supabase.table("usuarios").upsert(datos_limpios).execute()
         return {"success": True}
     except Exception as e:
         logger.error(f"Error actualizando perfil: {e}")
