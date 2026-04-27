@@ -1518,7 +1518,7 @@ def api_generar_seccion():
 
 @app.route('/api/refs-previas', methods=['POST'])
 def api_refs_previas():
-    """Busca referencias reales ANTES de generar el informe y devuelve contexto_refs."""
+    """Busca referencias reales ANTES de generar el informe."""
     try:
         data  = request.get_json(silent=True) or {}
         tema  = data.get('tema', '').strip()
