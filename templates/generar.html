@@ -532,6 +532,7 @@ select option { background: var(--surface); }
         <p style="font-size:.68rem; color:var(--text3); margin-top:.8rem; text-align:center;">
             Los cambios en el editor se reflejan en el PDF y Word descargados.
         </p>
+        <div id="saveStatus" style="display:none; margin-top:.7rem; text-align:center; font-size:.75rem; padding:.5rem .9rem; border-radius:8px; font-family:'JetBrains Mono',monospace;"></div>
     </div>
 
 </div>
@@ -549,6 +550,31 @@ select option { background: var(--surface); }
 const _arpRaw  = localStorage.getItem('arp_user');
 const _arpUser = _arpRaw ? JSON.parse(_arpRaw) : null;
 
+// ═══ AUTOCOMPLETAR DATOS DESDE PERFIL ═══
+(async function autoFillPerfil() {
+  if (!_arpUser) return;
+  try {
+    const res  = await fetch('/api/perfil', { headers: { 'X-User-Id': _arpUser.user_id } });
+    const data = await res.json();
+    if (!data.success || !data.perfil) return;
+    const p = data.perfil;
+    const fill = (id, val) => { const el = document.getElementById(id); if (el && !el.value && val) el.value = val; };
+    fill('nombre',      p.nombre      || _arpUser.nombre);
+    fill('institucion', p.institucion);
+    fill('ciudad',      p.ciudad);
+    // Preseleccionar norma favorita
+    if (p.norma_favorita) {
+      const chip = document.querySelector(`[data-norma="${p.norma_favorita}"]`);
+      if (chip) { chip.click(); }
+    }
+    // Preseleccionar nivel favorito
+    if (p.nivel_favorito) {
+      const sel = document.getElementById('nivel');
+      if (sel) sel.value = p.nivel_favorito;
+    }
+  } catch(e) { /* silencioso */ }
+})();
+
 // Wrapper global para fetch — si recibe 401, redirige al login
 async function fetchAuth(url, options = {}) {
     options.headers = options.headers || {};
@@ -562,7 +588,13 @@ async function fetchAuth(url, options = {}) {
     return res;
 }
 
-// ═══ ESTADO ═══
+// ═══ FECHA HOY ═══
+(function() {
+  const fechaEl = document.getElementById('fecha');
+  if (fechaEl && !fechaEl.value) {
+    fechaEl.value = new Date().toISOString().split('T')[0];
+  }
+})();
 let modo              = 'rapido';
 let tipoActual        = 'academico';
 let normaActual       = 'APA 7';
@@ -856,7 +888,18 @@ document.getElementById('generarBtn').onclick = async () => {
   try {
     const arpRaw = localStorage.getItem('arp_user');
     if (arpRaw) {
-      const arpUser = JSON.parse(arpRaw);
+      const saveStatusEl = document.getElementById('saveStatus');
+      // Mostrar guardando después de mostrar el editor
+      const mostrarGuardando = () => {
+        if (!saveStatusEl) return;
+        saveStatusEl.style.display = 'block';
+        saveStatusEl.style.background = 'var(--gold-dim)';
+        saveStatusEl.style.border = '1px solid rgba(212,168,67,.25)';
+        saveStatusEl.style.color = 'var(--gold)';
+        saveStatusEl.textContent = '💾 Guardando informe en tu cuenta…';
+      };
+      setTimeout(mostrarGuardando, 1300);
+
       fetchAuth('/api/guardar-informe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json'},
@@ -870,9 +913,31 @@ document.getElementById('generarBtn').onclick = async () => {
           modo:          modo || 'rapido'
         })
       }).then(r => r.json()).then(d => {
-        if (d.success) console.log('Informe guardado en BD:', d.informe_id);
-        else console.warn('No se guardo el informe:', d.error);
-      }).catch(e => console.warn('Error guardando:', e));
+        if (!saveStatusEl) return;
+        if (d.success) {
+          saveStatusEl.style.background = 'rgba(82,196,138,.1)';
+          saveStatusEl.style.border = '1px solid rgba(82,196,138,.3)';
+          saveStatusEl.style.color = 'var(--green)';
+          saveStatusEl.innerHTML = '✅ Informe guardado en <a href="/mis-informes" style="color:var(--green);font-weight:700;">Mis informes</a>';
+          console.log('Informe guardado en BD:', d.informe_id);
+        } else {
+          saveStatusEl.style.background = 'rgba(224,92,92,.08)';
+          saveStatusEl.style.border = '1px solid rgba(224,92,92,.25)';
+          saveStatusEl.style.color = 'var(--red)';
+          saveStatusEl.textContent = '⚠️ No se pudo guardar el informe. Descárgalo ahora.';
+          console.warn('No se guardó el informe:', d.error);
+        }
+        setTimeout(() => { if(saveStatusEl) saveStatusEl.style.display = 'none'; }, 6000);
+      }).catch(e => {
+        if (saveStatusEl) {
+          saveStatusEl.style.background = 'rgba(224,92,92,.08)';
+          saveStatusEl.style.border = '1px solid rgba(224,92,92,.25)';
+          saveStatusEl.style.color = 'var(--red)';
+          saveStatusEl.textContent = '⚠️ Error al guardar. Descarga el informe para no perderlo.';
+          setTimeout(() => { saveStatusEl.style.display = 'none'; }, 6000);
+        }
+        console.warn('Error guardando:', e);
+      });
     }
   } catch(e) {
     console.warn('Error al intentar guardar informe:', e);
