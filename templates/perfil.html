@@ -3,162 +3,134 @@
 
 {% block extra_css %}
 <style>
-.page-wrap { max-width: 640px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+.page-wrap { max-width: 660px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
 
-.page-hd { margin-bottom: 2rem; }
-.page-hd h1 { font-family: 'Playfair Display', serif; font-size: 1.7rem; font-weight: 700; }
-.page-hd p  { font-size: .83rem; color: var(--text2); margin-top: .2rem; }
+.page-hd { display:flex; align-items:center; gap:1rem; margin-bottom:2rem; }
+.page-hd-ico {
+    width:52px; height:52px; border-radius:14px; flex-shrink:0;
+    background:linear-gradient(145deg,#1a1508,#211b0a);
+    border:1px solid rgba(212,168,67,.18);
+    display:flex; align-items:center; justify-content:center;
+}
+.page-hd h1 { font-family:'Playfair Display',serif; font-size:1.6rem; font-weight:700; line-height:1.1; }
+.page-hd p  { font-size:.8rem; color:var(--text2); margin-top:.3rem; }
 
-/* Avatar */
-.avatar-row {
-    display: flex;
-    align-items: center;
-    gap: 1.2rem;
-    margin-bottom: 1.8rem;
-    padding: 1.3rem 1.5rem;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
+.pf-hero {
+    display:flex; align-items:center; gap:1.2rem;
+    padding:1.4rem 1.6rem;
+    background:linear-gradient(135deg,var(--surface) 0%,#13180d 100%);
+    border:1px solid rgba(212,168,67,.15);
+    border-radius:var(--radius-lg); margin-bottom:1rem;
+    position:relative; overflow:hidden;
 }
-.avatar {
-    width: 52px;
-    height: 52px;
-    border-radius: 14px;
-    background: linear-gradient(135deg, var(--gold) 0%, #8b6412 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 22px;
-    font-weight: 700;
-    color: #000;
-    flex-shrink: 0;
-    font-family: 'Playfair Display', serif;
+.pf-hero::before {
+    content:''; position:absolute; right:-50px; top:-50px;
+    width:160px; height:160px; border-radius:50%;
+    background:radial-gradient(circle,rgba(212,168,67,.07) 0%,transparent 70%);
+    pointer-events:none;
 }
-.avatar-info strong { display: block; font-size: .95rem; }
-.avatar-info span   { font-size: .78rem; color: var(--text2); }
+.pf-avatar {
+    width:62px; height:62px; border-radius:18px;
+    background:linear-gradient(135deg,var(--gold) 0%,#8b6412 100%);
+    display:flex; align-items:center; justify-content:center;
+    font-size:26px; font-weight:700; color:#000; flex-shrink:0;
+    box-shadow:0 6px 20px rgba(212,168,67,.22);
+    font-family:'Playfair Display',serif;
+}
+.pf-info strong { display:block; font-size:1rem; font-weight:700; color:var(--text); }
+.pf-info span   { font-size:.76rem; color:var(--text2); }
+.pf-badges { display:flex; gap:.4rem; flex-wrap:wrap; margin-top:.55rem; }
+.pf-badge {
+    padding:.2rem .65rem; border-radius:100px; font-size:.65rem; font-weight:600;
+    background:var(--gold-dim); border:1px solid rgba(212,168,67,.2); color:var(--gold);
+}
 
-/* Card */
-.pcard {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 1.5rem;
-    margin-bottom: 1rem;
+.stats-row { display:grid; grid-template-columns:repeat(3,1fr); gap:.7rem; margin-bottom:1rem; }
+.stat {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius-lg); padding:1rem; text-align:center;
+    transition:border-color .2s;
 }
+.stat:hover { border-color:rgba(212,168,67,.2); }
+.stat strong { display:block; font-size:1.45rem; font-family:'Playfair Display',serif; color:var(--gold); line-height:1; }
+.stat span   { font-size:.63rem; color:var(--text2); text-transform:uppercase; letter-spacing:.05em; margin-top:.3rem; display:block; }
+
+.pcard { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1.4rem 1.5rem; margin-bottom:.9rem; }
 .pcard-hd {
-    font-weight: 700;
-    font-size: .88rem;
-    color: var(--gold);
-    text-transform: uppercase;
-    letter-spacing: .06em;
-    margin-bottom: 1.2rem;
-    display: flex;
-    align-items: center;
-    gap: .5rem;
+    display:flex; align-items:center; gap:.5rem;
+    font-weight:700; font-size:.78rem; color:var(--gold);
+    text-transform:uppercase; letter-spacing:.07em;
+    margin-bottom:1.2rem; padding-bottom:.8rem; border-bottom:1px solid var(--border);
 }
 
-/* Fields */
-.field { margin-bottom: 1rem; }
-.field label {
-    display: block;
-    font-size: .75rem;
-    font-weight: 600;
-    color: var(--text2);
-    margin-bottom: .4rem;
-    text-transform: uppercase;
-    letter-spacing: .04em;
-}
+.field { margin-bottom:.9rem; }
+.field label { display:block; font-size:.7rem; font-weight:600; color:var(--text2); margin-bottom:.35rem; text-transform:uppercase; letter-spacing:.04em; }
 .field input, .field select {
-    width: 100%;
-    padding: .7rem 1rem;
-    background: var(--surface2);
-    border: 1px solid var(--border2);
-    border-radius: var(--radius);
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: .88rem;
-    transition: border-color .18s;
-    outline: none;
+    width:100%; padding:.72rem 1rem;
+    background:var(--surface2); border:1px solid var(--border2);
+    border-radius:var(--radius); color:var(--text);
+    font-family:'DM Sans',sans-serif; font-size:.88rem;
+    transition:border-color .18s,box-shadow .18s; outline:none;
 }
-.field input:focus, .field select:focus { border-color: var(--gold); }
-.field select option { background: var(--surface2); }
-
-.g2c { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
-@media (max-width:520px) { .g2c { grid-template-columns: 1fr; } }
+.field input:focus, .field select:focus { border-color:var(--gold); box-shadow:0 0 0 3px var(--gold-dim); }
+.field select option { background:var(--surface2); }
+.g2c { display:grid; grid-template-columns:1fr 1fr; gap:.8rem; }
+@media(max-width:520px){ .g2c { grid-template-columns:1fr; } }
 
 .btn-save {
-    width: 100%;
-    padding: .8rem;
-    background: linear-gradient(135deg, var(--gold) 0%, #9a6e18 100%);
-    color: #000;
-    font-weight: 700;
-    font-size: .88rem;
-    border: none;
-    border-radius: var(--radius);
-    cursor: pointer;
-    transition: all .2s;
-    font-family: 'DM Sans', sans-serif;
-    margin-top: .5rem;
+    width:100%; padding:.82rem;
+    background:linear-gradient(135deg,var(--gold) 0%,#9a6e18 100%);
+    color:#000; font-weight:700; font-size:.88rem; border:none;
+    border-radius:var(--radius); cursor:pointer; transition:all .2s;
+    font-family:'DM Sans',sans-serif; margin-top:.4rem;
+    display:flex; align-items:center; justify-content:center; gap:.4rem;
 }
-.btn-save:hover { transform: translateY(-1px); box-shadow: 0 6px 24px var(--gold-glow); }
-.btn-save:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.btn-save:hover { transform:translateY(-1px); box-shadow:0 6px 24px var(--gold-glow); }
+.btn-save:disabled { opacity:.5; cursor:not-allowed; transform:none; }
 
-.msg-ok  { font-size:.8rem; color: var(--green); text-align:center; margin-top:.5rem; display:none; }
-.msg-err { font-size:.8rem; color: var(--red);   text-align:center; margin-top:.5rem; display:none; }
-
-/* Logout */
 .btn-logout {
-    width: 100%;
-    padding: .75rem;
-    background: transparent;
-    color: var(--red);
-    font-weight: 600;
-    font-size: .85rem;
-    border: 1px solid rgba(224,92,92,.3);
-    border-radius: var(--radius);
-    cursor: pointer;
-    transition: all .2s;
-    font-family: 'DM Sans', sans-serif;
+    width:100%; padding:.75rem; background:transparent; color:var(--red);
+    font-weight:600; font-size:.85rem;
+    border:1px solid rgba(224,92,92,.25); border-radius:var(--radius);
+    cursor:pointer; transition:all .2s; font-family:'DM Sans',sans-serif;
 }
-.btn-logout:hover { background: rgba(224,92,92,.08); border-color: var(--red); }
+.btn-logout:hover { background:rgba(224,92,92,.07); border-color:var(--red); }
 
-/* No auth */
-.no-auth {
-    text-align: center;
-    padding: 3rem 2rem;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-}
-.no-auth .ico { font-size: 2.5rem; margin-bottom: 1rem; }
-.no-auth h3   { margin-bottom: .5rem; }
-.no-auth p    { font-size: .85rem; color: var(--text2); margin-bottom: 1.5rem; }
+.msg-ok  { font-size:.8rem; color:var(--green); text-align:center; margin-top:.5rem; display:none; }
+.msg-err { font-size:.8rem; color:var(--red);   text-align:center; margin-top:.5rem; display:none; }
 
-/* Stat row */
-.stat-row { display: flex; gap: .8rem; margin-bottom: 1rem; }
-.stat-box {
-    flex: 1;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: .9rem 1rem;
-    text-align: center;
-}
-.stat-box strong { display: block; font-size: 1.4rem; font-family: 'Playfair Display', serif; color: var(--gold); }
-.stat-box span   { font-size: .72rem; color: var(--text2); }
+.no-auth { text-align:center; padding:3rem 2rem; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); }
+.no-auth .ico { font-size:2.5rem; margin-bottom:1rem; }
+.no-auth h3   { margin-bottom:.5rem; }
+.no-auth p    { font-size:.85rem; color:var(--text2); margin-bottom:1.5rem; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="page-wrap">
+
     <div class="page-hd">
-        <h1>👤 Mi Perfil</h1>
-        <p>Configura tus datos para que aparezcan automáticamente en cada informe.</p>
+        <div class="page-hd-ico">
+            <svg width="28" height="28" viewBox="0 0 36 36" fill="none">
+                <circle cx="18" cy="13" r="6.5" stroke="#d4a843" stroke-width="1.6" fill="none"/>
+                <circle cx="18" cy="13" r="3" fill="#d4a843" opacity=".18"/>
+                <circle cx="18" cy="13" r="1.3" fill="#d4a843" opacity=".75"/>
+                <path d="M8 31 C8 24 28 24 28 31" stroke="#d4a843" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+                <path d="M5 33 C5 27 31 27 31 33" stroke="#d4a843" stroke-width=".9" fill="none" stroke-linecap="round" opacity=".35"/>
+                <circle cx="18" cy="13" r="6.5" stroke="#f0c96a" stroke-width=".5" stroke-dasharray="2.5 3" fill="none" opacity=".3"/>
+                <circle cx="18" cy="13" r="9.5" stroke="#d4a843" stroke-width=".5" fill="none" opacity=".12"/>
+            </svg>
+        </div>
+        <div>
+            <h1>Mi Perfil</h1>
+            <p>Configura tus datos para que aparezcan automáticamente en cada informe.</p>
+        </div>
     </div>
 
     <div id="contenido">
-        <div style="text-align:center; padding:3rem; color:var(--text2);">Cargando perfil...</div>
+        <div style="text-align:center;padding:3rem;color:var(--text2);">Cargando perfil...</div>
     </div>
+
 </div>
 {% endblock %}
 
@@ -167,9 +139,7 @@
 const raw  = localStorage.getItem('arp_user');
 const user = raw ? JSON.parse(raw) : null;
 
-function inicialLetra(nombre) {
-    return nombre ? nombre.charAt(0).toUpperCase() : '?';
-}
+function inicialLetra(s){ return s ? s.charAt(0).toUpperCase() : '?'; }
 
 async function cargarPerfil() {
     if (!user) {
@@ -178,84 +148,78 @@ async function cargarPerfil() {
                 <div class="ico">🔐</div>
                 <h3>Inicia sesión para ver tu perfil</h3>
                 <p>Con una cuenta puedes guardar tus datos y acceder a todos tus informes.</p>
-                <a href="/auth?next=/perfil" class="btn-gold" style="display:inline-flex; font-size:.85rem;">
-                    Iniciar sesión →
-                </a>
+                <a href="/auth?next=/perfil" class="btn-gold" style="display:inline-flex;font-size:.85rem;">Iniciar sesión →</a>
             </div>`;
         return;
     }
-
-    // Mostrar nombre/email mientras carga
     document.getElementById('contenido').innerHTML = construirUI({
-        nombre:        user.nombre || '',
-        email:         user.email  || '',
-        institucion:   '',
-        carrera:       '',
-        ciudad:        '',
-        telefono:      '',
-        norma_favorita: 'APA 7',
-        nivel_favorito: 'universitario',
+        nombre:'',email:user.email||'',institucion:'',carrera:'',
+        ciudad:'',telefono:'',norma_favorita:'APA 7',nivel_favorito:'universitario',
     }, 0);
-
-    // Intentar obtener datos reales del servidor
     try {
-        const [resPerfil, resInformes] = await Promise.all([
-            fetch('/api/perfil', { headers: { 'X-User-Id': user.user_id } }),
-            fetch('/api/mis-informes', { headers: { 'X-User-Id': user.user_id } }),
+        const [resPerfil,resInformes] = await Promise.all([
+            fetch('/api/perfil',       {headers:{'X-User-Id':user.user_id}}),
+            fetch('/api/mis-informes', {headers:{'X-User-Id':user.user_id}}),
         ]);
-        const dataPerfil   = await resPerfil.json();
-        const dataInformes = await resInformes.json();
-
-        const perfil  = dataPerfil.success  ? dataPerfil.perfil   : {};
-        const nInformes = dataInformes.success ? (dataInformes.informes || []).length : 0;
-
+        const dp = await resPerfil.json();
+        const di = await resInformes.json();
+        const perfil    = dp.success ? dp.perfil              : {};
+        const nInformes = di.success ? (di.informes||[]).length : 0;
         document.getElementById('contenido').innerHTML = construirUI({
-            nombre:         perfil.nombre        || user.nombre || '',
-            email:          user.email           || '',
-            institucion:    perfil.institucion   || '',
-            carrera:        perfil.carrera       || '',
-            ciudad:         perfil.ciudad        || '',
-            telefono:       perfil.telefono      || '',
+            nombre:         perfil.nombre         || user.nombre || '',
+            email:          user.email            || '',
+            institucion:    perfil.institucion    || '',
+            carrera:        perfil.carrera        || '',
+            ciudad:         perfil.ciudad         || '',
+            telefono:       perfil.telefono       || '',
             norma_favorita: perfil.norma_favorita || 'APA 7',
             nivel_favorito: perfil.nivel_favorito || 'universitario',
         }, nInformes);
+    } catch(e){}
+}
 
-    } catch(e) {
-        // Seguir con los datos de localStorage sin mostrar error
-    }
+function nivelCorto(v){
+    return {universitario:'Univ.',posgrado:'Posgrado',tecnico:'Técnico',colegio:'Colegio'}[v]||v;
 }
 
 function construirUI(p, nInformes) {
     const normas  = ['APA 7','APA 6','ICONTEC','IEEE','Vancouver','Chicago','MLA','Harvard'];
     const niveles = [
-        { v:'colegio',       l:'Colegio / Secundaria' },
-        { v:'tecnico',       l:'Técnico / Tecnológico' },
-        { v:'universitario', l:'Universitario' },
-        { v:'posgrado',      l:'Posgrado / Maestría / Doctorado' },
+        {v:'colegio',l:'Colegio / Secundaria'},
+        {v:'tecnico',l:'Técnico / Tecnológico'},
+        {v:'universitario',l:'Universitario'},
+        {v:'posgrado',l:'Posgrado / Maestría / Doctorado'},
     ];
+    const badges = [
+        p.norma_favorita ? `<span class="pf-badge">${p.norma_favorita}</span>` : '',
+        p.nivel_favorito ? `<span class="pf-badge">${nivelCorto(p.nivel_favorito)}</span>` : '',
+        p.institucion    ? `<span class="pf-badge">${p.institucion.split(' ').slice(0,3).join(' ')}</span>` : '',
+    ].filter(Boolean).join('');
 
     return `
-    <div class="avatar-row">
-        <div class="avatar">${inicialLetra(p.nombre)}</div>
-        <div class="avatar-info">
-            <strong>${p.nombre || 'Sin nombre'}</strong>
+    <div class="pf-hero">
+        <div class="pf-avatar">${inicialLetra(p.nombre||p.email)}</div>
+        <div class="pf-info">
+            <strong>${p.nombre||'Sin nombre'}</strong>
             <span>${p.email}</span>
+            <div class="pf-badges">${badges}</div>
         </div>
     </div>
 
-    <div class="stat-row">
-        <div class="stat-box">
-            <strong>${nInformes}</strong>
-            <span>Informes generados</span>
-        </div>
-        <div class="stat-box">
-            <strong>${p.norma_favorita}</strong>
-            <span>Norma favorita</span>
-        </div>
+    <div class="stats-row">
+        <div class="stat"><strong>${nInformes}</strong><span>Informes</span></div>
+        <div class="stat"><strong>${p.norma_favorita}</strong><span>Norma fav.</span></div>
+        <div class="stat"><strong>${nivelCorto(p.nivel_favorito)}</strong><span>Nivel</span></div>
     </div>
 
     <div class="pcard">
-        <div class="pcard-hd">✏️ Datos personales</div>
+        <div class="pcard-hd">
+            <svg width="14" height="14" viewBox="0 0 36 36" fill="none">
+                <circle cx="18" cy="13" r="6.5" stroke="#d4a843" stroke-width="2.2" fill="none"/>
+                <path d="M8 31 C8 24 28 24 28 31" stroke="#d4a843" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+            </svg>
+            Datos personales
+        </div>
         <div class="field">
             <label>Nombre completo</label>
             <input type="text" id="pNombre" value="${p.nombre}" placeholder="Tu nombre completo">
@@ -273,7 +237,15 @@ function construirUI(p, nInformes) {
     </div>
 
     <div class="pcard">
-        <div class="pcard-hd">🏛️ Datos académicos</div>
+        <div class="pcard-hd">
+            <svg width="14" height="14" viewBox="0 0 36 36" fill="none">
+                <rect x="5" y="3" width="18" height="24" rx="3" stroke="#d4a843" stroke-width="2" fill="none"/>
+                <line x1="9" y1="10" x2="20" y2="10" stroke="#d4a843" stroke-width="1.8" stroke-linecap="round"/>
+                <line x1="9" y1="14" x2="20" y2="14" stroke="#d4a843" stroke-width="1.8" stroke-linecap="round"/>
+                <line x1="9" y1="18" x2="15" y2="18" stroke="#d4a843" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            Datos académicos
+        </div>
         <div class="field">
             <label>Institución / Universidad</label>
             <input type="text" id="pInstitucion" value="${p.institucion}" placeholder="Nombre de tu institución">
@@ -285,99 +257,74 @@ function construirUI(p, nInformes) {
         <div class="g2c">
             <div class="field">
                 <label>Norma favorita</label>
-                <select id="pNorma">
-                    ${normas.map(n => `<option value="${n}" ${n === p.norma_favorita ? 'selected' : ''}>${n}</option>`).join('')}
-                </select>
+                <select id="pNorma">${normas.map(n=>`<option value="${n}" ${n===p.norma_favorita?'selected':''}>${n}</option>`).join('')}</select>
             </div>
             <div class="field">
                 <label>Nivel académico</label>
-                <select id="pNivel">
-                    ${niveles.map(n => `<option value="${n.v}" ${n.v === p.nivel_favorito ? 'selected' : ''}>${n.l}</option>`).join('')}
-                </select>
+                <select id="pNivel">${niveles.map(n=>`<option value="${n.v}" ${n.v===p.nivel_favorito?'selected':''}>${n.l}</option>`).join('')}</select>
             </div>
         </div>
-        <button class="btn-save" id="btnGuardar" onclick="guardarPerfil()">
-            💾 Guardar cambios
-        </button>
-        <div class="msg-ok"  id="msgOk">✅ Perfil actualizado correctamente.</div>
+        <button class="btn-save" id="btnGuardar" onclick="guardarPerfil()">💾 Guardar cambios</button>
+        <div class="msg-ok" id="msgOk">✅ Perfil actualizado correctamente.</div>
         <div class="msg-err" id="msgErr"></div>
     </div>
 
     <div class="pcard">
-        <div class="pcard-hd">🔐 Sesión</div>
-        <p style="font-size:.83rem; color:var(--text2); margin-bottom:1rem;">
-            Sesión activa como <strong>${p.email}</strong>
+        <div class="pcard-hd">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="11" width="18" height="11" rx="2" stroke="#d4a843" stroke-width="2" fill="none"/>
+                <path d="M7 11V7a5 5 0 0110 0v4" stroke="#d4a843" stroke-width="2" stroke-linecap="round" fill="none"/>
+                <circle cx="12" cy="16" r="1.5" fill="#d4a843"/>
+            </svg>
+            Sesión activa
+        </div>
+        <p style="font-size:.82rem;color:var(--text2);margin-bottom:1rem;">
+            Conectado como <strong style="color:var(--text)">${p.email}</strong>
         </p>
-        <button class="btn-logout" onclick="cerrarSesion()">
-            Cerrar sesión
-        </button>
+        <button class="btn-logout" onclick="cerrarSesion()">Cerrar sesión</button>
     </div>`;
 }
 
 async function guardarPerfil() {
     if (!user) return;
     const btn = document.getElementById('btnGuardar');
-    btn.disabled = true;
-    btn.textContent = 'Guardando...';
-
-    const nombre      = document.getElementById('pNombre').value.trim();
-    const ciudad      = document.getElementById('pCiudad').value.trim();
-    const telefono    = document.getElementById('pTelefono').value.trim();
-    const institucion = document.getElementById('pInstitucion').value.trim();
-    const carrera     = document.getElementById('pCarrera').value.trim();
-    const norma       = document.getElementById('pNorma').value;
-    const nivel       = document.getElementById('pNivel').value;
-
+    btn.disabled = true; btn.textContent = 'Guardando...';
+    const payload = {
+        nombre:         document.getElementById('pNombre').value.trim(),
+        ciudad:         document.getElementById('pCiudad').value.trim(),
+        telefono:       document.getElementById('pTelefono').value.trim(),
+        institucion:    document.getElementById('pInstitucion').value.trim(),
+        carrera:        document.getElementById('pCarrera').value.trim(),
+        norma_favorita: document.getElementById('pNorma').value,
+        nivel_favorito: document.getElementById('pNivel').value,
+    };
     try {
-        const res  = await fetch('/api/perfil', {
-            method:  'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-User-Id':    user.user_id
-            },
-            body: JSON.stringify({ nombre, ciudad, telefono, institucion, carrera,
-                                   norma_favorita: norma, nivel_favorito: nivel })
-        });
+        const res  = await fetch('/api/perfil',{method:'PUT',headers:{'Content-Type':'application/json','X-User-Id':user.user_id},body:JSON.stringify(payload)});
         const data = await res.json();
-
         if (data.success) {
-            // Actualizar localStorage con el nuevo nombre
-            user.nombre = nombre;
-            localStorage.setItem('arp_user', JSON.stringify(user));
+            user.nombre = payload.nombre;
+            localStorage.setItem('arp_user',JSON.stringify(user));
             document.getElementById('msgOk').style.display  = 'block';
             document.getElementById('msgErr').style.display = 'none';
-            setTimeout(() => { document.getElementById('msgOk').style.display = 'none'; }, 3000);
+            setTimeout(()=>document.getElementById('msgOk').style.display='none',3000);
         } else {
-            document.getElementById('msgErr').textContent    = data.error || 'No se pudo guardar.';
-            document.getElementById('msgErr').style.display  = 'block';
-            document.getElementById('msgOk').style.display   = 'none';
+            document.getElementById('msgErr').textContent   = data.error||'No se pudo guardar.';
+            document.getElementById('msgErr').style.display = 'block';
         }
     } catch(e) {
         document.getElementById('msgErr').textContent   = 'Error de conexión.';
         document.getElementById('msgErr').style.display = 'block';
     } finally {
-        btn.disabled = false;
-        btn.textContent = '💾 Guardar cambios';
+        btn.disabled = false; btn.innerHTML = '💾 Guardar cambios';
     }
 }
 
-function cerrarSesion() {
+function cerrarSesion(){
     Swal.fire({
-        title: '¿Cerrar sesión?',
-        icon:  'question',
-        showCancelButton:  true,
-        confirmButtonText: 'Sí, salir',
-        cancelButtonText:  'Cancelar',
-        background: '#0e1118',
-        color: '#eae8e1',
-        confirmButtonColor: '#e05c5c',
-        cancelButtonColor:  '#3d3c38',
-    }).then(r => {
-        if (r.isConfirmed) {
-            localStorage.removeItem('arp_user');
-            location.href = '/';
-        }
-    });
+        title:'¿Cerrar sesión?',icon:'question',showCancelButton:true,
+        confirmButtonText:'Sí, salir',cancelButtonText:'Cancelar',
+        background:'#0e1118',color:'#eae8e1',confirmButtonColor:'#e05c5c',cancelButtonColor:'#3d3c38',
+    }).then(r=>{ if(r.isConfirmed){localStorage.removeItem('arp_user');location.href='/';} });
 }
 
 cargarPerfil();
