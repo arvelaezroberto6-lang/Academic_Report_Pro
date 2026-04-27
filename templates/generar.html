@@ -552,9 +552,11 @@ const _arpUser = _arpRaw ? JSON.parse(_arpRaw) : null;
 
 // ═══ AUTOCOMPLETAR DATOS DESDE PERFIL ═══
 (async function autoFillPerfil() {
-  if (!_arpUser) return;
+  if (!_arpUser || !_arpUser.access_token) return;
   try {
-    const res  = await fetch('/api/perfil', { headers: { 'X-User-Id': _arpUser.user_id } });
+    const res  = await fetch('/api/perfil', {
+      headers: { 'Authorization': `Bearer ${_arpUser.access_token}` }
+    });
     const data = await res.json();
     if (!data.success || !data.perfil) return;
     const p = data.perfil;
@@ -575,10 +577,13 @@ const _arpUser = _arpRaw ? JSON.parse(_arpRaw) : null;
   } catch(e) { /* silencioso */ }
 })();
 
-// Wrapper global para fetch — si recibe 401, redirige al login
+// Wrapper global para fetch — adjunta el JWT y maneja 401
 async function fetchAuth(url, options = {}) {
     options.headers = options.headers || {};
-    if (_arpUser) options.headers['X-User-Id'] = _arpUser.user_id;
+    // ✅ SEGURO: enviar JWT verificado por Supabase, no el user_id del cliente
+    if (_arpUser && _arpUser.access_token) {
+        options.headers['Authorization'] = `Bearer ${_arpUser.access_token}`;
+    }
     const res = await fetch(url, options);
     if (res.status === 401) {
         localStorage.removeItem('arp_user');  // limpiar sesión inválida
