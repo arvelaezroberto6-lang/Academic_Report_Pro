@@ -209,7 +209,9 @@ async function cargarInformes() {
     }
     const user = JSON.parse(raw);
     try {
-        const res  = await fetch('/api/mis-informes',{headers:{'X-User-Id':user.user_id}});
+        const res = await fetch('/api/mis-informes', {
+    headers: { 'Authorization': `Bearer ${user.access_token}` }
+});
         const data = await res.json();
         if (!data.success) throw new Error(data.error);
         _informes = data.informes||[];
