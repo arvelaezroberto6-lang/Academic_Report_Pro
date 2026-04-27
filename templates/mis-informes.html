@@ -5,188 +5,193 @@
 <style>
 .page-wrap { max-width: 900px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
 
+/* ── Page header ── */
 .page-hd {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 2rem;
-    flex-wrap: wrap;
-    gap: 1rem;
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:1.6rem; flex-wrap:wrap; gap:1rem;
 }
-.page-hd h1 {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.7rem;
-    font-weight: 700;
+.page-hd-left { display:flex; align-items:center; gap:.9rem; }
+.page-hd-ico {
+    width:52px; height:52px; border-radius:14px; flex-shrink:0;
+    background:linear-gradient(145deg,#1a1508,#211b0a);
+    border:1px solid rgba(212,168,67,.18);
+    display:flex; align-items:center; justify-content:center;
 }
-.page-hd p { font-size: .83rem; color: var(--text2); margin-top: .2rem; }
+.page-hd h1 { font-family:'Playfair Display',serif; font-size:1.6rem; font-weight:700; line-height:1.1; }
+.page-hd p  { font-size:.8rem; color:var(--text2); margin-top:.2rem; }
 
-/* Estado vacío */
-.empty-state {
-    text-align: center;
-    padding: 4rem 2rem;
-    border: 1px dashed var(--border2);
-    border-radius: var(--radius-lg);
+/* ── Filter bar ── */
+.filter-bar { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:1.4rem; }
+.filter-btn {
+    padding:.38rem 1rem; border-radius:100px; font-size:.73rem; font-weight:600;
+    border:1px solid var(--border2); background:transparent; color:var(--text2);
+    cursor:pointer; transition:all .18s; font-family:'DM Sans',sans-serif;
 }
-.empty-state .ico { font-size: 3rem; margin-bottom: 1rem; }
-.empty-state h3 { font-size: 1.1rem; margin-bottom: .5rem; }
-.empty-state p { font-size: .85rem; color: var(--text2); }
+.filter-btn:hover  { border-color:rgba(212,168,67,.35); color:var(--gold); }
+.filter-btn.active { background:var(--gold-dim); border-color:rgba(212,168,67,.3); color:var(--gold); }
 
-/* Skeleton loader */
-.skeleton-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 1.3rem 1.5rem;
-    margin-bottom: .8rem;
-    animation: pulse 1.5s ease-in-out infinite;
-}
-.skel-line {
-    height: 12px;
-    border-radius: 6px;
-    background: var(--surface2);
-    margin-bottom: .6rem;
-}
-@keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.4 } }
+/* ── Skeleton ── */
+.skeleton-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1.3rem 1.5rem; margin-bottom:.8rem; animation:pulse 1.5s ease-in-out infinite; }
+.skel-line { height:12px; border-radius:6px; background:var(--surface2); margin-bottom:.6rem; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 
-/* Informe card */
+/* ── Informe card ── */
 .informe-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 1.2rem 1.5rem;
-    margin-bottom: .8rem;
-    display: flex;
-    align-items: flex-start;
-    gap: 1rem;
-    transition: border-color .2s, transform .2s;
-    cursor: pointer;
-    text-decoration: none;
-    color: inherit;
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius-lg); padding:1.1rem 1.4rem;
+    margin-bottom:.7rem; display:flex; align-items:center; gap:1rem;
+    transition:border-color .2s,transform .2s; cursor:pointer;
+    text-decoration:none; color:inherit;
 }
-.informe-card:hover { border-color: rgba(212,168,67,.35); transform: translateY(-1px); }
+.informe-card:hover { border-color:rgba(212,168,67,.3); transform:translateY(-1px); }
 
 .inf-ico {
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
-    background: var(--gold-dim);
-    border: 1px solid rgba(212,168,67,.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    flex-shrink: 0;
+    width:42px; height:42px; border-radius:12px;
+    background:var(--gold-dim); border:1px solid rgba(212,168,67,.18);
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
 }
-.inf-body { flex: 1; min-width: 0; }
-.inf-tema {
-    font-weight: 700;
-    font-size: .93rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-bottom: .3rem;
-}
-.inf-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: .4rem;
-    align-items: center;
-}
+.inf-body { flex:1; min-width:0; }
+.inf-tema { font-weight:700; font-size:.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:.3rem; }
+.inf-meta { display:flex; flex-wrap:wrap; gap:.35rem; align-items:center; }
 .inf-badge {
-    padding: .18rem .6rem;
-    border-radius: 100px;
-    font-size: .67rem;
-    font-weight: 600;
-    font-family: 'JetBrains Mono', monospace;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    color: var(--text2);
+    padding:.18rem .6rem; border-radius:100px; font-size:.65rem; font-weight:600;
+    background:var(--surface2); border:1px solid var(--border); color:var(--text2);
 }
-.inf-badge.gold { background: var(--gold-dim); border-color: rgba(212,168,67,.25); color: var(--gold); }
-.inf-fecha { font-size: .72rem; color: var(--text3); margin-left: auto; white-space: nowrap; }
+.inf-badge.gold { background:var(--gold-dim); border-color:rgba(212,168,67,.22); color:var(--gold); }
+.inf-fecha { font-size:.7rem; color:var(--text3); margin-left:auto; white-space:nowrap; }
 
-.inf-actions {
-    display: flex;
-    gap: .4rem;
-    flex-shrink: 0;
-    align-items: center;
-}
+.inf-actions { display:flex; gap:.35rem; flex-shrink:0; }
 .btn-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--text2);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    transition: all .18s;
+    width:32px; height:32px; border-radius:8px; border:1px solid var(--border);
+    background:transparent; color:var(--text2); cursor:pointer;
+    display:flex; align-items:center; justify-content:center; font-size:13px;
+    transition:all .18s;
 }
-.btn-icon:hover { border-color: var(--red); color: var(--red); background: rgba(224,92,92,.08); }
-.btn-icon.btn-dl:hover { border-color: rgba(212,168,67,.5) !important; color: var(--gold) !important; background: var(--gold-dim) !important; }
+.btn-icon:hover          { border-color:var(--red);    color:var(--red);  background:rgba(224,92,92,.07); }
+.btn-icon.btn-dl:hover   { border-color:rgba(212,168,67,.4) !important; color:var(--gold) !important; background:var(--gold-dim) !important; }
 
-/* No auth banner */
-.no-auth {
-    text-align: center;
-    padding: 3rem 2rem;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
+/* ── Empty / No-auth ── */
+.empty-state {
+    text-align:center; padding:4rem 2rem;
+    border:1px dashed var(--border2); border-radius:var(--radius-lg);
 }
-.no-auth .ico { font-size: 2.5rem; margin-bottom: 1rem; }
-.no-auth h3 { margin-bottom: .5rem; }
-.no-auth p { font-size: .85rem; color: var(--text2); margin-bottom: 1.5rem; }
+.empty-state .ico { font-size:3rem; margin-bottom:1rem; }
+.empty-state h3   { font-size:1.1rem; margin-bottom:.5rem; }
+.empty-state p    { font-size:.85rem; color:var(--text2); }
+
+.no-auth { text-align:center; padding:3rem 2rem; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); }
+.no-auth .ico { font-size:2.5rem; margin-bottom:1rem; }
+.no-auth h3   { margin-bottom:.5rem; }
+.no-auth p    { font-size:.85rem; color:var(--text2); margin-bottom:1.5rem; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="page-wrap">
     <div class="page-hd">
-        <div>
-            <h1>📁 Mis Informes</h1>
-            <p id="subtitulo">Cargando...</p>
+        <div class="page-hd-left">
+            <div class="page-hd-ico">
+                <svg width="28" height="28" viewBox="0 0 36 36" fill="none">
+                    <rect x="5" y="3" width="18" height="24" rx="3" stroke="#d4a843" stroke-width="1.5" fill="none"/>
+                    <rect x="6.5" y="4.5" width="15" height="21" rx="2" fill="#d4a843" opacity=".05"/>
+                    <line x1="9" y1="9.5"  x2="20" y2="9.5"  stroke="#d4a843" stroke-width="1.3" stroke-linecap="round"/>
+                    <line x1="9" y1="13.5" x2="20" y2="13.5" stroke="#d4a843" stroke-width="1.3" stroke-linecap="round"/>
+                    <line x1="9" y1="17.5" x2="15" y2="17.5" stroke="#d4a843" stroke-width="1.3" stroke-linecap="round"/>
+                    <circle cx="8.5" cy="9.5"  r=".9" fill="#f0c96a"/>
+                    <circle cx="8.5" cy="13.5" r=".9" fill="#f0c96a"/>
+                    <circle cx="8.5" cy="17.5" r=".9" fill="#f0c96a"/>
+                    <rect x="17" y="19" width="14" height="14" rx="7" fill="#141720" stroke="#d4a843" stroke-width="1.5"/>
+                    <polyline points="21.5,26 23.5,28.5 27,23.5" stroke="#f0c96a" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <div>
+                <h1>Mis Informes</h1>
+                <p id="subtitulo">Cargando...</p>
+            </div>
         </div>
-        <a href="/generar" class="btn-gold" style="font-size:.83rem; padding:.65rem 1.4rem;">
-            ➕ Nuevo informe
-        </a>
+        <a href="/generar" class="btn-gold" style="font-size:.82rem;padding:.65rem 1.3rem;">➕ Nuevo informe</a>
+    </div>
+
+    <div class="filter-bar" id="filterBar" style="display:none">
+        <button class="filter-btn active" data-filter="todos" onclick="filtrar(this)">Todos</button>
+        <button class="filter-btn" data-filter="APA 7"    onclick="filtrar(this)">APA 7</button>
+        <button class="filter-btn" data-filter="ICONTEC"  onclick="filtrar(this)">ICONTEC</button>
+        <button class="filter-btn" data-filter="IEEE"     onclick="filtrar(this)">IEEE</button>
+        <button class="filter-btn" data-filter="academico"   onclick="filtrar(this)">📄 Académico</button>
+        <button class="filter-btn" data-filter="laboratorio" onclick="filtrar(this)">🔬 Lab</button>
+        <button class="filter-btn" data-filter="ejecutivo"   onclick="filtrar(this)">📊 Ejecutivo</button>
     </div>
 
     <div id="contenido">
-        <!-- Skeleton -->
-        <div class="skeleton-card">
-            <div class="skel-line" style="width:60%"></div>
-            <div class="skel-line" style="width:35%"></div>
-        </div>
-        <div class="skeleton-card">
-            <div class="skel-line" style="width:75%"></div>
-            <div class="skel-line" style="width:40%"></div>
-        </div>
-        <div class="skeleton-card">
-            <div class="skel-line" style="width:50%"></div>
-            <div class="skel-line" style="width:30%"></div>
-        </div>
+        <div class="skeleton-card"><div class="skel-line" style="width:60%"></div><div class="skel-line" style="width:35%"></div></div>
+        <div class="skeleton-card"><div class="skel-line" style="width:75%"></div><div class="skel-line" style="width:40%"></div></div>
+        <div class="skeleton-card"><div class="skel-line" style="width:50%"></div><div class="skel-line" style="width:30%"></div></div>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-const ICONOS_TIPO = {
-    academico:   '📄',
-    laboratorio: '🔬',
-    ejecutivo:   '📊',
-    tesis:       '🎓',
-    pasantia:    '🏢',
-    proyecto:    '📋',
-};
+const ICONOS_TIPO = { academico:'📄', laboratorio:'🔬', ejecutivo:'📊', tesis:'🎓', pasantia:'🏢', proyecto:'📋' };
+let _informes = [];
 
-function formatearFecha(iso) {
+function fechaRelativa(iso) {
     if (!iso) return '';
-    const d = new Date(iso);
-    return d.toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' });
+    const diff = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diff/60000);
+    if (mins < 60)   return `hace ${mins} min`;
+    const hrs = Math.floor(mins/60);
+    if (hrs < 24)    return `hace ${hrs}h`;
+    const dias = Math.floor(hrs/24);
+    if (dias === 1)  return 'ayer';
+    if (dias < 7)    return `hace ${dias} días`;
+    if (dias < 30)   return `hace ${Math.floor(dias/7)} sem`;
+    return new Date(iso).toLocaleDateString('es-CO',{day:'2-digit',month:'short'});
+}
+
+function renderInformes(lista) {
+    if (!lista.length) {
+        document.getElementById('contenido').innerHTML = `
+            <div class="empty-state">
+                <div class="ico">📭</div>
+                <h3>No hay informes con ese filtro</h3>
+                <p>Prueba con otro filtro o genera un nuevo informe.</p>
+            </div>`;
+        return;
+    }
+    document.getElementById('contenido').innerHTML = lista.map(inf => `
+        <div class="informe-card" onclick="abrirInforme('${inf.id}',${JSON.stringify(inf.tema)})">
+            <div class="inf-ico">${ICONOS_TIPO[inf.tipo_informe]||'📄'}</div>
+            <div class="inf-body">
+                <div class="inf-tema">${inf.tema}</div>
+                <div class="inf-meta">
+                    <span class="inf-badge gold">${inf.norma}</span>
+                    <span class="inf-badge">${inf.tipo_informe}</span>
+                    <span class="inf-badge">${inf.nivel||'universitario'}</span>
+                    ${inf.asignatura?`<span class="inf-badge">${inf.asignatura}</span>`:''}
+                    ${inf.refs_total>0?`<span class="inf-badge">📚 ${inf.refs_total} refs</span>`:''}
+                    <span class="inf-fecha">${fechaRelativa(inf.created_at)}</span>
+                </div>
+            </div>
+            <div class="inf-actions" onclick="event.stopPropagation()">
+                <button class="btn-icon btn-dl" title="PDF"  onclick="reDescargar('${inf.id}','pdf')"  style="color:var(--gold);border-color:rgba(212,168,67,.22)">📄</button>
+                <button class="btn-icon btn-dl" title="Word" onclick="reDescargar('${inf.id}','word')">📝</button>
+                <button class="btn-icon"        title="Eliminar" onclick="eliminar('${inf.id}',this)">🗑</button>
+            </div>
+        </div>`).join('');
+}
+
+function filtrar(btn) {
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const f = btn.dataset.filter;
+    if (f === 'todos') { renderInformes(_informes); return; }
+    const normas = ['APA 7','APA 6','ICONTEC','IEEE','Vancouver','Chicago','MLA','Harvard'];
+    const lista = normas.includes(f)
+        ? _informes.filter(i=>i.norma===f)
+        : _informes.filter(i=>i.tipo_informe===f);
+    renderInformes(lista);
 }
 
 async function cargarInformes() {
@@ -198,63 +203,30 @@ async function cargarInformes() {
                 <div class="ico">🔐</div>
                 <h3>Inicia sesión para ver tus informes</h3>
                 <p>Crea una cuenta gratis y todos tus informes se guardarán automáticamente.</p>
-                <a href="/auth?next=/mis-informes" class="btn-gold" style="display:inline-flex; font-size:.85rem;">
-                    Iniciar sesión →
-                </a>
+                <a href="/auth?next=/mis-informes" class="btn-gold" style="display:inline-flex;font-size:.85rem;">Iniciar sesión →</a>
             </div>`;
         return;
     }
-
     const user = JSON.parse(raw);
-
     try {
-        const res  = await fetch('/api/mis-informes', {
-            headers: { 'X-User-Id': user.user_id }
-        });
+        const res  = await fetch('/api/mis-informes',{headers:{'X-User-Id':user.user_id}});
         const data = await res.json();
-
         if (!data.success) throw new Error(data.error);
-
-        const informes = data.informes || [];
-        document.getElementById('subtitulo').textContent =
-            informes.length > 0
-                ? `${informes.length} informe${informes.length !== 1 ? 's' : ''} guardado${informes.length !== 1 ? 's' : ''}`
-                : 'Sin informes aún';
-
-        if (informes.length === 0) {
+        _informes = data.informes||[];
+        const n = _informes.length;
+        document.getElementById('subtitulo').textContent = n>0 ? `${n} informe${n!==1?'s':''} guardado${n!==1?'s':''}` : 'Sin informes aún';
+        if (n > 0) document.getElementById('filterBar').style.display = 'flex';
+        if (n === 0) {
             document.getElementById('contenido').innerHTML = `
                 <div class="empty-state">
                     <div class="ico">📭</div>
                     <h3>Todavía no has generado ningún informe</h3>
                     <p>Genera tu primer informe y aparecerá aquí automáticamente.</p>
-                    <a href="/generar" class="btn-gold" style="display:inline-flex; margin-top:1.5rem; font-size:.85rem;">
-                        ✦ Crear mi primer informe
-                    </a>
+                    <a href="/generar" class="btn-gold" style="display:inline-flex;margin-top:1.5rem;font-size:.85rem;">✦ Crear mi primer informe</a>
                 </div>`;
-            return;
+        } else {
+            renderInformes(_informes);
         }
-
-        document.getElementById('contenido').innerHTML = informes.map(inf => `
-            <div class="informe-card" onclick="abrirInforme('${inf.id}', ${JSON.stringify(inf.tema)})">
-                <div class="inf-ico">${ICONOS_TIPO[inf.tipo_informe] || '📄'}</div>
-                <div class="inf-body">
-                    <div class="inf-tema">${inf.tema}</div>
-                    <div class="inf-meta">
-                        <span class="inf-badge gold">${inf.norma}</span>
-                        <span class="inf-badge">${inf.tipo_informe}</span>
-                        <span class="inf-badge">${inf.nivel || 'universitario'}</span>
-                        ${inf.asignatura ? `<span class="inf-badge">${inf.asignatura}</span>` : ''}
-                        ${inf.refs_total > 0 ? `<span class="inf-badge">📚 ${inf.refs_total} refs</span>` : ''}
-                        <span class="inf-fecha">${formatearFecha(inf.created_at)}</span>
-                    </div>
-                </div>
-                <div class="inf-actions" onclick="event.stopPropagation()">
-                    <button class="btn-icon btn-dl" title="Descargar PDF" onclick="reDescargarInforme('${inf.id}','pdf')" style="color:var(--gold);border-color:rgba(212,168,67,.25)">📄</button>
-                    <button class="btn-icon btn-dl" title="Descargar Word" onclick="reDescargarInforme('${inf.id}','word')" style="color:var(--text2)">📝</button>
-                    <button class="btn-icon" title="Eliminar" onclick="eliminar('${inf.id}', this)">🗑</button>
-                </div>
-            </div>`).join('');
-
     } catch(e) {
         document.getElementById('subtitulo').textContent = '';
         document.getElementById('contenido').innerHTML = `
@@ -268,103 +240,74 @@ async function cargarInformes() {
 
 function abrirInforme(id, tema) {
     Swal.fire({
-        title: tema || 'Ver informe',
-        html: `
-          <p style="color:var(--text2);font-size:.88rem;margin-bottom:1.2rem">¿Qué quieres hacer con este informe?</p>
-          <div style="display:flex;gap:.6rem;justify-content:center;flex-wrap:wrap">
-            <button onclick="reDescargarInforme('${id}','pdf')" class="swal-btn-gold">📄 Descargar PDF</button>
-            <button onclick="reDescargarInforme('${id}','word')" class="swal-btn-outline">📝 Descargar Word</button>
-          </div>`,
-        showConfirmButton: false,
-        showCloseButton: true,
-        background: '#0e1118',
-        color: '#eae8e1',
-        customClass: { popup: 'swal-popup-custom' },
-        didOpen: () => {
-          // Inyectar estilos para los botones del swal
-          const style = document.createElement('style');
-          style.textContent = `.swal-btn-gold{padding:.65rem 1.3rem;background:linear-gradient(135deg,#d4a843,#9a6e18);color:#000;font-weight:700;font-size:.85rem;border:none;border-radius:9px;cursor:pointer;font-family:'DM Sans',sans-serif}
-          .swal-btn-outline{padding:.65rem 1.3rem;background:transparent;color:#eae8e1;font-weight:600;font-size:.85rem;border:1px solid rgba(255,255,255,.15);border-radius:9px;cursor:pointer;font-family:'DM Sans',sans-serif}
-          .swal-popup-custom{border:1px solid rgba(255,255,255,.08)!important;border-radius:18px!important}`;
-          document.head.appendChild(style);
+        title: tema||'Ver informe',
+        html: `<p style="color:var(--text2);font-size:.88rem;margin-bottom:1.2rem">¿Qué quieres hacer?</p>
+               <div style="display:flex;gap:.6rem;justify-content:center;flex-wrap:wrap">
+                 <button onclick="reDescargar('${id}','pdf')" class="sb-gold">📄 Descargar PDF</button>
+                 <button onclick="reDescargar('${id}','word')" class="sb-out">📝 Descargar Word</button>
+               </div>`,
+        showConfirmButton:false, showCloseButton:true,
+        background:'#0e1118', color:'#eae8e1',
+        customClass:{popup:'swal-popup-custom'},
+        didOpen:()=>{
+            const s=document.createElement('style');
+            s.textContent=`.sb-gold{padding:.65rem 1.3rem;background:linear-gradient(135deg,#d4a843,#9a6e18);color:#000;font-weight:700;font-size:.85rem;border:none;border-radius:9px;cursor:pointer;font-family:'DM Sans',sans-serif}
+            .sb-out{padding:.65rem 1.3rem;background:transparent;color:#eae8e1;font-weight:600;font-size:.85rem;border:1px solid rgba(255,255,255,.15);border-radius:9px;cursor:pointer;font-family:'DM Sans',sans-serif}
+            .swal-popup-custom{border:1px solid rgba(255,255,255,.08)!important;border-radius:18px!important}`;
+            document.head.appendChild(s);
         }
     });
 }
 
-async function reDescargarInforme(id, formato) {
+async function reDescargar(id, formato) {
     Swal.close();
     const user = JSON.parse(localStorage.getItem('arp_user'));
     try {
-        // Obtener datos del informe
-        const res  = await fetch(`/api/informe/${id}`, { headers: { 'X-User-Id': user.user_id } });
+        const res  = await fetch(`/api/informe/${id}`,{headers:{'X-User-Id':user.user_id}});
         const data = await res.json();
-        if (!data.success) throw new Error(data.error || 'No se pudo obtener el informe');
-
-        const endpoint = formato === 'pdf' ? '/exportar-pdf' : '/exportar-word';
-        const ext      = formato === 'pdf' ? 'pdf' : 'docx';
-
-        Swal.fire({ title: `Generando ${formato.toUpperCase()}…`, html: '<div style="color:var(--text2);font-size:.85rem">Un momento…</div>', allowOutsideClick: false, showConfirmButton: false, background: '#0e1118', color: '#eae8e1',
-          didOpen: () => Swal.showLoading() });
-
-        const exportRes = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ secciones: data.informe.secciones, datos_usuario: data.informe.datos_usuario })
-        });
+        if (!data.success) throw new Error(data.error||'No se pudo obtener el informe');
+        const endpoint = formato==='pdf'?'/exportar-pdf':'/exportar-word';
+        const ext      = formato==='pdf'?'pdf':'docx';
+        Swal.fire({title:`Generando ${formato.toUpperCase()}…`,html:'<div style="color:var(--text2);font-size:.85rem">Un momento…</div>',allowOutsideClick:false,showConfirmButton:false,background:'#0e1118',color:'#eae8e1',didOpen:()=>Swal.showLoading()});
+        const exportRes = await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({secciones:data.informe.secciones,datos_usuario:data.informe.datos_usuario})});
         if (!exportRes.ok) throw new Error('Error del servidor al exportar');
         const blob = await exportRes.blob();
         const url  = URL.createObjectURL(blob);
         const a    = document.createElement('a');
-        const nombreTema = (data.informe.datos_usuario?.tema || 'informe').replace(/[^a-z0-9]/gi, '_').toLowerCase().slice(0, 40);
-        a.href = url; a.download = `${nombreTema}.${ext}`; a.click();
-        URL.revokeObjectURL(url);
-        Swal.fire({ icon: 'success', title: '¡Descargado!', timer: 1500, showConfirmButton: false, background: '#0e1118', color: '#eae8e1' });
+        const nom  = (data.informe.datos_usuario?.tema||'informe').replace(/[^a-z0-9]/gi,'_').toLowerCase().slice(0,40);
+        a.href=url; a.download=`${nom}.${ext}`; a.click(); URL.revokeObjectURL(url);
+        Swal.fire({icon:'success',title:'¡Descargado!',timer:1500,showConfirmButton:false,background:'#0e1118',color:'#eae8e1'});
     } catch(e) {
-        Swal.fire({ icon: 'error', title: 'Error', text: e.message, confirmButtonColor: '#d4a843', background: '#0e1118', color: '#eae8e1' });
+        Swal.fire({icon:'error',title:'Error',text:e.message,confirmButtonColor:'#d4a843',background:'#0e1118',color:'#eae8e1'});
     }
 }
 
 async function eliminar(id, btn) {
-    const confirmado = await Swal.fire({
-        title: '¿Eliminar informe?',
-        text: 'Esta acción no se puede deshacer.',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar',
-        background: '#0e1118',
-        color: '#eae8e1',
-        confirmButtonColor: '#e05c5c',
-        cancelButtonColor: '#3d3c38',
+    const conf = await Swal.fire({
+        title:'¿Eliminar informe?', text:'Esta acción no se puede deshacer.', icon:'warning',
+        showCancelButton:true, confirmButtonText:'Sí, eliminar', cancelButtonText:'Cancelar',
+        background:'#0e1118', color:'#eae8e1', confirmButtonColor:'#e05c5c', cancelButtonColor:'#3d3c38',
     });
-    if (!confirmado.isConfirmed) return;
-
+    if (!conf.isConfirmed) return;
     const user = JSON.parse(localStorage.getItem('arp_user'));
     try {
-        const res  = await fetch(`/api/informe/${id}`, {
-            method: 'DELETE',
-            headers: { 'X-User-Id': user.user_id }
-        });
+        const res  = await fetch(`/api/informe/${id}`,{method:'DELETE',headers:{'X-User-Id':user.user_id}});
         const data = await res.json();
         if (data.success) {
-            // Quitar la card del DOM sin recargar
-            btn.closest('.informe-card').style.transition = 'opacity .3s';
-            btn.closest('.informe-card').style.opacity = '0';
-            setTimeout(() => {
-                btn.closest('.informe-card').remove();
-                // Actualizar contador
-                const cards = document.querySelectorAll('.informe-card');
-                document.getElementById('subtitulo').textContent =
-                    cards.length > 0
-                        ? `${cards.length} informe${cards.length !== 1 ? 's' : ''} guardado${cards.length !== 1 ? 's' : ''}`
-                        : 'Sin informes aún';
-                if (cards.length === 0) cargarInformes();
-            }, 300);
+            const card = btn.closest('.informe-card');
+            card.style.transition='opacity .3s'; card.style.opacity='0';
+            setTimeout(()=>{
+                card.remove();
+                _informes = _informes.filter(i=>i.id!==id);
+                const n = document.querySelectorAll('.informe-card').length;
+                document.getElementById('subtitulo').textContent = n>0?`${n} informe${n!==1?'s':''} guardado${n!==1?'s':''}`:'Sin informes aún';
+                if (n===0){ document.getElementById('filterBar').style.display='none'; cargarInformes(); }
+            },300);
         } else {
-            Swal.fire({ title: 'Error', text: data.error, icon: 'error', background: '#0e1118', color: '#eae8e1' });
+            Swal.fire({title:'Error',text:data.error,icon:'error',background:'#0e1118',color:'#eae8e1'});
         }
     } catch(e) {
-        Swal.fire({ title: 'Error de conexión', text: e.message, icon: 'error', background: '#0e1118', color: '#eae8e1' });
+        Swal.fire({title:'Error de conexión',text:e.message,icon:'error',background:'#0e1118',color:'#eae8e1'});
     }
 }
 
