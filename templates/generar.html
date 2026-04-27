@@ -756,7 +756,7 @@ document.getElementById('generarBtn').onclick = async () => {
       if (clave === 'desarrollo' && seccionesGeneradas['objetivos']) {
         extraPayload.objetivos_texto = seccionesGeneradas['objetivos'];
       }
-      // Si ya tenemos referencias reales, usarlas directamente sin llamar a DeepSeek
+      // Si ya tenemos referencias reales, usarlas directamente
       if (clave === 'referencias' && refsTextoFinal) {
         seccionesGeneradas['referencias'] = refsTextoFinal;
         marcarChip('referencias', 'ok');
