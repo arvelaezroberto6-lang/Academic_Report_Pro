@@ -722,22 +722,22 @@ document.getElementById('generarBtn').onclick = async () => {
   seccionesGeneradas = {};
   let errores = 0;
 
-  // ── PASO 0: Buscar referencias reales ANTES de generar secciones ──
+  // PASO 0: Buscar referencias reales ANTES de generar secciones
   let contextoRefs   = '';
   let refsTextoFinal = '';
   try {
-    document.getElementById('progressMessage').textContent = '🔬 Buscando referencias académicas reales…';
-    const refsRes0  = await fetch('/api/refs-previas', {
+    document.getElementById('progressMessage').textContent = '🔬 Buscando referencias académicas reales...';
+    const preRefsRes  = await fetch('/api/refs-previas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tema, norma: normaActual })
     });
-    const refsData0 = await refsRes0.json();
-    if (refsData0.success && refsData0.contexto_refs) {
-      contextoRefs   = refsData0.contexto_refs;
-      refsTextoFinal = refsData0.refs_texto || '';
-      window._refsInfo = { fuente: 'crossref_openalex', total: refsData0.total, refs_reales: refsData0.refs || [] };
-      console.log('Referencias previas:', refsData0.total);
+    const preRefsData = await preRefsRes.json();
+    if (preRefsData.success && preRefsData.contexto_refs) {
+      contextoRefs   = preRefsData.contexto_refs;
+      refsTextoFinal = preRefsData.refs_texto || '';
+      window._refsInfo = { fuente: 'crossref_openalex', total: preRefsData.total, refs_reales: preRefsData.refs || [] };
+      console.log('Referencias previas encontradas:', preRefsData.total);
     }
   } catch(e) {
     console.warn('No se pudieron obtener refs previas:', e);
@@ -756,7 +756,7 @@ document.getElementById('generarBtn').onclick = async () => {
       if (clave === 'desarrollo' && seccionesGeneradas['objetivos']) {
         extraPayload.objetivos_texto = seccionesGeneradas['objetivos'];
       }
-      // Si ya tenemos referencias reales, usarlas directamente
+      // Si ya tenemos referencias reales, usarlas directamente sin llamar a DeepSeek
       if (clave === 'referencias' && refsTextoFinal) {
         seccionesGeneradas['referencias'] = refsTextoFinal;
         marcarChip('referencias', 'ok');
@@ -830,7 +830,7 @@ document.getElementById('generarBtn').onclick = async () => {
     }
   }
 
-  // ── Guardar informe si el usuario está autenticado ──
+  // Guardar informe si el usuario está autenticado
   try {
     const arpRaw = localStorage.getItem('arp_user');
     if (arpRaw) {
@@ -848,12 +848,12 @@ document.getElementById('generarBtn').onclick = async () => {
           modo:          modo || 'rapido'
         })
       }).then(r => r.json()).then(d => {
-        if (d.success) console.log('Informe guardado:', d.informe_id);
-        else console.warn('No se guardó el informe:', d.error);
-      });
+        if (d.success) console.log('Informe guardado en BD:', d.informe_id);
+        else console.warn('No se guardo el informe:', d.error);
+      }).catch(e => console.warn('Error guardando:', e));
     }
   } catch(e) {
-    console.warn('Error guardando informe:', e);
+    console.warn('Error al intentar guardar informe:', e);
   }
 
   setTimeout(() => {
