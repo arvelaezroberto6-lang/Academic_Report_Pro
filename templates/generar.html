@@ -722,6 +722,27 @@ document.getElementById('generarBtn').onclick = async () => {
   seccionesGeneradas = {};
   let errores = 0;
 
+  // ── PASO 0: Buscar referencias reales ANTES de generar secciones ──
+  let contextoRefs   = '';
+  let refsTextoFinal = '';
+  try {
+    document.getElementById('progressMessage').textContent = '🔬 Buscando referencias académicas reales…';
+    const refsRes  = await fetch('/api/refs-previas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tema, norma: normaActual })
+    });
+    const refsData = await refsRes.json();
+    if (refsData.success && refsData.contexto_refs) {
+      contextoRefs   = refsData.contexto_refs;
+      refsTextoFinal = refsData.refs_texto || '';
+      window._refsInfo = refsData;
+      console.log(`Referencias previas: ${refsData.total} encontradas`);
+    }
+  } catch(e) {
+    console.warn('No se pudieron obtener refs previas:', e);
+  }
+
   for (let i = 0; i < SECCIONES_INFO.length; i++) {
     const { clave, nombre } = SECCIONES_INFO[i];
     marcarChip(clave, 'generando');
@@ -730,15 +751,21 @@ document.getElementById('generarBtn').onclick = async () => {
     document.getElementById('progressFill').style.width   = ((i / SECCIONES_INFO.length) * 100) + '%';
 
     try {
-      // FIX 2: Pass objetivos already generated when generating 'desarrollo'
       const extraPayload = {};
       if (clave === 'desarrollo' && seccionesGeneradas['objetivos']) {
         extraPayload.objetivos_texto = seccionesGeneradas['objetivos'];
       }
+      // Si ya tenemos referencias reales, no generar la sección — usar las reales
+      if (clave === 'referencias' && refsTextoFinal) {
+        seccionesGeneradas['referencias'] = refsTextoFinal;
+        marcarChip('referencias', 'ok');
+        document.getElementById('progressFill').style.width = ((( i + 1) / SECCIONES_INFO.length) * 100) + '%';
+        continue;
+      }
       const res  = await fetch('/api/generar-seccion', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...payload, seccion: clave, ...extraPayload })
+        body: JSON.stringify({ ...payload, seccion: clave, contexto_refs: contextoRefs, ...extraPayload })
       });
       const data = await res.json();
       if (data.success && data.contenido) {
@@ -815,32 +842,6 @@ document.getElementById('generarBtn').onclick = async () => {
 
   btn.disabled = false;
   btn.innerHTML = '🚀 Generar informe completo';
-
-  // Guardar informe en la base de datos si el usuario está autenticado
-  try {
-    const arpRaw = localStorage.getItem('arp_user');
-    if (arpRaw) {
-      const arpUser = JSON.parse(arpRaw);
-      await fetch('/api/guardar-informe', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-User-Id': arpUser.user_id
-        },
-        body: JSON.stringify({
-          secciones:     seccionesGeneradas,
-          datos_usuario: datosUsuario,
-          refs_reales:   window._refsInfo ? (window._refsInfo.refs_reales || []) : [],
-          tipo_informe:  tipoActual || 'academico',
-          norma:         normaActual,
-          nivel:         document.getElementById('nivel')?.value || 'universitario',
-          modo:          modo || 'rapido'
-        })
-      });
-    }
-  } catch(e) {
-    console.warn('No se pudo guardar el informe:', e);
-  }
 };
 
 // ═══ MOSTRAR EDITOR ═══
@@ -906,8 +907,8 @@ document.getElementById('regenerarSeccionBtn').onclick = async () => {
         norma:           normaActual,
         texto_usuario:   modo !== 'rapido' ? (document.getElementById('textoUsuario')?.value || '') : '',
         refs_manuales:   refsManuales,
-        // FIX 2: pass objectives when regenerating desarrollo manually
-        objetivos_texto: clave === 'desarrollo' ? (seccionesGeneradas['objetivos'] || '') : ''
+        objetivos_texto: clave === 'desarrollo' ? (seccionesGeneradas['objetivos'] || '') : '',
+        contexto_refs:   contextoRefs || ''
       })
     });
     const data = await res.json();
