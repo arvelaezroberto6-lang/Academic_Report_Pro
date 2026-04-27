@@ -126,6 +126,7 @@
     transition: all .18s;
 }
 .btn-icon:hover { border-color: var(--red); color: var(--red); background: rgba(224,92,92,.08); }
+.btn-icon.btn-dl:hover { border-color: rgba(212,168,67,.5) !important; color: var(--gold) !important; background: var(--gold-dim) !important; }
 
 /* No auth banner */
 .no-auth {
@@ -234,7 +235,7 @@ async function cargarInformes() {
         }
 
         document.getElementById('contenido').innerHTML = informes.map(inf => `
-            <div class="informe-card" onclick="abrirInforme('${inf.id}')">
+            <div class="informe-card" onclick="abrirInforme('${inf.id}', ${JSON.stringify(inf.tema)})">
                 <div class="inf-ico">${ICONOS_TIPO[inf.tipo_informe] || '📄'}</div>
                 <div class="inf-body">
                     <div class="inf-tema">${inf.tema}</div>
@@ -248,6 +249,8 @@ async function cargarInformes() {
                     </div>
                 </div>
                 <div class="inf-actions" onclick="event.stopPropagation()">
+                    <button class="btn-icon btn-dl" title="Descargar PDF" onclick="reDescargarInforme('${inf.id}','pdf')" style="color:var(--gold);border-color:rgba(212,168,67,.25)">📄</button>
+                    <button class="btn-icon btn-dl" title="Descargar Word" onclick="reDescargarInforme('${inf.id}','word')" style="color:var(--text2)">📝</button>
                     <button class="btn-icon" title="Eliminar" onclick="eliminar('${inf.id}', this)">🗑</button>
                 </div>
             </div>`).join('');
@@ -263,17 +266,62 @@ async function cargarInformes() {
     }
 }
 
-function abrirInforme(id) {
-    // Por ahora abre el generador — en v2 podría abrir una vista de detalle
+function abrirInforme(id, tema) {
     Swal.fire({
-        title: 'Ver informe',
-        text: 'Próximamente podrás ver y re-exportar tus informes guardados. Por ahora puedes eliminarlo si lo deseas.',
-        icon: 'info',
-        confirmButtonText: 'Entendido',
+        title: tema || 'Ver informe',
+        html: `
+          <p style="color:var(--text2);font-size:.88rem;margin-bottom:1.2rem">¿Qué quieres hacer con este informe?</p>
+          <div style="display:flex;gap:.6rem;justify-content:center;flex-wrap:wrap">
+            <button onclick="reDescargarInforme('${id}','pdf')" class="swal-btn-gold">📄 Descargar PDF</button>
+            <button onclick="reDescargarInforme('${id}','word')" class="swal-btn-outline">📝 Descargar Word</button>
+          </div>`,
+        showConfirmButton: false,
+        showCloseButton: true,
         background: '#0e1118',
         color: '#eae8e1',
-        confirmButtonColor: '#d4a843',
+        customClass: { popup: 'swal-popup-custom' },
+        didOpen: () => {
+          // Inyectar estilos para los botones del swal
+          const style = document.createElement('style');
+          style.textContent = `.swal-btn-gold{padding:.65rem 1.3rem;background:linear-gradient(135deg,#d4a843,#9a6e18);color:#000;font-weight:700;font-size:.85rem;border:none;border-radius:9px;cursor:pointer;font-family:'DM Sans',sans-serif}
+          .swal-btn-outline{padding:.65rem 1.3rem;background:transparent;color:#eae8e1;font-weight:600;font-size:.85rem;border:1px solid rgba(255,255,255,.15);border-radius:9px;cursor:pointer;font-family:'DM Sans',sans-serif}
+          .swal-popup-custom{border:1px solid rgba(255,255,255,.08)!important;border-radius:18px!important}`;
+          document.head.appendChild(style);
+        }
     });
+}
+
+async function reDescargarInforme(id, formato) {
+    Swal.close();
+    const user = JSON.parse(localStorage.getItem('arp_user'));
+    try {
+        // Obtener datos del informe
+        const res  = await fetch(`/api/informe/${id}`, { headers: { 'X-User-Id': user.user_id } });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'No se pudo obtener el informe');
+
+        const endpoint = formato === 'pdf' ? '/exportar-pdf' : '/exportar-word';
+        const ext      = formato === 'pdf' ? 'pdf' : 'docx';
+
+        Swal.fire({ title: `Generando ${formato.toUpperCase()}…`, html: '<div style="color:var(--text2);font-size:.85rem">Un momento…</div>', allowOutsideClick: false, showConfirmButton: false, background: '#0e1118', color: '#eae8e1',
+          didOpen: () => Swal.showLoading() });
+
+        const exportRes = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ secciones: data.informe.secciones, datos_usuario: data.informe.datos_usuario })
+        });
+        if (!exportRes.ok) throw new Error('Error del servidor al exportar');
+        const blob = await exportRes.blob();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        const nombreTema = (data.informe.datos_usuario?.tema || 'informe').replace(/[^a-z0-9]/gi, '_').toLowerCase().slice(0, 40);
+        a.href = url; a.download = `${nombreTema}.${ext}`; a.click();
+        URL.revokeObjectURL(url);
+        Swal.fire({ icon: 'success', title: '¡Descargado!', timer: 1500, showConfirmButton: false, background: '#0e1118', color: '#eae8e1' });
+    } catch(e) {
+        Swal.fire({ icon: 'error', title: 'Error', text: e.message, confirmButtonColor: '#d4a843', background: '#0e1118', color: '#eae8e1' });
+    }
 }
 
 async function eliminar(id, btn) {
