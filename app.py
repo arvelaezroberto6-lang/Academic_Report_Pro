@@ -677,16 +677,19 @@ def generar_seccion(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_
     # Bloque de fuentes reales — va al INICIO del prompt de usuario (más peso que system)
     _prefijo_refs = ""
     if contexto_refs and contexto_refs.strip() and seccion not in ('referencias',):
+        _apellidos_lista = re.findall(r'\[\d+\]\s+([A-ZÁÉÍÓÚÑa-záéíóúñ\-]+)', contexto_refs)
+        _apellidos_str   = ", ".join(_apellidos_lista[:12]) if _apellidos_lista else "los listados arriba"
         _prefijo_refs = (
+            f"FUENTES VERIFICADAS — LISTA COMPLETA Y ÚNICA PERMITIDA:\n"
             f"{contexto_refs}\n"
-            f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"INSTRUCCIÓN OBLIGATORIA ANTES DE ESCRIBIR:\n"
-            f"Lee la lista de fuentes verificadas de arriba. "
-            f"Cuando cites en el texto, usa ÚNICAMENTE esos autores y años. "
-            f"Ejemplo: si la lista tiene 'Balanyà, De Oliveira (2022)', cita así: (Balanyà & De Oliveira, 2022). "
-            f"PROHIBIDO usar autores que NO estén en esa lista. "
-            f"PROHIBIDO inventar García, López, Martínez, Hernández ni ningún otro autor.\n"
-            f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"═══════════════════════════════════════════════════════\n"
+            f"REGLAS ABSOLUTAS DE CITACIÓN:\n"
+            f"1. SOLO puedes citar autores de la lista de arriba. Apellidos permitidos: {_apellidos_str}.\n"
+            f"2. PROHIBIDO ABSOLUTO inventar autores: ni García, ni López, ni Martínez ni NINGÚN apellido fuera de la lista.\n"
+            f"3. Si necesitas más citas, reutiliza el mismo autor con distintos puntos.\n"
+            f"4. Entidades colombianas (DANE, MinSalud, MinTIC, MinCiencias, OPS) solo para datos estadísticos generales.\n"
+            f"5. Cada cita en el texto DEBE corresponder a un ítem de la lista de arriba.\n"
+            f"═══════════════════════════════════════════════════════\n\n"
         )
 
     system_prompt = (
@@ -695,10 +698,10 @@ def generar_seccion(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_
         f"Escribes {_nivel_sistema}.{_modo_sistema} "
         f"REGLA CRÍTICA DE CITAS: TODA afirmación factual, estadística o concepto teórico "
         f"DEBE tener una cita en el texto en formato {norma}. "
-        f"Por ejemplo en APA: (MinTIC, 2023), (García & López, 2022), (DANE, 2024). "
+        f"SOLO puedes citar autores que estén en la lista de FUENTES VERIFICADAS que recibirás. "
         f"No puedes escribir un dato o afirmación sin su respectiva cita inmediatamente después. "
         f"Las secciones de introducción, marco teórico y desarrollo deben tener al menos "
-        f"una cita por párrafo. "
+        f"una cita por párrafo, usando exclusivamente los autores de la lista verificada. "
         "REGLA CRÍTICA DE VERACIDAD: NUNCA inventes datos, cifras, estadísticas ni nombres de estudios. "
         "Si no tienes el dato exacto de una fuente real, escribe: "
         "'según estimaciones recientes' o 'de acuerdo con reportes del sector (año aproximado)'. "
@@ -719,27 +722,37 @@ def generar_seccion(seccion, tema, info_extra, tipo_informe, norma, nivel, refs_
         return None
     contenido = contenido.strip()
 
-    # ── Validar que usó los autores reales (si se inyectaron) ──
+    # ── Validar autores reales y detectar inventados ──
     if contexto_refs and contexto_refs.strip() and seccion not in ('referencias',):
-        # Extraer apellidos de la lista de fuentes reales
         apellidos_reales = re.findall(r'\[\d+\]\s+([A-ZÁÉÍÓÚÑa-záéíóúñ\-]+)', contexto_refs)
-        apellidos_usados = sum(1 for ap in apellidos_reales if ap.lower() in contenido.lower())
-        if apellidos_reales and apellidos_usados == 0:
-            logger.warning(f"Seccion '{seccion}': DeepSeek ignoró las fuentes reales. Reintentando...")
-            prompt_retry = (
-                f"{contexto_refs}\n\n"
-                f"ATENCIÓN: En tu respuesta anterior NO usaste ninguno de los autores de la lista anterior. "
-                f"Eso es un error grave. Reescribe la sección usando OBLIGATORIAMENTE al menos 3 autores "
-                f"de la lista como citas en el texto. Los autores disponibles son: "
-                f"{', '.join(apellidos_reales[:8])}.\n\n"
-                f"Sección a reescribir:\n{prompt.split('━━━')[-1] if '━━━' in prompt else prompt}"
-            )
-            contenido2 = llamar_deepseek(prompt_retry, system_prompt=system_prompt, max_tokens=3000)
-            if contenido2:
-                apellidos_usados2 = sum(1 for ap in apellidos_reales if ap.lower() in contenido2.lower())
-                if apellidos_usados2 > apellidos_usados:
-                    contenido = contenido2.strip()
-                    logger.info(f"Reintento mejoró uso de fuentes reales: {apellidos_usados2} autores")
+        if apellidos_reales:
+            apellidos_usados = sum(1 for ap in apellidos_reales if ap.lower() in contenido.lower())
+            citas_en_texto   = re.findall(r'\(([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)[^)]{0,40}\d{4}\)', contenido)
+            entidades_ok     = {'dane', 'minsalud', 'mintic', 'minciencias', 'ops', 'oms',
+                                'who', 'fedegan', 'crc', 'colciencias', 'sena'}
+            citas_inventadas = [c for c in citas_en_texto
+                                if not any(ap.lower() in c.lower() for ap in apellidos_reales)
+                                and c.lower().split()[0] not in entidades_ok]
+            if apellidos_usados == 0 or len(citas_inventadas) > 2:
+                razon = "no usó autores reales" if apellidos_usados == 0 else f"inventó autores: {citas_inventadas[:3]}"
+                logger.warning(f"Seccion '{seccion}': {razon}. Reintentando...")
+                prompt_retry = (
+                    f"FUENTES VERIFICADAS — ÚNICAS PERMITIDAS:\n{contexto_refs}\n\n"
+                    f"PROBLEMA: {razon}.\n"
+                    f"Apellidos permitidos: {chr(10).join(apellidos_reales[:10])}.\n"
+                    f"Reescribe usando SOLO esos autores. Para datos sin autor usa (DANE, año) o (MinSalud, año).\n\n"
+                    f"SECCIÓN:\n"
+                    f"{prompt.split('═══')[-1] if '═══' in prompt else prompt.split('━━━')[-1] if '━━━' in prompt else prompt}"
+                )
+                contenido2 = llamar_deepseek(prompt_retry, system_prompt=system_prompt, max_tokens=3000)
+                if contenido2:
+                    ap2  = sum(1 for ap in apellidos_reales if ap.lower() in contenido2.lower())
+                    inv2 = [c for c in re.findall(r'\(([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)[^)]{0,40}\d{4}\)', contenido2)
+                            if not any(ap.lower() in c.lower() for ap in apellidos_reales)
+                            and c.lower().split()[0] not in entidades_ok]
+                    if ap2 >= apellidos_usados and len(inv2) <= len(citas_inventadas):
+                        contenido = contenido2.strip()
+                        logger.info(f"Reintento OK: {ap2} reales, {len(inv2)} inventados")
 
     # Validar citas — 1 reintento si faltan
     val = validar_citas(contenido, seccion, norma)
@@ -1515,74 +1528,6 @@ def api_generar_seccion():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
-
-@app.route('/api/refs-previas', methods=['POST'])
-def api_refs_previas():
-    """Busca referencias reales ANTES de generar el informe."""
-    try:
-        data  = request.get_json(silent=True) or {}
-        tema  = data.get('tema', '').strip()
-        norma = data.get('norma', 'APA 7')
-        if not tema:
-            return jsonify({'success': False, 'error': 'Tema requerido'}), 400
-        logger.info(f"Buscando refs previas para: '{tema[:50]}'")
-        refs = buscar_referencias_reales(tema, cantidad_total=12)
-        if not refs:
-            return jsonify({'success': True, 'contexto_refs': '', 'total': 0, 'refs': []})
-        contexto_refs    = _construir_contexto_refs(refs, norma)
-        refs_formateadas = formatear_referencias(refs, norma)
-        logger.info(f"Refs previas obtenidas: {len(refs)}")
-        return jsonify({
-            'success':       True,
-            'contexto_refs': contexto_refs,
-            'refs_texto':    refs_formateadas,
-            'total':         len(refs),
-            'refs':          [{'tipo': r['tipo'], 'titulo': r['titulo'][:70],
-                               'anio': r['anio'], 'doi': r.get('doi', '')} for r in refs]
-        })
-    except Exception as e:
-        logger.error(f"Error en /api/refs-previas: {e}")
-        return jsonify({'success': True, 'contexto_refs': '', 'total': 0, 'refs': []})
-
-
-@app.route('/api/guardar-informe', methods=['POST'])
-def api_guardar_informe():
-    """Guarda el informe completo generado por secciones."""
-    try:
-        user_id = request.headers.get('X-User-Id')
-        if not user_id:
-            return jsonify({'success': False, 'error': 'No autenticado'}), 401
-        if not DB_DISPONIBLE:
-            return jsonify({'success': False, 'error': 'Base de datos no disponible'}), 503
-        data          = request.get_json(silent=True) or {}
-        secciones     = data.get('secciones', {})
-        datos_usuario = data.get('datos_usuario', {})
-        refs_reales   = data.get('refs_reales', [])
-        tipo_informe  = data.get('tipo_informe', 'academico')
-        norma         = data.get('norma', 'APA 7')
-        nivel         = data.get('nivel', 'universitario')
-        modo          = data.get('modo', 'rapido')
-        if not secciones or not datos_usuario.get('tema'):
-            return jsonify({'success': False, 'error': 'Datos incompletos'}), 400
-        informe_id = guardar_informe(
-            user_id=user_id,
-            datos_usuario=datos_usuario,
-            secciones=secciones,
-            refs_reales=refs_reales,
-            tipo_informe=tipo_informe,
-            norma=norma,
-            nivel=nivel,
-            modo=modo
-        )
-        if informe_id:
-            logger.info(f"Informe guardado: {informe_id}")
-            return jsonify({'success': True, 'informe_id': informe_id})
-        return jsonify({'success': False, 'error': 'No se pudo guardar'}), 500
-    except Exception as e:
-        logger.error(f"Error en /api/guardar-informe: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-
 @app.route('/api/referencias-reales', methods=['POST'])
 def api_referencias_reales():
     """
@@ -1942,6 +1887,72 @@ def api_recuperar_password():
         logger.error(f"Error recuperando contraseña: {e}")
         # Siempre éxito para no revelar si el email existe
         return jsonify({'success': True})
+
+
+
+@app.route('/api/refs-previas', methods=['POST'])
+def api_refs_previas():
+    try:
+        data  = request.get_json(silent=True) or {}
+        tema  = data.get('tema', '').strip()
+        norma = data.get('norma', 'APA 7')
+        if not tema:
+            return jsonify({'success': False, 'error': 'Tema requerido'}), 400
+        logger.info(f"Buscando refs previas para: '{tema[:50]}'")
+        refs = buscar_referencias_reales(tema, cantidad_total=12)
+        if not refs:
+            return jsonify({'success': True, 'contexto_refs': '', 'total': 0, 'refs': []})
+        contexto_refs    = _construir_contexto_refs(refs, norma)
+        refs_formateadas = formatear_referencias(refs, norma)
+        logger.info(f"Refs previas obtenidas: {len(refs)}")
+        return jsonify({
+            'success':       True,
+            'contexto_refs': contexto_refs,
+            'refs_texto':    refs_formateadas,
+            'total':         len(refs),
+            'refs':          [{'tipo': r['tipo'], 'titulo': r['titulo'][:70],
+                               'anio': r['anio'], 'doi': r.get('doi', '')} for r in refs]
+        })
+    except Exception as e:
+        logger.error(f"Error en /api/refs-previas: {e}")
+        return jsonify({'success': True, 'contexto_refs': '', 'total': 0, 'refs': []})
+
+
+@app.route('/api/guardar-informe', methods=['POST'])
+def api_guardar_informe():
+    try:
+        user_id = request.headers.get('X-User-Id')
+        if not user_id:
+            return jsonify({'success': False, 'error': 'No autenticado'}), 401
+        if not DB_DISPONIBLE:
+            return jsonify({'success': False, 'error': 'Base de datos no disponible'}), 503
+        data          = request.get_json(silent=True) or {}
+        secciones     = data.get('secciones', {})
+        datos_usuario = data.get('datos_usuario', {})
+        refs_reales   = data.get('refs_reales', [])
+        tipo_informe  = data.get('tipo_informe', 'academico')
+        norma         = data.get('norma', 'APA 7')
+        nivel         = data.get('nivel', 'universitario')
+        modo          = data.get('modo', 'rapido')
+        if not secciones or not datos_usuario.get('tema'):
+            return jsonify({'success': False, 'error': 'Datos incompletos'}), 400
+        informe_id = guardar_informe(
+            user_id=user_id,
+            datos_usuario=datos_usuario,
+            secciones=secciones,
+            refs_reales=refs_reales,
+            tipo_informe=tipo_informe,
+            norma=norma,
+            nivel=nivel,
+            modo=modo
+        )
+        if informe_id:
+            logger.info(f"Informe guardado: {informe_id}")
+            return jsonify({'success': True, 'informe_id': informe_id})
+        return jsonify({'success': False, 'error': 'No se pudo guardar'}), 500
+    except Exception as e:
+        logger.error(f"Error en /api/guardar-informe: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/recuperar')
