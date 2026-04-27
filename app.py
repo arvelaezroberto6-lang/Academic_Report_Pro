@@ -1515,6 +1515,44 @@ def api_generar_seccion():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+
+@app.route('/api/refs-previas', methods=['POST'])
+def api_refs_previas():
+    """
+    Busca referencias reales ANTES de generar el informe.
+    Devuelve el contexto_refs que el frontend debe pasar en cada /api/generar-seccion.
+    """
+    try:
+        data  = request.get_json(silent=True) or {}
+        tema  = data.get('tema', '').strip()
+        norma = data.get('norma', 'APA 7')
+        if not tema:
+            return jsonify({'success': False, 'error': 'Tema requerido'}), 400
+
+        logger.info(f"Buscando refs previas para: '{tema[:50]}'")
+        refs = buscar_referencias_reales(tema, cantidad_total=12)
+
+        if not refs:
+            logger.warning("No se encontraron refs previas")
+            return jsonify({'success': True, 'contexto_refs': '', 'total': 0, 'refs': []})
+
+        contexto_refs  = _construir_contexto_refs(refs, norma)
+        refs_formateadas = formatear_referencias(refs, norma)
+        logger.info(f"Refs previas obtenidas: {len(refs)}")
+
+        return jsonify({
+            'success':       True,
+            'contexto_refs': contexto_refs,
+            'refs_texto':    refs_formateadas,
+            'total':         len(refs),
+            'refs':          [{'tipo': r['tipo'], 'titulo': r['titulo'][:70],
+                               'anio': r['anio'], 'doi': r.get('doi','')} for r in refs]
+        })
+    except Exception as e:
+        logger.error(f"Error en /api/refs-previas: {e}")
+        return jsonify({'success': True, 'contexto_refs': '', 'total': 0, 'refs': []})
+
+
 @app.route('/api/referencias-reales', methods=['POST'])
 def api_referencias_reales():
     """
@@ -1874,50 +1912,6 @@ def api_recuperar_password():
         logger.error(f"Error recuperando contraseña: {e}")
         # Siempre éxito para no revelar si el email existe
         return jsonify({'success': True})
-
-
-
-@app.route('/api/guardar-informe', methods=['POST'])
-def api_guardar_informe():
-    """Guarda el informe completo generado por secciones."""
-    try:
-        user_id = request.headers.get('X-User-Id')
-        if not user_id:
-            return jsonify({'success': False, 'error': 'No autenticado'}), 401
-        if not DB_DISPONIBLE:
-            return jsonify({'success': False, 'error': 'Base de datos no disponible'}), 503
-
-        data          = request.get_json(silent=True) or {}
-        secciones     = data.get('secciones', {})
-        datos_usuario = data.get('datos_usuario', {})
-        refs_reales   = data.get('refs_reales', [])
-        tipo_informe  = data.get('tipo_informe', 'academico')
-        norma         = data.get('norma', 'APA 7')
-        nivel         = data.get('nivel', 'universitario')
-        modo          = data.get('modo', 'rapido')
-
-        if not secciones or not datos_usuario.get('tema'):
-            return jsonify({'success': False, 'error': 'Datos incompletos'}), 400
-
-        informe_id = guardar_informe(
-            user_id=user_id,
-            datos_usuario=datos_usuario,
-            secciones=secciones,
-            refs_reales=refs_reales,
-            tipo_informe=tipo_informe,
-            norma=norma,
-            nivel=nivel,
-            modo=modo
-        )
-        if informe_id:
-            logger.info(f"Informe guardado via /api/guardar-informe: {informe_id}")
-            return jsonify({'success': True, 'informe_id': informe_id})
-        else:
-            return jsonify({'success': False, 'error': 'No se pudo guardar'}), 500
-
-    except Exception as e:
-        logger.error(f"Error en /api/guardar-informe: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/recuperar')
