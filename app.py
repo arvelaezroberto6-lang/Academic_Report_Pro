@@ -1545,8 +1545,9 @@ def api_generar(user_id):
 
 @app.route('/api/generar-seccion', methods=['POST'])
 @limit("30 per hour")
-@requiere_auth
-def api_generar_seccion(user_id):
+def api_generar_seccion():
+    # Generación no requiere auth — el guardado sí (se hace por separado en /api/guardar-informe)
+    user_id = obtener_user_id_verificado(request)  # puede ser None si no hay sesión
     try:
         data      = request.get_json(silent=True) or {}
         seccion   = sanitizar_texto(data.get('seccion', ''), 50)
