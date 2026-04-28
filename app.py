@@ -59,7 +59,7 @@ try:
     limiter = Limiter(
         get_remote_address,
         app=app,
-        default_limits=["500 per day", "100 per hour"],
+        default_limits=["2000 per day", "300 per hour"],
         storage_uri="memory://",   # cambiar a Redis en producción con: redis://localhost:6379
         headers_enabled=True
     )
@@ -1476,7 +1476,7 @@ def perfil():
 # RUTAS — API (POST)
 # ============================================================
 @app.route('/api/generar', methods=['POST'])
-@limit("15 per hour")   # máx 15 generaciones por IP por hora (protege la API de DeepSeek)
+@limit("25 per hour")   # máx 25 generaciones por IP por hora
 @requiere_auth
 def api_generar(user_id):
     try:
@@ -1544,10 +1544,9 @@ def api_generar(user_id):
 
 
 @app.route('/api/generar-seccion', methods=['POST'])
-@limit("30 per hour")
-def api_generar_seccion():
-    # Generación no requiere auth — el guardado sí (se hace por separado en /api/guardar-informe)
-    user_id = obtener_user_id_verificado(request)  # puede ser None si no hay sesión
+@limit("60 per hour")
+@requiere_auth
+def api_generar_seccion(user_id):
     try:
         data      = request.get_json(silent=True) or {}
         seccion   = sanitizar_texto(data.get('seccion', ''), 50)
@@ -1684,7 +1683,7 @@ def exportar_word():
 # RUTAS DE AUTENTICACIÓN Y PERFIL (CAMBIO 3)
 # ============================================================
 @app.route('/api/auth/registro', methods=['POST'])
-@limit("5 per hour")   # máx 5 registros por IP por hora (anti-spam)
+@limit("30 per hour")  # máx 30 registros por IP por hora
 def api_registro():
     """Registrar un nuevo usuario con validaciones de seguridad."""
     try:
@@ -1721,7 +1720,7 @@ def api_registro():
 
 
 @app.route('/api/auth/login', methods=['POST'])
-@limit("10 per hour")   # máx 10 intentos por IP por hora (anti-brute-force)
+@limit("20 per hour")   # máx 20 intentos por IP por hora (anti-brute-force)
 def api_login():
     """Iniciar sesión — devuelve el access_token JWT."""
     try:
@@ -1867,7 +1866,7 @@ def health():
 # FEEDBACK / RECOMENDACIONES  →  envío por email al dueño
 # ─────────────────────────────────────────────────────────────
 @app.route('/api/feedback', methods=['POST'])
-@limit("5 per hour")   # máx 5 feedbacks por IP por hora
+@limit("15 per hour")  # máx 15 feedbacks por IP por hora
 def api_feedback():
     """Recibe una sugerencia y la envía al correo del dueño."""
     try:
@@ -1954,7 +1953,7 @@ def api_feedback():
 # RECUPERACIÓN DE CONTRASEÑA  (Supabase lo maneja)
 # ─────────────────────────────────────────────────────────────
 @app.route('/api/auth/recuperar', methods=['POST'])
-@limit("3 per hour")   # máx 3 recuperaciones por IP por hora
+@limit("10 per hour")  # máx 10 recuperaciones por IP por hora
 def api_recuperar_password():
     """Envía email de recuperación a través de Supabase."""
     try:
