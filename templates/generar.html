@@ -542,6 +542,8 @@ select option { background: var(--surface); }
 {% block extra_js %}
 <script>
 // ═══ AUTH GUARD ═══
+// Redirige al login solo si no hay ningún dato de sesión guardado.
+// Si hay sesión pero el token expiró, se avisa al momento de generar sin interrumpir.
 (function() {
     if (!localStorage.getItem('arp_user')) {
         location.href = '/auth?next=/generar';
@@ -580,15 +582,27 @@ const _arpUser = _arpRaw ? JSON.parse(_arpRaw) : null;
 // Wrapper global para fetch — adjunta el JWT y maneja 401
 async function fetchAuth(url, options = {}) {
     options.headers = options.headers || {};
-    // ✅ SEGURO: enviar JWT verificado por Supabase, no el user_id del cliente
     if (_arpUser && _arpUser.access_token) {
         options.headers['Authorization'] = `Bearer ${_arpUser.access_token}`;
     }
     const res = await fetch(url, options);
     if (res.status === 401) {
-        localStorage.removeItem('arp_user');  // limpiar sesión inválida
-        location.href = '/auth?next=/generar';
-        throw new Error('Sesión expirada');
+        // Si no hay ninguna sesión guardada, redirigir al login
+        if (!_arpUser) {
+            location.href = '/auth?next=/generar';
+            throw new Error('No autenticado');
+        }
+        // Si la sesión expiró, avisar una sola vez sin interrumpir la generación
+        if (!window._tokenExpiredNotified) {
+            window._tokenExpiredNotified = true;
+            const notif = document.createElement('div');
+            notif.style.cssText = 'position:fixed;top:1rem;right:1rem;z-index:9999;padding:.75rem 1.1rem;background:rgba(20,15,5,.95);border:1px solid rgba(212,168,67,.4);border-radius:10px;font-size:.8rem;color:var(--gold);font-family:"DM Sans",sans-serif;max-width:290px;line-height:1.5;box-shadow:0 4px 20px rgba(0,0,0,.4);';
+            notif.innerHTML = '⚠️ Tu sesión expiró. El informe se genera igual, pero <a href="/auth?next=/generar" style="color:var(--gold);font-weight:700;text-decoration:underline;">vuelve a iniciar sesión</a> para guardarlo.';
+            document.body.appendChild(notif);
+            setTimeout(() => notif.remove(), 9000);
+        }
+        // Retornar la respuesta igual para que el flujo continúe
+        return res;
     }
     return res;
 }
