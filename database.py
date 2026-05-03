@@ -60,12 +60,13 @@ def registrar_usuario(nombre: str = "", email: str = "", password: str = "") -> 
 
         if res.session:
             return {
-                "success":      True,
-                "user_id":      res.user.id,
-                "email":        res.user.email,
-                "nombre":       nombre,
-                "access_token": res.session.access_token,
-                "auto_login":   True,
+                "success":       True,
+                "user_id":       res.user.id,
+                "email":         res.user.email,
+                "nombre":        nombre,
+                "access_token":  res.session.access_token,
+                "refresh_token": res.session.refresh_token,
+                "auto_login":    True,
             }
         return {
             "success":    True,
@@ -94,11 +95,12 @@ def login_usuario(email: str, password: str) -> dict:
             if res.user and res.user.user_metadata:
                 nombre = res.user.user_metadata.get("nombre", "")
             return {
-                "success":      True,
-                "access_token": res.session.access_token,
-                "user_id":      res.user.id,
-                "email":        res.user.email,
-                "nombre":       nombre,
+                "success":       True,
+                "access_token":  res.session.access_token,
+                "refresh_token": res.session.refresh_token,
+                "user_id":       res.user.id,
+                "email":         res.user.email,
+                "nombre":        nombre,
             }
         return {"success": False, "error": "Credenciales incorrectas"}
     except Exception as e:
