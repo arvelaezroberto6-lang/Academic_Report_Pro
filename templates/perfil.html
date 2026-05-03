@@ -45,7 +45,17 @@
     background:var(--gold-dim); border:1px solid rgba(212,168,67,.2); color:var(--gold);
 }
 
-.stats-row { display:grid; grid-template-columns:repeat(3,1fr); gap:.7rem; margin-bottom:1rem; }
+/* Fila de stats principal */
+.stats-row {
+    display:grid; grid-template-columns:repeat(3,1fr);
+    gap:.7rem; margin-bottom:.7rem;
+}
+/* Fila de stats extra (se activa cuando cargan los datos) */
+.stats-row-extra {
+    display:none;
+    grid-template-columns:repeat(3,1fr);
+    gap:.7rem; margin-bottom:1rem;
+}
 .stat {
     background:var(--surface); border:1px solid var(--border);
     border-radius:var(--radius-lg); padding:1rem; text-align:center;
@@ -152,19 +162,23 @@ async function cargarPerfil() {
             </div>`;
         return;
     }
+
+    // Mostrar UI con datos vacíos mientras carga
     document.getElementById('contenido').innerHTML = construirUI({
-        nombre:'',email:user.email||'',institucion:'',carrera:'',
-        ciudad:'',telefono:'',norma_favorita:'APA 7',nivel_favorito:'universitario',
+        nombre:'', email:user.email||'', institucion:'', carrera:'',
+        ciudad:'', telefono:'', norma_favorita:'APA 7', nivel_favorito:'universitario',
     }, 0);
+
     try {
-        const [resPerfil,resInformes] = await Promise.all([
-            fetch('/api/perfil',       {headers:{'Authorization':`Bearer ${user.access_token}`}}),
-            fetch('/api/mis-informes', {headers:{'Authorization':`Bearer ${user.access_token}`}}),
+        const [resPerfil, resInformes] = await Promise.all([
+            fetch('/api/perfil',       { headers: { 'Authorization': `Bearer ${user.access_token}` } }),
+            fetch('/api/mis-informes', { headers: { 'Authorization': `Bearer ${user.access_token}` } }),
         ]);
         const dp = await resPerfil.json();
         const di = await resInformes.json();
         const perfil    = dp.success ? dp.perfil              : {};
         const nInformes = di.success ? (di.informes||[]).length : 0;
+
         document.getElementById('contenido').innerHTML = construirUI({
             nombre:         perfil.nombre         || user.nombre || '',
             email:          user.email            || '',
@@ -175,20 +189,24 @@ async function cargarPerfil() {
             norma_favorita: perfil.norma_favorita || 'APA 7',
             nivel_favorito: perfil.nivel_favorito || 'universitario',
         }, nInformes);
-    } catch(e){}
+
+    } catch(e) {}
+
+    // Cargar estadísticas extra de forma independiente
+    cargarEstadisticas();
 }
 
-function nivelCorto(v){
-    return {universitario:'Univ.',posgrado:'Posgrado',tecnico:'Técnico',colegio:'Colegio'}[v]||v;
+function nivelCorto(v) {
+    return { universitario:'Univ.', posgrado:'Posgrado', tecnico:'Técnico', colegio:'Colegio' }[v] || v;
 }
 
 function construirUI(p, nInformes) {
     const normas  = ['APA 7','APA 6','ICONTEC','IEEE','Vancouver','Chicago','MLA','Harvard'];
     const niveles = [
-        {v:'colegio',l:'Colegio / Secundaria'},
-        {v:'tecnico',l:'Técnico / Tecnológico'},
+        {v:'colegio',     l:'Colegio / Secundaria'},
+        {v:'tecnico',     l:'Técnico / Tecnológico'},
         {v:'universitario',l:'Universitario'},
-        {v:'posgrado',l:'Posgrado / Maestría / Doctorado'},
+        {v:'posgrado',    l:'Posgrado / Maestría / Doctorado'},
     ];
     const badges = [
         p.norma_favorita ? `<span class="pf-badge">${p.norma_favorita}</span>` : '',
@@ -206,10 +224,36 @@ function construirUI(p, nInformes) {
         </div>
     </div>
 
+    <!-- Fila principal de stats -->
     <div class="stats-row">
-        <div class="stat"><strong>${nInformes}</strong><span>Informes</span></div>
-        <div class="stat"><strong>${p.norma_favorita}</strong><span>Norma fav.</span></div>
-        <div class="stat"><strong>${nivelCorto(p.nivel_favorito)}</strong><span>Nivel</span></div>
+        <div class="stat">
+            <strong id="stTotal">${nInformes}</strong>
+            <span>Informes</span>
+        </div>
+        <div class="stat">
+            <strong id="stNorma">${p.norma_favorita}</strong>
+            <span>Norma fav.</span>
+        </div>
+        <div class="stat">
+            <strong id="stNivel">${nivelCorto(p.nivel_favorito)}</strong>
+            <span>Nivel</span>
+        </div>
+    </div>
+
+    <!-- Fila extra de stats (se muestra solo si el usuario tiene informes) -->
+    <div class="stats-row-extra" id="statsRowExtra">
+        <div class="stat">
+            <strong id="stRefs">—</strong>
+            <span>Referencias</span>
+        </div>
+        <div class="stat">
+            <strong id="stDias">—</strong>
+            <span>Días activo</span>
+        </div>
+        <div class="stat">
+            <strong id="stRacha">—</strong>
+            <span>Racha 🔥</span>
+        </div>
     </div>
 
     <div class="pcard">
@@ -265,7 +309,7 @@ function construirUI(p, nInformes) {
             </div>
         </div>
         <button class="btn-save" id="btnGuardar" onclick="guardarPerfil()">💾 Guardar cambios</button>
-        <div class="msg-ok" id="msgOk">✅ Perfil actualizado correctamente.</div>
+        <div class="msg-ok"  id="msgOk">✅ Perfil actualizado correctamente.</div>
         <div class="msg-err" id="msgErr"></div>
     </div>
 
@@ -285,6 +329,39 @@ function construirUI(p, nInformes) {
     </div>`;
 }
 
+// ── Carga las estadísticas extra y las inyecta en el DOM ──────
+async function cargarEstadisticas() {
+    if (!user) return;
+    try {
+        const res  = await fetch('/api/estadisticas', {
+            headers: { 'Authorization': `Bearer ${user.access_token}` }
+        });
+        const data = await res.json();
+        if (!data.success || data.stats.total_informes === 0) return;
+
+        const s = data.stats;
+
+        // Actualizar fila principal con datos reales de la API
+        const stTotal = document.getElementById('stTotal');
+        const stNorma = document.getElementById('stNorma');
+        if (stTotal) stTotal.textContent = s.total_informes;
+        if (stNorma) stNorma.textContent = s.norma_mas_usada || '—';
+
+        // Rellenar y mostrar la fila extra
+        const extra = document.getElementById('statsRowExtra');
+        if (extra) {
+            document.getElementById('stRefs').textContent  = s.total_referencias;
+            document.getElementById('stDias').textContent  = s.dias_activo;
+            document.getElementById('stRacha').textContent = s.racha_actual > 0
+                ? `${s.racha_actual}d`
+                : '—';
+            extra.style.display = 'grid';
+        }
+    } catch (e) {
+        // Silencioso: las stats extra no son críticas
+    }
+}
+
 async function guardarPerfil() {
     if (!user) return;
     const btn = document.getElementById('btnGuardar');
@@ -299,16 +376,20 @@ async function guardarPerfil() {
         nivel_favorito: document.getElementById('pNivel').value,
     };
     try {
-        const res  = await fetch('/api/perfil',{method:'PUT',headers:{'Content-Type':'application/json','Authorization':`Bearer ${user.access_token}`},body:JSON.stringify(payload)});
+        const res  = await fetch('/api/perfil', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.access_token}` },
+            body: JSON.stringify(payload)
+        });
         const data = await res.json();
         if (data.success) {
             user.nombre = payload.nombre;
-            localStorage.setItem('arp_user',JSON.stringify(user));
+            localStorage.setItem('arp_user', JSON.stringify(user));
             document.getElementById('msgOk').style.display  = 'block';
             document.getElementById('msgErr').style.display = 'none';
-            setTimeout(()=>document.getElementById('msgOk').style.display='none',3000);
+            setTimeout(() => document.getElementById('msgOk').style.display = 'none', 3000);
         } else {
-            document.getElementById('msgErr').textContent   = data.error||'No se pudo guardar.';
+            document.getElementById('msgErr').textContent   = data.error || 'No se pudo guardar.';
             document.getElementById('msgErr').style.display = 'block';
         }
     } catch(e) {
@@ -319,12 +400,13 @@ async function guardarPerfil() {
     }
 }
 
-function cerrarSesion(){
+function cerrarSesion() {
     Swal.fire({
-        title:'¿Cerrar sesión?',icon:'question',showCancelButton:true,
-        confirmButtonText:'Sí, salir',cancelButtonText:'Cancelar',
-        background:'#0e1118',color:'#eae8e1',confirmButtonColor:'#e05c5c',cancelButtonColor:'#3d3c38',
-    }).then(r=>{ if(r.isConfirmed){localStorage.removeItem('arp_user');location.href='/';} });
+        title: '¿Cerrar sesión?', icon: 'question', showCancelButton: true,
+        confirmButtonText: 'Sí, salir', cancelButtonText: 'Cancelar',
+        background: '#0e1118', color: '#eae8e1',
+        confirmButtonColor: '#e05c5c', cancelButtonColor: '#3d3c38',
+    }).then(r => { if (r.isConfirmed) { localStorage.removeItem('arp_user'); location.href = '/'; } });
 }
 
 cargarPerfil();
