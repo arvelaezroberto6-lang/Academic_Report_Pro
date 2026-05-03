@@ -3,8 +3,12 @@
 
 {% block extra_css %}
 <style>
-.page-wrap { max-width: 660px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+/* ══════════════════════════════════════════════
+   PERFIL — Layout base
+══════════════════════════════════════════════ */
+.page-wrap { max-width: 700px; margin: 0 auto; padding: 3rem 1.5rem 6rem; }
 
+/* ── Page header ── */
 .page-hd { display:flex; align-items:center; gap:1rem; margin-bottom:2rem; }
 .page-hd-ico {
     width:52px; height:52px; border-radius:14px; flex-shrink:0;
@@ -15,66 +19,88 @@
 .page-hd h1 { font-family:'Playfair Display',serif; font-size:1.6rem; font-weight:700; line-height:1.1; }
 .page-hd p  { font-size:.8rem; color:var(--text2); margin-top:.3rem; }
 
+/* ── Hero ── */
 .pf-hero {
-    display:flex; align-items:center; gap:1.2rem;
-    padding:1.4rem 1.6rem;
+    display:flex; align-items:center; gap:1.4rem;
+    padding:1.5rem 1.7rem;
     background:linear-gradient(135deg,var(--surface) 0%,#13180d 100%);
     border:1px solid rgba(212,168,67,.15);
-    border-radius:var(--radius-lg); margin-bottom:1rem;
+    border-radius:var(--radius-lg); margin-bottom:.8rem;
     position:relative; overflow:hidden;
 }
 .pf-hero::before {
-    content:''; position:absolute; right:-50px; top:-50px;
-    width:160px; height:160px; border-radius:50%;
-    background:radial-gradient(circle,rgba(212,168,67,.07) 0%,transparent 70%);
+    content:''; position:absolute; right:-60px; top:-60px;
+    width:200px; height:200px; border-radius:50%;
+    background:radial-gradient(circle,rgba(212,168,67,.08) 0%,transparent 70%);
     pointer-events:none;
 }
 .pf-avatar {
-    width:62px; height:62px; border-radius:18px;
+    width:68px; height:68px; border-radius:20px; flex-shrink:0;
     background:linear-gradient(135deg,var(--gold) 0%,#8b6412 100%);
     display:flex; align-items:center; justify-content:center;
-    font-size:26px; font-weight:700; color:#000; flex-shrink:0;
-    box-shadow:0 6px 20px rgba(212,168,67,.22);
+    font-size:28px; font-weight:700; color:#000;
+    box-shadow:0 8px 28px rgba(212,168,67,.28);
     font-family:'Playfair Display',serif;
+    position:relative;
 }
-.pf-info strong { display:block; font-size:1rem; font-weight:700; color:var(--text); }
-.pf-info span   { font-size:.76rem; color:var(--text2); }
+.pf-avatar-ring {
+    position:absolute; inset:-3px; border-radius:23px;
+    border:1.5px solid rgba(212,168,67,.3);
+    animation:ring-pulse 3s ease-in-out infinite;
+}
+@keyframes ring-pulse { 0%,100%{opacity:.3} 50%{opacity:.9} }
+.pf-info { flex:1; min-width:0; }
+.pf-info strong { display:block; font-size:1.05rem; font-weight:700; color:var(--text); }
+.pf-info .pf-email { font-size:.76rem; color:var(--text2); margin-top:.1rem; }
 .pf-badges { display:flex; gap:.4rem; flex-wrap:wrap; margin-top:.55rem; }
 .pf-badge {
     padding:.2rem .65rem; border-radius:100px; font-size:.65rem; font-weight:600;
     background:var(--gold-dim); border:1px solid rgba(212,168,67,.2); color:var(--gold);
+    font-family:'JetBrains Mono',monospace;
 }
+.pf-member-since { font-size:.65rem; color:var(--text3); margin-top:.4rem; }
 
-/* Fila de stats principal */
+/* ── Stats row ── */
 .stats-row {
     display:grid; grid-template-columns:repeat(3,1fr);
     gap:.7rem; margin-bottom:.7rem;
 }
-/* Fila de stats extra (se activa cuando cargan los datos) */
-.stats-row-extra {
-    display:none;
-    grid-template-columns:repeat(3,1fr);
-    gap:.7rem; margin-bottom:1rem;
-}
 .stat {
     background:var(--surface); border:1px solid var(--border);
     border-radius:var(--radius-lg); padding:1rem; text-align:center;
-    transition:border-color .2s;
+    transition:border-color .2s, transform .2s;
+    position:relative; overflow:hidden;
 }
-.stat:hover { border-color:rgba(212,168,67,.2); }
-.stat strong { display:block; font-size:1.45rem; font-family:'Playfair Display',serif; color:var(--gold); line-height:1; }
-.stat span   { font-size:.63rem; color:var(--text2); text-transform:uppercase; letter-spacing:.05em; margin-top:.3rem; display:block; }
+.stat::after {
+    content:''; position:absolute; inset:0;
+    background:radial-gradient(circle at 50% 0%,rgba(212,168,67,.05) 0%,transparent 70%);
+    pointer-events:none;
+}
+.stat:hover { border-color:rgba(212,168,67,.25); transform:translateY(-1px); }
+.stat strong {
+    display:block; font-size:1.5rem;
+    font-family:'Playfair Display',serif; color:var(--gold); line-height:1;
+}
+.stat span { font-size:.62rem; color:var(--text2); text-transform:uppercase; letter-spacing:.05em; margin-top:.35rem; display:block; }
 
-.pcard { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1.4rem 1.5rem; margin-bottom:.9rem; }
+/* ── Card base ── */
+.pcard {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius-lg); padding:1.4rem 1.5rem; margin-bottom:.9rem;
+}
 .pcard-hd {
     display:flex; align-items:center; gap:.5rem;
-    font-weight:700; font-size:.78rem; color:var(--gold);
-    text-transform:uppercase; letter-spacing:.07em;
-    margin-bottom:1.2rem; padding-bottom:.8rem; border-bottom:1px solid var(--border);
+    font-weight:700; font-size:.75rem; color:var(--gold);
+    text-transform:uppercase; letter-spacing:.08em;
+    margin-bottom:1.2rem; padding-bottom:.85rem; border-bottom:1px solid var(--border);
 }
 
+/* ── Form fields ── */
 .field { margin-bottom:.9rem; }
-.field label { display:block; font-size:.7rem; font-weight:600; color:var(--text2); margin-bottom:.35rem; text-transform:uppercase; letter-spacing:.04em; }
+.field label {
+    display:block; font-size:.7rem; font-weight:600; color:var(--text2);
+    margin-bottom:.35rem; text-transform:uppercase; letter-spacing:.04em;
+}
 .field input, .field select {
     width:100%; padding:.72rem 1rem;
     background:var(--surface2); border:1px solid var(--border2);
@@ -82,11 +108,28 @@
     font-family:'DM Sans',sans-serif; font-size:.88rem;
     transition:border-color .18s,box-shadow .18s; outline:none;
 }
-.field input:focus, .field select:focus { border-color:var(--gold); box-shadow:0 0 0 3px var(--gold-dim); }
+.field input:focus, .field select:focus {
+    border-color:var(--gold); box-shadow:0 0 0 3px var(--gold-dim);
+}
 .field select option { background:var(--surface2); }
 .g2c { display:grid; grid-template-columns:1fr 1fr; gap:.8rem; }
 @media(max-width:520px){ .g2c { grid-template-columns:1fr; } }
 
+/* ── Password field with toggle ── */
+.pass-wrap { position:relative; }
+.pass-wrap input { padding-right:2.8rem !important; }
+.pass-toggle {
+    position:absolute; right:.8rem; top:50%; transform:translateY(-50%);
+    background:none; border:none; cursor:pointer; color:var(--text2);
+    font-size:1rem; padding:.2rem; transition:color .18s;
+}
+.pass-toggle:hover { color:var(--gold); }
+
+/* ── Pass strength bar ── */
+.pass-strength { height:3px; border-radius:2px; margin-top:.4rem; background:var(--border2); overflow:hidden; }
+.pass-strength-bar { height:100%; border-radius:2px; transition:all .3s; width:0; }
+
+/* ── Buttons ── */
 .btn-save {
     width:100%; padding:.82rem;
     background:linear-gradient(135deg,var(--gold) 0%,#9a6e18 100%);
@@ -96,7 +139,18 @@
     display:flex; align-items:center; justify-content:center; gap:.4rem;
 }
 .btn-save:hover { transform:translateY(-1px); box-shadow:0 6px 24px var(--gold-glow); }
-.btn-save:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+.btn-save:disabled { opacity:.5; cursor:not-allowed; transform:none; box-shadow:none; }
+
+.btn-outline {
+    width:100%; padding:.78rem;
+    background:transparent; border:1px solid var(--border2);
+    color:var(--text2); font-weight:600; font-size:.86rem;
+    border-radius:var(--radius); cursor:pointer; transition:all .18s;
+    font-family:'DM Sans',sans-serif; margin-top:.4rem;
+    display:flex; align-items:center; justify-content:center; gap:.4rem;
+}
+.btn-outline:hover { border-color:rgba(212,168,67,.3); color:var(--gold); }
+.btn-outline:disabled { opacity:.4; cursor:not-allowed; }
 
 .btn-logout {
     width:100%; padding:.75rem; background:transparent; color:var(--red);
@@ -106,13 +160,150 @@
 }
 .btn-logout:hover { background:rgba(224,92,92,.07); border-color:var(--red); }
 
-.msg-ok  { font-size:.8rem; color:var(--green); text-align:center; margin-top:.5rem; display:none; }
-.msg-err { font-size:.8rem; color:var(--red);   text-align:center; margin-top:.5rem; display:none; }
+/* ── Spinner ── */
+.btn-spinner {
+    display:none; width:15px; height:15px;
+    border:2px solid rgba(0,0,0,.25); border-top-color:#000;
+    border-radius:50%; animation:spin .6s linear infinite;
+}
+.btn-spinner.light { border-color:rgba(255,255,255,.2); border-top-color:var(--text2); }
+@keyframes spin { to { transform:rotate(360deg); } }
 
+/* ── Messages ── */
+.msg-ok  { font-size:.8rem; color:var(--green); text-align:center; margin-top:.6rem; display:none; }
+.msg-err { font-size:.8rem; color:var(--red);   text-align:center; margin-top:.6rem; display:none; }
+.msg-box {
+    border-radius:var(--radius); padding:.75rem 1rem; font-size:.82rem;
+    margin-bottom:.9rem; display:none; line-height:1.5;
+}
+.msg-box.ok  { background:rgba(82,196,138,.1); border:1px solid rgba(82,196,138,.25); color:var(--green); }
+.msg-box.err { background:rgba(224,92,92,.1);  border:1px solid rgba(224,92,92,.25);  color:var(--red); }
+
+/* ── No-auth ── */
 .no-auth { text-align:center; padding:3rem 2rem; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); }
 .no-auth .ico { font-size:2.5rem; margin-bottom:1rem; }
 .no-auth h3   { margin-bottom:.5rem; }
 .no-auth p    { font-size:.85rem; color:var(--text2); margin-bottom:1.5rem; }
+
+/* ══════════════════════════════════════════════
+   HEATMAP DE ACTIVIDAD
+══════════════════════════════════════════════ */
+.heatmap-wrap { overflow-x:auto; padding-bottom:.5rem; }
+.heatmap-grid {
+    display:inline-grid;
+    grid-template-rows: repeat(7, 10px);
+    grid-auto-flow: column;
+    gap:3px;
+    min-width:100%;
+}
+.hm-cell {
+    width:10px; height:10px; border-radius:2.5px;
+    background:var(--surface2);
+    border:1px solid rgba(255,255,255,.04);
+    transition:transform .12s;
+    cursor:default;
+}
+.hm-cell:hover { transform:scale(1.5); z-index:2; }
+.hm-cell[data-n="1"] { background:rgba(212,168,67,.25); border-color:rgba(212,168,67,.15); }
+.hm-cell[data-n="2"] { background:rgba(212,168,67,.45); border-color:rgba(212,168,67,.25); }
+.hm-cell[data-n="3"] { background:rgba(212,168,67,.68); border-color:rgba(212,168,67,.38); }
+.hm-cell[data-n="4"] { background:rgba(212,168,67,.88); border-color:rgba(212,168,67,.5);  }
+.hm-cell[data-n="5"] { background:var(--gold);           border-color:var(--gold); }
+.heatmap-legend {
+    display:flex; align-items:center; gap:.35rem;
+    font-size:.64rem; color:var(--text3); margin-top:.7rem; justify-content:flex-end;
+}
+.hm-legend-cell {
+    width:9px; height:9px; border-radius:2px;
+}
+.hm-months {
+    display:flex; font-size:.6rem; color:var(--text3);
+    margin-bottom:.35rem; gap:0; overflow:hidden;
+}
+.hm-month-label { flex:1; text-align:left; padding-left:2px; }
+
+/* ══════════════════════════════════════════════
+   BARRAS DE NORMAS Y TIPOS
+══════════════════════════════════════════════ */
+.breakdown-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; }
+@media(max-width:480px){ .breakdown-grid { grid-template-columns:1fr; } }
+
+.breakdown-group {}
+.breakdown-title { font-size:.68rem; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:.06em; margin-bottom:.7rem; }
+.breakdown-item { margin-bottom:.55rem; }
+.breakdown-label {
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:.74rem; color:var(--text); margin-bottom:.25rem;
+}
+.breakdown-label span { font-size:.67rem; color:var(--text3); font-family:'JetBrains Mono',monospace; }
+.breakdown-bar { height:5px; border-radius:3px; background:var(--surface2); overflow:hidden; }
+.breakdown-fill {
+    height:100%; border-radius:3px;
+    background:linear-gradient(90deg,var(--gold) 0%,rgba(212,168,67,.55) 100%);
+    transition:width .6s cubic-bezier(.23,1,.32,1);
+    width:0;
+}
+.breakdown-empty { font-size:.78rem; color:var(--text3); text-align:center; padding:.8rem 0; }
+
+/* ══════════════════════════════════════════════
+   ÚLTIMOS INFORMES (mini-cards)
+══════════════════════════════════════════════ */
+.inf-mini {
+    display:flex; align-items:center; gap:.9rem;
+    padding:.9rem 1rem; border:1px solid var(--border);
+    border-radius:12px; background:var(--surface2);
+    margin-bottom:.5rem; transition:border-color .18s, transform .18s;
+    cursor:default;
+}
+.inf-mini:hover { border-color:rgba(212,168,67,.25); transform:translateX(2px); }
+.inf-mini-ico {
+    width:34px; height:34px; border-radius:9px; flex-shrink:0;
+    background:var(--gold-dim); border:1px solid rgba(212,168,67,.18);
+    display:flex; align-items:center; justify-content:center; font-size:14px;
+}
+.inf-mini-body { flex:1; min-width:0; }
+.inf-mini-tema {
+    font-size:.82rem; font-weight:700;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.inf-mini-meta { display:flex; gap:.4rem; margin-top:.2rem; flex-wrap:wrap; align-items:center; }
+.inf-mini-badge {
+    padding:.1rem .45rem; border-radius:100px; font-size:.6rem;
+    font-family:'JetBrains Mono',monospace; font-weight:600;
+    background:var(--surface); border:1px solid var(--border); color:var(--text2);
+}
+.inf-mini-badge.gold { background:var(--gold-dim); border-color:rgba(212,168,67,.2); color:var(--gold); }
+.inf-mini-fecha { font-size:.65rem; color:var(--text3); margin-left:auto; white-space:nowrap; flex-shrink:0; }
+.inf-mini-actions { display:flex; gap:.3rem; flex-shrink:0; }
+.btn-dl-mini {
+    width:28px; height:28px; border-radius:7px; border:1px solid var(--border);
+    background:transparent; color:var(--text2); cursor:pointer; font-size:12px;
+    display:flex; align-items:center; justify-content:center; transition:all .15s;
+}
+.btn-dl-mini:hover { border-color:rgba(212,168,67,.4); color:var(--gold); background:var(--gold-dim); }
+.inf-mini-empty { font-size:.82rem; color:var(--text3); text-align:center; padding:1rem 0; }
+.ver-todos {
+    display:block; text-align:center; font-size:.78rem; color:var(--text2);
+    text-decoration:none; padding:.6rem; border-radius:8px;
+    border:1px solid var(--border); margin-top:.3rem; transition:all .18s;
+}
+.ver-todos:hover { color:var(--gold); border-color:rgba(212,168,67,.25); }
+
+/* ══════════════════════════════════════════════
+   SECCIÓN CONTRASEÑA
+══════════════════════════════════════════════ */
+.pass-collapse {
+    overflow:hidden; max-height:0; transition:max-height .35s ease;
+}
+.pass-collapse.open { max-height:400px; }
+.pass-divider { height:1px; background:var(--border); margin:.9rem 0; }
+
+/* ── Skeleton ── */
+.skeleton-line {
+    height:12px; border-radius:6px; background:var(--surface2);
+    animation:pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
 </style>
 {% endblock %}
 
@@ -127,8 +318,6 @@
                 <circle cx="18" cy="13" r="1.3" fill="#d4a843" opacity=".75"/>
                 <path d="M8 31 C8 24 28 24 28 31" stroke="#d4a843" stroke-width="1.6" fill="none" stroke-linecap="round"/>
                 <path d="M5 33 C5 27 31 27 31 33" stroke="#d4a843" stroke-width=".9" fill="none" stroke-linecap="round" opacity=".35"/>
-                <circle cx="18" cy="13" r="6.5" stroke="#f0c96a" stroke-width=".5" stroke-dasharray="2.5 3" fill="none" opacity=".3"/>
-                <circle cx="18" cy="13" r="9.5" stroke="#d4a843" stroke-width=".5" fill="none" opacity=".12"/>
             </svg>
         </div>
         <div>
@@ -138,7 +327,20 @@
     </div>
 
     <div id="contenido">
-        <div style="text-align:center;padding:3rem;color:var(--text2);">Cargando perfil...</div>
+        <!-- Skeleton mientras carga -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:.8rem">
+            <div style="display:flex;gap:1rem;align-items:center">
+                <div style="width:68px;height:68px;border-radius:20px;background:var(--surface2);flex-shrink:0;animation:pulse 1.5s infinite"></div>
+                <div style="flex:1">
+                    <div class="skeleton-line" style="width:45%;margin-bottom:.6rem"></div>
+                    <div class="skeleton-line" style="width:30%"></div>
+                </div>
+            </div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.4rem;margin-bottom:.8rem">
+            <div class="skeleton-line" style="width:100%;margin-bottom:.6rem"></div>
+            <div class="skeleton-line" style="width:70%"></div>
+        </div>
     </div>
 
 </div>
@@ -149,8 +351,27 @@
 const raw  = localStorage.getItem('arp_user');
 const user = raw ? JSON.parse(raw) : null;
 
-function inicialLetra(s){ return s ? s.charAt(0).toUpperCase() : '?'; }
+const ICONOS_TIPO = { academico:'📄', laboratorio:'🔬', ejecutivo:'📊', tesis:'🎓', pasantia:'🏢', proyecto:'📋' };
 
+function inicialLetra(s) { return s ? s.charAt(0).toUpperCase() : '?'; }
+
+function nivelCorto(v) {
+    return { universitario:'Univ.', posgrado:'Posgrado', tecnico:'Técnico', colegio:'Colegio' }[v] || v;
+}
+
+function formatearFecha(iso) {
+    if (!iso) return '';
+    return new Date(iso).toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' });
+}
+
+function formatearFechaMiembro(iso) {
+    if (!iso) return '';
+    return new Date(iso).toLocaleDateString('es-CO', { month:'long', year:'numeric' });
+}
+
+// ══════════════════════════════════════════════
+// CARGA PRINCIPAL
+// ══════════════════════════════════════════════
 async function cargarPerfil() {
     if (!user) {
         document.getElementById('contenido').innerHTML = `
@@ -163,23 +384,20 @@ async function cargarPerfil() {
         return;
     }
 
-    // Mostrar UI con datos vacíos mientras carga
-    document.getElementById('contenido').innerHTML = construirUI({
-        nombre:'', email:user.email||'', institucion:'', carrera:'',
-        ciudad:'', telefono:'', norma_favorita:'APA 7', nivel_favorito:'universitario',
-    }, 0);
-
     try {
-        const [resPerfil, resInformes] = await Promise.all([
-            fetch('/api/perfil',       { headers: { 'Authorization': `Bearer ${user.access_token}` } }),
-            fetch('/api/mis-informes', { headers: { 'Authorization': `Bearer ${user.access_token}` } }),
+        // Cargar perfil, informes y estadísticas en paralelo
+        const [dp, di, ds] = await Promise.all([
+            fetchAuth('/api/perfil'),
+            fetchAuth('/api/mis-informes'),
+            fetchAuth('/api/estadisticas'),
         ]);
-        const dp = await resPerfil.json();
-        const di = await resInformes.json();
-        const perfil    = dp.success ? dp.perfil              : {};
-        const nInformes = di.success ? (di.informes||[]).length : 0;
 
-        document.getElementById('contenido').innerHTML = construirUI({
+        const perfil    = dp.success ? dp.perfil          : {};
+        const informes  = di.success ? (di.informes || []) : [];
+        const stats     = ds.success ? ds.stats            : {};
+
+        // Rellenar datos con fallbacks
+        const p = {
             nombre:         perfil.nombre         || user.nombre || '',
             email:          user.email            || '',
             institucion:    perfil.institucion    || '',
@@ -188,82 +406,206 @@ async function cargarPerfil() {
             telefono:       perfil.telefono       || '',
             norma_favorita: perfil.norma_favorita || 'APA 7',
             nivel_favorito: perfil.nivel_favorito || 'universitario',
-        }, nInformes);
+        };
 
-    } catch(e) {}
+        document.getElementById('contenido').innerHTML = construirUI(p, stats, informes);
 
-    // Cargar estadísticas extra de forma independiente
-    cargarEstadisticas();
+        // Animar barras y heatmap después del render
+        requestAnimationFrame(() => {
+            animarBarras(stats);
+            renderHeatmap();
+        });
+
+    } catch(e) {
+        document.getElementById('contenido').innerHTML = `
+            <div class="no-auth">
+                <div class="ico">⚠️</div>
+                <h3>Error cargando el perfil</h3>
+                <p style="color:var(--red)">${e.message}</p>
+            </div>`;
+    }
 }
 
-function nivelCorto(v) {
-    return { universitario:'Univ.', posgrado:'Posgrado', tecnico:'Técnico', colegio:'Colegio' }[v] || v;
-}
-
-function construirUI(p, nInformes) {
+// ══════════════════════════════════════════════
+// CONSTRUIR HTML COMPLETO
+// ══════════════════════════════════════════════
+function construirUI(p, s, informes) {
     const normas  = ['APA 7','APA 6','ICONTEC','IEEE','Vancouver','Chicago','MLA','Harvard'];
     const niveles = [
-        {v:'colegio',     l:'Colegio / Secundaria'},
-        {v:'tecnico',     l:'Técnico / Tecnológico'},
+        {v:'colegio',      l:'Colegio / Secundaria'},
+        {v:'tecnico',      l:'Técnico / Tecnológico'},
         {v:'universitario',l:'Universitario'},
-        {v:'posgrado',    l:'Posgrado / Maestría / Doctorado'},
+        {v:'posgrado',     l:'Posgrado / Maestría / Doctorado'},
     ];
+
     const badges = [
         p.norma_favorita ? `<span class="pf-badge">${p.norma_favorita}</span>` : '',
         p.nivel_favorito ? `<span class="pf-badge">${nivelCorto(p.nivel_favorito)}</span>` : '',
         p.institucion    ? `<span class="pf-badge">${p.institucion.split(' ').slice(0,3).join(' ')}</span>` : '',
     ].filter(Boolean).join('');
 
+    const primerInforme = s.primer_informe ? formatearFechaMiembro(s.primer_informe) : null;
+    const memberSince   = primerInforme ? `Miembro desde ${primerInforme}` : '';
+
+    // ── Últimos 3 informes ──────────────────────
+    const ultimosInformes = (informes || []).slice(0, 3);
+    const informesHTML = ultimosInformes.length === 0
+        ? `<div class="inf-mini-empty">Aún no has generado informes. <a href="/generar" style="color:var(--gold)">¡Crea el primero!</a></div>`
+        : ultimosInformes.map(inf => `
+            <div class="inf-mini">
+                <div class="inf-mini-ico">${ICONOS_TIPO[inf.tipo_informe] || '📄'}</div>
+                <div class="inf-mini-body">
+                    <div class="inf-mini-tema">${inf.tema}</div>
+                    <div class="inf-mini-meta">
+                        <span class="inf-mini-badge gold">${inf.norma}</span>
+                        <span class="inf-mini-badge">${inf.tipo_informe}</span>
+                        <span class="inf-mini-fecha">${formatearFecha(inf.created_at)}</span>
+                    </div>
+                </div>
+                <div class="inf-mini-actions">
+                    <button class="btn-dl-mini" title="Descargar PDF"  onclick="descargarRapido('${inf.id}','pdf')">📄</button>
+                    <button class="btn-dl-mini" title="Descargar Word" onclick="descargarRapido('${inf.id}','word')">📝</button>
+                </div>
+            </div>`).join('');
+
+    // ── Desglose normas ─────────────────────────
+    const porNorma = s.informes_por_norma || {};
+    const porTipo  = s.informes_por_tipo  || {};
+    const maxNorma = Math.max(1, ...Object.values(porNorma));
+    const maxTipo  = Math.max(1, ...Object.values(porTipo));
+
+    const tipoLabel = { academico:'Académico', laboratorio:'Laboratorio', ejecutivo:'Ejecutivo', tesis:'Tesis', pasantia:'Pasantía', proyecto:'Proyecto' };
+
+    const normaBarras = Object.keys(porNorma).length === 0
+        ? `<div class="breakdown-empty">Sin datos aún</div>`
+        : Object.entries(porNorma)
+            .sort((a,b) => b[1]-a[1])
+            .map(([norma, cnt]) => `
+                <div class="breakdown-item">
+                    <div class="breakdown-label">${norma}<span>${cnt}</span></div>
+                    <div class="breakdown-bar"><div class="breakdown-fill" data-pct="${Math.round(cnt/maxNorma*100)}"></div></div>
+                </div>`).join('');
+
+    const tipoBarras = Object.keys(porTipo).length === 0
+        ? `<div class="breakdown-empty">Sin datos aún</div>`
+        : Object.entries(porTipo)
+            .sort((a,b) => b[1]-a[1])
+            .map(([tipo, cnt]) => `
+                <div class="breakdown-item">
+                    <div class="breakdown-label">${tipoLabel[tipo]||tipo}<span>${cnt}</span></div>
+                    <div class="breakdown-bar"><div class="breakdown-fill" data-pct="${Math.round(cnt/maxTipo*100)}"></div></div>
+                </div>`).join('');
+
     return `
+    <!-- ── Hero ── -->
     <div class="pf-hero">
-        <div class="pf-avatar">${inicialLetra(p.nombre||p.email)}</div>
+        <div class="pf-avatar">
+            <div class="pf-avatar-ring"></div>
+            ${inicialLetra(p.nombre || p.email)}
+        </div>
         <div class="pf-info">
-            <strong>${p.nombre||'Sin nombre'}</strong>
-            <span>${p.email}</span>
+            <strong>${p.nombre || 'Sin nombre'}</strong>
+            <div class="pf-email">${p.email}</div>
             <div class="pf-badges">${badges}</div>
+            ${memberSince ? `<div class="pf-member-since">✦ ${memberSince}</div>` : ''}
         </div>
     </div>
 
-    <!-- Fila principal de stats -->
-    <div class="stats-row">
+    <!-- ── Stats principales ── -->
+    <div class="stats-row" style="margin-bottom:.8rem">
         <div class="stat">
-            <strong id="stTotal">${nInformes}</strong>
+            <strong>${s.total_informes ?? 0}</strong>
             <span>Informes</span>
         </div>
         <div class="stat">
-            <strong id="stNorma">${p.norma_favorita}</strong>
-            <span>Norma fav.</span>
-        </div>
-        <div class="stat">
-            <strong id="stNivel">${nivelCorto(p.nivel_favorito)}</strong>
-            <span>Nivel</span>
-        </div>
-    </div>
-
-    <!-- Fila extra de stats (se muestra solo si el usuario tiene informes) -->
-    <div class="stats-row-extra" id="statsRowExtra">
-        <div class="stat">
-            <strong id="stRefs">—</strong>
+            <strong>${s.total_referencias ?? 0}</strong>
             <span>Referencias</span>
         </div>
         <div class="stat">
-            <strong id="stDias">—</strong>
-            <span>Días activo</span>
-        </div>
-        <div class="stat">
-            <strong id="stRacha">—</strong>
-            <span>Racha 🔥</span>
+            <strong>${s.racha_actual > 0 ? s.racha_actual + 'd 🔥' : (s.dias_activo ?? 0)}</strong>
+            <span>${s.racha_actual > 0 ? 'Racha activa' : 'Días activo'}</span>
         </div>
     </div>
 
+    <!-- ══ Heatmap de actividad ══ -->
+    <div class="pcard" style="margin-bottom:.9rem">
+        <div class="pcard-hd">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="4" width="18" height="16" rx="2" stroke="#d4a843" stroke-width="1.8" fill="none"/>
+                <line x1="3" y1="9" x2="21" y2="9" stroke="#d4a843" stroke-width="1.5"/>
+                <line x1="8" y1="4" x2="8" y2="9" stroke="#d4a843" stroke-width="1.5"/>
+                <line x1="16" y1="4" x2="16" y2="9" stroke="#d4a843" stroke-width="1.5"/>
+                <rect x="7" y="13" width="2.5" height="2.5" rx=".5" fill="#d4a843" opacity=".6"/>
+                <rect x="11" y="13" width="2.5" height="2.5" rx=".5" fill="#d4a843" opacity=".6"/>
+                <rect x="15" y="13" width="2.5" height="2.5" rx=".5" fill="#d4a843" opacity=".3"/>
+            </svg>
+            Actividad — últimas 12 semanas
+        </div>
+        <div id="heatmapMeses" class="hm-months"></div>
+        <div class="heatmap-wrap">
+            <div class="heatmap-grid" id="heatmapGrid"></div>
+        </div>
+        <div class="heatmap-legend">
+            <span>Menos</span>
+            <div class="hm-legend-cell" style="background:var(--surface2);border:1px solid rgba(255,255,255,.06)"></div>
+            <div class="hm-legend-cell" style="background:rgba(212,168,67,.25)"></div>
+            <div class="hm-legend-cell" style="background:rgba(212,168,67,.55)"></div>
+            <div class="hm-legend-cell" style="background:rgba(212,168,67,.8)"></div>
+            <div class="hm-legend-cell" style="background:var(--gold)"></div>
+            <span>Más</span>
+        </div>
+    </div>
+
+    <!-- ══ Desglose normas / tipos ══ -->
+    <div class="pcard" style="margin-bottom:.9rem">
+        <div class="pcard-hd">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="12" width="4" height="9" rx="1" fill="#d4a843" opacity=".5"/>
+                <rect x="10" y="7"  width="4" height="14" rx="1" fill="#d4a843" opacity=".75"/>
+                <rect x="17" y="3"  width="4" height="18" rx="1" fill="#d4a843"/>
+            </svg>
+            Uso por norma y tipo de informe
+        </div>
+        <div class="breakdown-grid">
+            <div class="breakdown-group">
+                <div class="breakdown-title">Por norma</div>
+                ${normaBarras}
+            </div>
+            <div class="breakdown-group">
+                <div class="breakdown-title">Por tipo</div>
+                ${tipoBarras}
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ Últimos informes ══ -->
+    <div class="pcard" style="margin-bottom:.9rem">
+        <div class="pcard-hd">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                <rect x="4" y="3" width="12" height="16" rx="2" stroke="#d4a843" stroke-width="1.8" fill="none"/>
+                <line x1="7" y1="8"  x2="13" y2="8"  stroke="#d4a843" stroke-width="1.4" stroke-linecap="round"/>
+                <line x1="7" y1="11" x2="13" y2="11" stroke="#d4a843" stroke-width="1.4" stroke-linecap="round"/>
+                <line x1="7" y1="14" x2="11" y2="14" stroke="#d4a843" stroke-width="1.4" stroke-linecap="round"/>
+                <circle cx="18" cy="17" r="4" fill="#d4a843" opacity=".2" stroke="#d4a843" stroke-width="1.4"/>
+                <line x1="18" y1="15" x2="18" y2="19" stroke="#d4a843" stroke-width="1.4" stroke-linecap="round"/>
+                <line x1="16" y1="17" x2="20" y2="17" stroke="#d4a843" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+            Informes recientes
+        </div>
+        ${informesHTML}
+        ${ultimosInformes.length > 0 ? `<a href="/mis-informes" class="ver-todos">Ver todos los informes →</a>` : ''}
+    </div>
+
+    <!-- ══ Datos personales ══ -->
     <div class="pcard">
         <div class="pcard-hd">
-            <svg width="14" height="14" viewBox="0 0 36 36" fill="none">
+            <svg width="13" height="13" viewBox="0 0 36 36" fill="none">
                 <circle cx="18" cy="13" r="6.5" stroke="#d4a843" stroke-width="2.2" fill="none"/>
                 <path d="M8 31 C8 24 28 24 28 31" stroke="#d4a843" stroke-width="2.2" fill="none" stroke-linecap="round"/>
             </svg>
             Datos personales
         </div>
+        <div id="msgPerfil" class="msg-box"></div>
         <div class="field">
             <label>Nombre completo</label>
             <input type="text" id="pNombre" value="${p.nombre}" placeholder="Tu nombre completo">
@@ -278,11 +620,11 @@ function construirUI(p, nInformes) {
                 <input type="text" id="pTelefono" value="${p.telefono}" placeholder="Ej: 300 000 0000">
             </div>
         </div>
-    </div>
 
-    <div class="pcard">
-        <div class="pcard-hd">
-            <svg width="14" height="14" viewBox="0 0 36 36" fill="none">
+        <!-- ── Datos académicos (dentro del mismo card) ── -->
+        <div class="pass-divider"></div>
+        <div class="pcard-hd" style="margin-bottom:1rem;padding-bottom:.7rem">
+            <svg width="13" height="13" viewBox="0 0 36 36" fill="none">
                 <rect x="5" y="3" width="18" height="24" rx="3" stroke="#d4a843" stroke-width="2" fill="none"/>
                 <line x1="9" y1="10" x2="20" y2="10" stroke="#d4a843" stroke-width="1.8" stroke-linecap="round"/>
                 <line x1="9" y1="14" x2="20" y2="14" stroke="#d4a843" stroke-width="1.8" stroke-linecap="round"/>
@@ -301,71 +643,226 @@ function construirUI(p, nInformes) {
         <div class="g2c">
             <div class="field">
                 <label>Norma favorita</label>
-                <select id="pNorma">${normas.map(n=>`<option value="${n}" ${n===p.norma_favorita?'selected':''}>${n}</option>`).join('')}</select>
+                <select id="pNorma">
+                    ${normas.map(n => `<option value="${n}" ${n===p.norma_favorita?'selected':''}>${n}</option>`).join('')}
+                </select>
             </div>
             <div class="field">
                 <label>Nivel académico</label>
-                <select id="pNivel">${niveles.map(n=>`<option value="${n.v}" ${n.v===p.nivel_favorito?'selected':''}>${n.l}</option>`).join('')}</select>
+                <select id="pNivel">
+                    ${niveles.map(n => `<option value="${n.v}" ${n.v===p.nivel_favorito?'selected':''}>${n.l}</option>`).join('')}
+                </select>
             </div>
         </div>
-        <button class="btn-save" id="btnGuardar" onclick="guardarPerfil()">💾 Guardar cambios</button>
-        <div class="msg-ok"  id="msgOk">✅ Perfil actualizado correctamente.</div>
-        <div class="msg-err" id="msgErr"></div>
+        <button class="btn-save" id="btnGuardar" onclick="guardarPerfil()">
+            <span id="btnGuardarTxt">💾 Guardar cambios</span>
+            <span class="btn-spinner" id="btnGuardarSpn"></span>
+        </button>
     </div>
 
+    <!-- ══ Cambiar contraseña ══ -->
     <div class="pcard">
         <div class="pcard-hd">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <rect x="3" y="11" width="18" height="11" rx="2" stroke="#d4a843" stroke-width="2" fill="none"/>
-                <path d="M7 11V7a5 5 0 0110 0v4" stroke="#d4a843" stroke-width="2" stroke-linecap="round" fill="none"/>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="11" width="18" height="11" rx="2" stroke="#d4a843" stroke-width="1.8" fill="none"/>
+                <path d="M7 11V7a5 5 0 0110 0v4" stroke="#d4a843" stroke-width="1.8" stroke-linecap="round" fill="none"/>
                 <circle cx="12" cy="16" r="1.5" fill="#d4a843"/>
+            </svg>
+            Cambiar contraseña
+        </div>
+
+        <button class="btn-outline" id="btnTogglePass" onclick="togglePassForm()">
+            🔑 Cambiar mi contraseña
+        </button>
+
+        <div class="pass-collapse" id="passCollapse">
+            <div style="height:.9rem"></div>
+            <div id="msgPass" class="msg-box"></div>
+            <div class="field">
+                <label>Contraseña actual</label>
+                <div class="pass-wrap">
+                    <input type="password" id="passActual" placeholder="Tu contraseña actual" autocomplete="current-password">
+                    <button type="button" class="pass-toggle" onclick="toggleVis('passActual',this)" tabindex="-1">👁</button>
+                </div>
+            </div>
+            <div class="field">
+                <label>Nueva contraseña</label>
+                <div class="pass-wrap">
+                    <input type="password" id="passNueva" placeholder="Mínimo 8 caracteres" autocomplete="new-password" oninput="checkPassStrength(this.value)">
+                    <button type="button" class="pass-toggle" onclick="toggleVis('passNueva',this)" tabindex="-1">👁</button>
+                </div>
+                <div class="pass-strength"><div class="pass-strength-bar" id="passBar"></div></div>
+            </div>
+            <div class="field">
+                <label>Confirmar nueva contraseña</label>
+                <div class="pass-wrap">
+                    <input type="password" id="passConfirm" placeholder="Repite la nueva contraseña" autocomplete="new-password">
+                    <button type="button" class="pass-toggle" onclick="toggleVis('passConfirm',this)" tabindex="-1">👁</button>
+                </div>
+            </div>
+            <button class="btn-save" id="btnCambiarPass" onclick="cambiarContrasena()">
+                <span id="btnPassTxt">Actualizar contraseña</span>
+                <span class="btn-spinner" id="btnPassSpn"></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ══ Sesión activa ══ -->
+    <div class="pcard">
+        <div class="pcard-hd">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="9" stroke="#d4a843" stroke-width="1.8" fill="none"/>
+                <circle cx="12" cy="12" r="3" fill="#d4a843" opacity=".5"/>
+                <line x1="12" y1="3" x2="12" y2="7" stroke="#d4a843" stroke-width="1.8" stroke-linecap="round"/>
+                <line x1="12" y1="17" x2="12" y2="21" stroke="#d4a843" stroke-width="1.8" stroke-linecap="round"/>
+                <line x1="3" y1="12" x2="7" y2="12" stroke="#d4a843" stroke-width="1.8" stroke-linecap="round"/>
+                <line x1="17" y1="12" x2="21" y2="12" stroke="#d4a843" stroke-width="1.8" stroke-linecap="round"/>
             </svg>
             Sesión activa
         </div>
-        <p style="font-size:.82rem;color:var(--text2);margin-bottom:1rem;">
+        <p style="font-size:.82rem;color:var(--text2);margin-bottom:1rem">
             Conectado como <strong style="color:var(--text)">${p.email}</strong>
         </p>
         <button class="btn-logout" onclick="cerrarSesion()">Cerrar sesión</button>
     </div>`;
 }
 
-// ── Carga las estadísticas extra y las inyecta en el DOM ──────
-async function cargarEstadisticas() {
-    if (!user) return;
+// ══════════════════════════════════════════════
+// HEATMAP
+// ══════════════════════════════════════════════
+async function renderHeatmap() {
     try {
-        const res  = await fetch('/api/estadisticas', {
-            headers: { 'Authorization': `Bearer ${user.access_token}` }
-        });
-        const data = await res.json();
-        if (!data.success || data.stats.total_informes === 0) return;
+        const data = await fetchAuth('/api/estadisticas/actividad?dias=84');
+        const actividad = data.actividad || [];
 
-        const s = data.stats;
+        // Construir mapa fecha → cantidad
+        const mapa = {};
+        for (const { fecha, cantidad } of actividad) mapa[fecha] = cantidad;
 
-        // Actualizar fila principal con datos reales de la API
-        const stTotal = document.getElementById('stTotal');
-        const stNorma = document.getElementById('stNorma');
-        if (stTotal) stTotal.textContent = s.total_informes;
-        if (stNorma) stNorma.textContent = s.norma_mas_usada || '—';
+        // Determinar rango: últimas 12 semanas (84 días), empezando en lunes
+        const hoy    = new Date();
+        hoy.setHours(0,0,0,0);
+        // Retroceder hasta el lunes más cercano (12 semanas atrás)
+        const diaSemana = (hoy.getDay() + 6) % 7; // 0=lunes
+        const inicio = new Date(hoy);
+        inicio.setDate(hoy.getDate() - diaSemana - 83);
 
-        // Rellenar y mostrar la fila extra
-        const extra = document.getElementById('statsRowExtra');
-        if (extra) {
-            document.getElementById('stRefs').textContent  = s.total_referencias;
-            document.getElementById('stDias').textContent  = s.dias_activo;
-            document.getElementById('stRacha').textContent = s.racha_actual > 0
-                ? `${s.racha_actual}d`
-                : '—';
-            extra.style.display = 'grid';
+        const totalDias = 84;
+        const grid = document.getElementById('heatmapGrid');
+        const meses = document.getElementById('heatmapMeses');
+        if (!grid) return;
+
+        grid.innerHTML = '';
+        const semanas = Math.ceil(totalDias / 7);
+        grid.style.gridTemplateColumns = `repeat(${semanas}, 10px)`;
+
+        // Construir celdas
+        let semanaActual = -1;
+        let mesAnterior  = -1;
+        const mesesUsados = [];
+
+        for (let i = 0; i < totalDias; i++) {
+            const d = new Date(inicio);
+            d.setDate(inicio.getDate() + i);
+            const semana = Math.floor(i / 7);
+            const mesD   = d.getMonth();
+
+            if (mesD !== mesAnterior) {
+                mesesUsados.push({ semana, mes: d.toLocaleDateString('es-CO', { month:'short' }) });
+                mesAnterior = mesD;
+            }
+
+            const fechaStr = d.toISOString().slice(0,10);
+            const n = mapa[fechaStr] || 0;
+            const nivel = n === 0 ? 0 : n === 1 ? 1 : n === 2 ? 2 : n <= 3 ? 3 : n <= 4 ? 4 : 5;
+
+            const cell = document.createElement('div');
+            cell.className = 'hm-cell';
+            if (nivel > 0) cell.setAttribute('data-n', Math.min(nivel, 5));
+            cell.title = `${fechaStr}: ${n} informe${n !== 1 ? 's' : ''}`;
+            grid.appendChild(cell);
         }
-    } catch (e) {
-        // Silencioso: las stats extra no son críticas
+
+        // Etiquetas de meses
+        if (meses) {
+            meses.innerHTML = '';
+            for (let s = 0; s < semanas; s++) {
+                const label = mesesUsados.find(m => m.semana === s);
+                const span  = document.createElement('div');
+                span.className   = 'hm-month-label';
+                span.textContent = label ? label.mes : '';
+                meses.appendChild(span);
+            }
+        }
+
+    } catch(e) {
+        // Silencioso — el heatmap no es crítico
     }
 }
 
+// ══════════════════════════════════════════════
+// BARRAS ANIMADAS
+// ══════════════════════════════════════════════
+function animarBarras(stats) {
+    setTimeout(() => {
+        document.querySelectorAll('.breakdown-fill').forEach(bar => {
+            const pct = bar.getAttribute('data-pct') || 0;
+            bar.style.width = pct + '%';
+        });
+    }, 200);
+}
+
+// ══════════════════════════════════════════════
+// DESCARGA RÁPIDA DESDE PERFIL
+// ══════════════════════════════════════════════
+async function descargarRapido(id, formato) {
+    try {
+        Swal.fire({
+            title: `Preparando ${formato.toUpperCase()}…`,
+            html: '<div style="color:var(--text2);font-size:.85rem">Un momento...</div>',
+            allowOutsideClick: false, showConfirmButton: false,
+            background:'#0e1118', color:'#eae8e1',
+            didOpen: () => Swal.showLoading()
+        });
+
+        const data = await fetchAuth(`/api/informe/${id}`);
+        if (!data.success) throw new Error(data.error || 'No se pudo obtener el informe');
+
+        const endpoint = formato === 'pdf' ? '/exportar-pdf' : '/exportar-word';
+        const ext      = formato === 'pdf' ? 'pdf' : 'docx';
+
+        const exportRes = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ secciones: data.informe.secciones, datos_usuario: data.informe.datos_usuario })
+        });
+        if (!exportRes.ok) throw new Error('Error al exportar');
+
+        const blob = await exportRes.blob();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        const tema = (data.informe.datos_usuario?.tema || 'informe').replace(/[^a-z0-9]/gi, '_').toLowerCase().slice(0, 40);
+        a.href = url; a.download = `${tema}.${ext}`; a.click();
+        URL.revokeObjectURL(url);
+
+        Swal.fire({ icon:'success', title:'¡Descargado!', timer:1400, showConfirmButton:false, background:'#0e1118', color:'#eae8e1' });
+    } catch(e) {
+        Swal.fire({ icon:'error', title:'Error', text:e.message, confirmButtonColor:'#d4a843', background:'#0e1118', color:'#eae8e1' });
+    }
+}
+
+// ══════════════════════════════════════════════
+// GUARDAR PERFIL
+// ══════════════════════════════════════════════
 async function guardarPerfil() {
     if (!user) return;
     const btn = document.getElementById('btnGuardar');
-    btn.disabled = true; btn.textContent = 'Guardando...';
+    const msg = document.getElementById('msgPerfil');
+    btn.disabled = true;
+    document.getElementById('btnGuardarSpn').style.display = 'inline-block';
+    document.getElementById('btnGuardarTxt').textContent   = 'Guardando...';
+    msg.style.display = 'none';
+
     const payload = {
         nombre:         document.getElementById('pNombre').value.trim(),
         ciudad:         document.getElementById('pCiudad').value.trim(),
@@ -375,40 +872,159 @@ async function guardarPerfil() {
         norma_favorita: document.getElementById('pNorma').value,
         nivel_favorito: document.getElementById('pNivel').value,
     };
+
     try {
-        const res  = await fetch('/api/perfil', {
+        const data = await fetchAuth('/api/perfil', {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.access_token}` },
             body: JSON.stringify(payload)
         });
-        const data = await res.json();
+
         if (data.success) {
             user.nombre = payload.nombre;
             localStorage.setItem('arp_user', JSON.stringify(user));
-            document.getElementById('msgOk').style.display  = 'block';
-            document.getElementById('msgErr').style.display = 'none';
-            setTimeout(() => document.getElementById('msgOk').style.display = 'none', 3000);
+            msg.className     = 'msg-box ok';
+            msg.textContent   = '✅ Perfil actualizado correctamente.';
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; }, 3500);
         } else {
-            document.getElementById('msgErr').textContent   = data.error || 'No se pudo guardar.';
-            document.getElementById('msgErr').style.display = 'block';
+            msg.className     = 'msg-box err';
+            msg.textContent   = data.error || 'No se pudo guardar.';
+            msg.style.display = 'block';
         }
     } catch(e) {
-        document.getElementById('msgErr').textContent   = 'Error de conexión.';
-        document.getElementById('msgErr').style.display = 'block';
+        msg.className     = 'msg-box err';
+        msg.textContent   = 'Error de conexión.';
+        msg.style.display = 'block';
     } finally {
-        btn.disabled = false; btn.innerHTML = '💾 Guardar cambios';
+        btn.disabled = false;
+        document.getElementById('btnGuardarSpn').style.display = 'none';
+        document.getElementById('btnGuardarTxt').textContent   = '💾 Guardar cambios';
     }
 }
 
+// ══════════════════════════════════════════════
+// CAMBIO DE CONTRASEÑA
+// ══════════════════════════════════════════════
+function togglePassForm() {
+    const col = document.getElementById('passCollapse');
+    const btn = document.getElementById('btnTogglePass');
+    const isOpen = col.classList.toggle('open');
+    btn.textContent = isOpen ? '✕ Cancelar' : '🔑 Cambiar mi contraseña';
+    if (!isOpen) {
+        document.getElementById('passActual').value  = '';
+        document.getElementById('passNueva').value   = '';
+        document.getElementById('passConfirm').value = '';
+        document.getElementById('passBar').style.width = '0';
+        document.getElementById('msgPass').style.display = 'none';
+    }
+}
+
+function toggleVis(id, btn) {
+    const inp = document.getElementById(id);
+    inp.type  = inp.type === 'password' ? 'text' : 'password';
+    btn.textContent = inp.type === 'password' ? '👁' : '🙈';
+}
+
+function checkPassStrength(v) {
+    const bar = document.getElementById('passBar');
+    let s = 0;
+    if (v.length >= 8)  s++;
+    if (v.length >= 12) s++;
+    if (/[A-Z]/.test(v)) s++;
+    if (/[0-9]/.test(v)) s++;
+    if (/[^A-Za-z0-9]/.test(v)) s++;
+    const c = ['#e05c5c','#f0a030','#d4a843','#52c48a','#52c48a'];
+    const w = ['20%','40%','60%','85%','100%'];
+    bar.style.width      = v.length ? w[Math.min(s,4)] : '0';
+    bar.style.background = v.length ? c[Math.min(s,4)] : '';
+}
+
+async function cambiarContrasena() {
+    const actual   = document.getElementById('passActual').value;
+    const nueva    = document.getElementById('passNueva').value;
+    const confirm  = document.getElementById('passConfirm').value;
+    const msg      = document.getElementById('msgPass');
+    msg.style.display = 'none';
+
+    if (!actual)           { showPassMsg('err', 'Ingresa tu contraseña actual.'); return; }
+    if (nueva.length < 8)  { showPassMsg('err', 'La nueva contraseña debe tener al menos 8 caracteres.'); return; }
+    if (nueva !== confirm) { showPassMsg('err', 'Las contraseñas no coinciden.'); return; }
+    if (nueva === actual)  { showPassMsg('err', 'La nueva contraseña debe ser diferente a la actual.'); return; }
+
+    const btn = document.getElementById('btnCambiarPass');
+    btn.disabled = true;
+    document.getElementById('btnPassSpn').style.display = 'inline-block';
+    document.getElementById('btnPassTxt').textContent   = 'Actualizando...';
+
+    try {
+        // Primero verificamos que la contraseña actual sea correcta haciendo login
+        const verRes = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: user.email, password: actual })
+        });
+        const verData = await verRes.json();
+        if (!verData.success) {
+            showPassMsg('err', 'La contraseña actual no es correcta.');
+            return;
+        }
+
+        // Ahora actualizamos con el token fresco
+        const freshToken = verData.access_token;
+        const updRes = await fetch('/api/auth/nueva-contrasena', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ access_token: freshToken, password: nueva })
+        });
+        const updData = await updRes.json();
+
+        if (updData.success) {
+            // Actualizar tokens en localStorage
+            const updated = { ...user, access_token: freshToken, refresh_token: verData.refresh_token || user.refresh_token };
+            localStorage.setItem('arp_user', JSON.stringify(updated));
+            showPassMsg('ok', '✅ Contraseña actualizada correctamente.');
+            document.getElementById('passActual').value  = '';
+            document.getElementById('passNueva').value   = '';
+            document.getElementById('passConfirm').value = '';
+            document.getElementById('passBar').style.width = '0';
+            setTimeout(() => togglePassForm(), 2000);
+        } else {
+            showPassMsg('err', updData.error || 'No se pudo actualizar la contraseña.');
+        }
+    } catch(e) {
+        showPassMsg('err', 'Error de conexión. Intenta de nuevo.');
+    } finally {
+        btn.disabled = false;
+        document.getElementById('btnPassSpn').style.display = 'none';
+        document.getElementById('btnPassTxt').textContent   = 'Actualizar contraseña';
+    }
+}
+
+function showPassMsg(tipo, texto) {
+    const msg     = document.getElementById('msgPass');
+    msg.className = `msg-box ${tipo}`;
+    msg.textContent = texto;
+    msg.style.display = 'block';
+}
+
+// ══════════════════════════════════════════════
+// CERRAR SESIÓN
+// ══════════════════════════════════════════════
 function cerrarSesion() {
     Swal.fire({
         title: '¿Cerrar sesión?', icon: 'question', showCancelButton: true,
         confirmButtonText: 'Sí, salir', cancelButtonText: 'Cancelar',
         background: '#0e1118', color: '#eae8e1',
         confirmButtonColor: '#e05c5c', cancelButtonColor: '#3d3c38',
-    }).then(r => { if (r.isConfirmed) { localStorage.removeItem('arp_user'); location.href = '/'; } });
+    }).then(r => {
+        if (r.isConfirmed) {
+            localStorage.removeItem('arp_user');
+            location.href = '/';
+        }
+    });
 }
 
+// ── Arrancar ───────────────────────────────────
 cargarPerfil();
 </script>
 {% endblock %}
