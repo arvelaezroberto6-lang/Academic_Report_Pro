@@ -609,8 +609,8 @@
         Escribe el tema, elige el formato y la IA genera un informe completo: introducción, marco teórico, metodología, conclusiones y referencias. Descárgalo en PDF o Word.
     </p>
 
-    <div class="hero-actions">
-        <a href="/auth" class="btn-gold" style="font-size:.95rem; padding:.95rem 2.4rem;">
+    <div class="hero-actions" id="heroActions">
+        <a href="/auth" class="btn-gold" style="font-size:.95rem; padding:.95rem 2.4rem;" id="heroBtnCuenta">
             ✦ Crear cuenta gratis
         </a>
         <a href="#como-funciona" class="btn-outline" style="font-size:.95rem; padding:.95rem 2.4rem;">
@@ -673,11 +673,11 @@
 
     <div class="stats-bar">
         <div class="stat-item">
-            <span class="stat-num">8</span>
+            <span class="stat-num" data-count="8" data-suffix="">8</span>
             <span class="stat-lbl">Normas soportadas</span>
         </div>
         <div class="stat-item">
-            <span class="stat-num">6</span>
+            <span class="stat-num" data-count="6" data-suffix="">6</span>
             <span class="stat-lbl">Tipos de informe</span>
         </div>
         <div class="stat-item">
@@ -906,85 +906,50 @@
     </div>
 </section>
 
-<!-- ══ TESTIMONIOS ══ -->
+<!-- ══ TRANSPARENCIA ══ -->
 <section class="section container reveal">
-    <span class="section-label">Lo que dicen los usuarios</span>
-    <h2 class="section-title">Miles de informes entregados</h2>
-    <p class="section-sub">Estudiantes y profesionales de toda Colombia ya usan Academic Report Pro para sus entregas.</p>
+    <span class="section-label">Transparencia</span>
+    <h2 class="section-title">Lo que hace (y lo que no hace)</h2>
+    <p class="section-sub">Creemos en la honestidad. Esto es exactamente lo que obtienes con Academic Report Pro.</p>
 
-    <div class="testimonios-grid">
-        <div class="testimonio-card">
-            <div class="test-stars">⭐⭐⭐⭐⭐</div>
-            <p class="test-text">Tenía que entregar un informe de laboratorio en menos de 3 horas y no había empezado. Con Academic Report Pro lo tuve listo en 15 minutos y saqué 4.5. No lo puedo creer todavía.</p>
-            <div class="test-author">
-                <div class="test-avatar">S</div>
-                <div>
-                    <div class="test-name">Sebastián M.</div>
-                    <div class="test-role">Ing. Química · Bogotá</div>
-                </div>
-                <span class="test-badge">Informe de lab</span>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; margin-top:2.5rem;">
+
+        <div style="background:var(--surface); border:1px solid rgba(82,196,138,.2); border-radius:var(--radius-lg); padding:1.6rem;">
+            <div style="display:flex; align-items:center; gap:.7rem; margin-bottom:1.2rem;">
+                <div style="width:32px;height:32px;border-radius:9px;background:rgba(82,196,138,.1);border:1px solid rgba(82,196,138,.25);display:flex;align-items:center;justify-content:center;font-size:14px;">✓</div>
+                <span style="font-weight:700;font-size:.95rem;color:var(--green);">Qué sí hace</span>
             </div>
+            <ul style="list-style:none;display:flex;flex-direction:column;gap:.8rem;">
+                <li style="display:flex;align-items:flex-start;gap:.7rem;font-size:.84rem;color:var(--text2);line-height:1.5;"><span style="color:var(--green);flex-shrink:0;margin-top:.1rem;">✓</span>Genera la estructura completa del informe con redacción académica formal</li>
+                <li style="display:flex;align-items:flex-start;gap:.7rem;font-size:.84rem;color:var(--text2);line-height:1.5;"><span style="color:var(--green);flex-shrink:0;margin-top:.1rem;">✓</span>Busca referencias reales en CrossRef y OpenAlex (bases de datos académicas)</li>
+                <li style="display:flex;align-items:flex-start;gap:.7rem;font-size:.84rem;color:var(--text2);line-height:1.5;"><span style="color:var(--green);flex-shrink:0;margin-top:.1rem;">✓</span>Aplica correctamente 8 normas bibliográficas (APA, ICONTEC, IEEE, etc.)</li>
+                <li style="display:flex;align-items:flex-start;gap:.7rem;font-size:.84rem;color:var(--text2);line-height:1.5;"><span style="color:var(--green);flex-shrink:0;margin-top:.1rem;">✓</span>Te da un punto de partida sólido que tú puedes editar y personalizar</li>
+                <li style="display:flex;align-items:flex-start;gap:.7rem;font-size:.84rem;color:var(--text2);line-height:1.5;"><span style="color:var(--green);flex-shrink:0;margin-top:.1rem;">✓</span>Adapta el lenguaje al nivel educativo: colegio, técnico, universitario, posgrado</li>
+            </ul>
         </div>
-        <div class="testimonio-card">
-            <div class="test-stars">⭐⭐⭐⭐⭐</div>
-            <p class="test-text">Lo que más me gustó es que las referencias son reales. En otros generadores me ponían fuentes inventadas y los profesores lo detectaban. Aquí todo viene de bases de datos académicas.</p>
-            <div class="test-author">
-                <div class="test-avatar">V</div>
-                <div>
-                    <div class="test-name">Valentina R.</div>
-                    <div class="test-role">Psicología · Medellín</div>
-                </div>
-                <span class="test-badge">APA 7</span>
+
+        <div style="background:var(--surface); border:1px solid rgba(224,92,92,.2); border-radius:var(--radius-lg); padding:1.6rem;">
+            <div style="display:flex; align-items:center; gap:.7rem; margin-bottom:1.2rem;">
+                <div style="width:32px;height:32px;border-radius:9px;background:rgba(224,92,92,.1);border:1px solid rgba(224,92,92,.25);display:flex;align-items:center;justify-content:center;font-size:14px;">✗</div>
+                <span style="font-weight:700;font-size:.95rem;color:var(--red);">Qué no hace</span>
             </div>
+            <ul style="list-style:none;display:flex;flex-direction:column;gap:.8rem;">
+                <li style="display:flex;align-items:flex-start;gap:.7rem;font-size:.84rem;color:var(--text2);line-height:1.5;"><span style="color:var(--red);flex-shrink:0;margin-top:.1rem;">✗</span>No reemplaza tu criterio académico ni tu conocimiento del tema</li>
+                <li style="display:flex;align-items:flex-start;gap:.7rem;font-size:.84rem;color:var(--text2);line-height:1.5;"><span style="color:var(--red);flex-shrink:0;margin-top:.1rem;">✗</span>No garantiza que las referencias sean perfectas — siempre verifica</li>
+                <li style="display:flex;align-items:flex-start;gap:.7rem;font-size:.84rem;color:var(--text2);line-height:1.5;"><span style="color:var(--red);flex-shrink:0;margin-top:.1rem;">✗</span>No genera datos experimentales inventados — marca cuándo no hay datos reales</li>
+                <li style="display:flex;align-items:flex-start;gap:.7rem;font-size:.84rem;color:var(--text2);line-height:1.5;"><span style="color:var(--red);flex-shrink:0;margin-top:.1rem;">✗</span>No evita que tu institución pueda detectar uso de IA — úsalo con responsabilidad</li>
+                <li style="display:flex;align-items:flex-start;gap:.7rem;font-size:.84rem;color:var(--text2);line-height:1.5;"><span style="color:var(--red);flex-shrink:0;margin-top:.1rem;">✗</span>No muestra reseñas de usuarios — no tenemos testimonios que verificar aún</li>
+            </ul>
         </div>
-        <div class="testimonio-card">
-            <div class="test-stars">⭐⭐⭐⭐⭐</div>
-            <p class="test-text">Trabajo y estudio al mismo tiempo. No tengo horas para hacer informes desde cero. Academic Report Pro me ahorra como 6 horas por informe. Una herramienta indispensable para mí.</p>
-            <div class="test-author">
-                <div class="test-avatar">C</div>
-                <div>
-                    <div class="test-name">Carlos A.</div>
-                    <div class="test-role">Administración · Cali</div>
-                </div>
-                <span class="test-badge">Ejecutivo</span>
-            </div>
-        </div>
-        <div class="testimonio-card">
-            <div class="test-stars">⭐⭐⭐⭐⭐</div>
-            <p class="test-text">La norma ICONTEC estaba perfecta. Los márgenes, la portada, las citas al pie, todo exactamente como lo pide la universidad. Mi tutor no notó que lo generé con IA.</p>
-            <div class="test-author">
-                <div class="test-avatar">L</div>
-                <div>
-                    <div class="test-name">Laura G.</div>
-                    <div class="test-role">Derecho · Barranquilla</div>
-                </div>
-                <span class="test-badge">ICONTEC</span>
-            </div>
-        </div>
-        <div class="testimonio-card">
-            <div class="test-stars">⭐⭐⭐⭐⭐</div>
-            <p class="test-text">Usé el modo manual para escribir algunos puntos específicos que yo quería incluir, y el resto lo generó la IA. Quedó exactamente como necesitaba. La flexibilidad es excelente.</p>
-            <div class="test-author">
-                <div class="test-avatar">D</div>
-                <div>
-                    <div class="test-name">Diego F.</div>
-                    <div class="test-role">Sistemas · Bucaramanga</div>
-                </div>
-                <span class="test-badge">IEEE</span>
-            </div>
-        </div>
-        <div class="testimonio-card">
-            <div class="test-stars">⭐⭐⭐⭐⭐</div>
-            <p class="test-text">Soy profesora y les recomendé la herramienta a mis estudiantes para que aprendan la estructura correcta de un informe. La calidad de la redacción es realmente buena para ser IA.</p>
-            <div class="test-author">
-                <div class="test-avatar">M</div>
-                <div>
-                    <div class="test-name">Marcela T.</div>
-                    <div class="test-role">Docente universitaria · Bogotá</div>
-                </div>
-                <span class="test-badge">Académico</span>
-            </div>
-        </div>
+
+    </div>
+
+    <div style="background:var(--gold-dim);border:1px solid rgba(212,168,67,.2);border-radius:var(--radius-lg);padding:1.2rem 1.6rem;margin-top:1.2rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+        <span style="font-size:1.2rem;">💡</span>
+        <p style="font-size:.84rem;color:var(--text2);line-height:1.6;margin:0;">
+            <strong style="color:var(--gold);">Nuestra postura:</strong> Academic Report Pro es una herramienta de apoyo, no una forma de saltarte el aprendizaje. 
+            Úsalo para entender la estructura, explorar fuentes y acelerar tu proceso — pero agrega tu propio análisis y criterio.
+        </p>
     </div>
 </section>
 
@@ -1030,11 +995,11 @@
     <div class="cta-section">
         <h2 class="cta-title">Tu próximo informe te espera</h2>
         <p class="cta-sub">
-            Miles de estudiantes y profesionales ya ahorraron horas de trabajo.<br>
-            Únete gratis — sin tarjeta, sin complicaciones.
+            Estructura académica correcta, referencias reales y formato profesional.<br>
+            Empieza ahora — sin complicaciones.
         </p>
-        <div class="cta-buttons">
-            <a href="/auth" class="btn-gold" style="font-size:1rem; padding:1rem 2.6rem;">
+        <div class="cta-buttons" id="ctaButtons">
+            <a href="/auth" class="btn-gold" style="font-size:1rem; padding:1rem 2.6rem;" id="ctaBtnCuenta">
                 ✦ Crear cuenta gratis
             </a>
             <a href="/generar" class="btn-outline" style="font-size:1rem; padding:1rem 2.6rem;">
@@ -1046,7 +1011,7 @@
             <span class="hero-trust-dot" style="width:3px;height:3px;border-radius:50%;background:var(--text3)"></span>
             <span>✓ Sin tarjeta</span>
             <span class="hero-trust-dot" style="width:3px;height:3px;border-radius:50%;background:var(--text3)"></span>
-            <span>✓ Cancela cuando quieras</span>
+            <span>✓ Empieza en segundos</span>
         </div>
     </div>
 </section>
@@ -1063,7 +1028,27 @@ function toggleFaq(el) {
     if (!wasOpen) item.classList.add('open');
 }
 
-// Scroll reveal
+// ── Auth-aware CTAs ──────────────────────────────────────────
+(function() {
+    const raw = localStorage.getItem('arp_user');
+    if (!raw) return;
+    // Si hay sesión activa, cambiar botones de "Crear cuenta" → "Ir al generador"
+    ['heroBtnCuenta', 'ctaBtnCuenta'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        btn.href = '/generar';
+        btn.innerHTML = '✦ Ir al generador';
+    });
+    // Ocultar textos de "Registro gratuito" del hero-trust
+    document.querySelectorAll('.hero-trust span').forEach(s => {
+        if (s.textContent.includes('Registro')) s.style.display = 'none';
+    });
+    document.querySelectorAll('.hero-trust .hero-trust-dot').forEach((d, i) => {
+        if (i === 0) d.style.display = 'none';
+    });
+})();
+
+// ── Scroll reveal ────────────────────────────────────────────
 const observer = new IntersectionObserver((entries) => {
     entries.forEach(e => {
         if (e.isIntersecting) {
@@ -1071,8 +1056,36 @@ const observer = new IntersectionObserver((entries) => {
             observer.unobserve(e.target);
         }
     });
-}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+}, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
 
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// ── Animated counter for stats bar ──────────────────────────
+function animateCount(el, target, suffix) {
+    const duration = 1600;
+    const start = performance.now();
+    const isFloat = target % 1 !== 0;
+    function step(now) {
+        const p = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - p, 3);
+        const val = isFloat ? (eased * target).toFixed(1) : Math.round(eased * target);
+        el.textContent = val + suffix;
+        if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+}
+
+const statsObserver = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+        if (!e.isIntersecting) return;
+        const el = e.target;
+        const raw = el.dataset.count;
+        const suffix = el.dataset.suffix || '';
+        if (raw) animateCount(el, parseFloat(raw), suffix);
+        statsObserver.unobserve(el);
+    });
+}, { threshold: 0.5 });
+
+document.querySelectorAll('.stat-num[data-count]').forEach(el => statsObserver.observe(el));
 </script>
 {% endblock %}
