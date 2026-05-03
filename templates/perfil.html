@@ -158,8 +158,8 @@ async function cargarPerfil() {
     }, 0);
     try {
         const [resPerfil,resInformes] = await Promise.all([
-            fetch('/api/perfil',       {headers:{'X-User-Id':user.user_id}}),
-            fetch('/api/mis-informes', {headers:{'X-User-Id':user.user_id}}),
+            fetch('/api/perfil',       {headers:{'Authorization':`Bearer ${user.access_token}`}}),
+            fetch('/api/mis-informes', {headers:{'Authorization':`Bearer ${user.access_token}`}}),
         ]);
         const dp = await resPerfil.json();
         const di = await resInformes.json();
@@ -299,7 +299,7 @@ async function guardarPerfil() {
         nivel_favorito: document.getElementById('pNivel').value,
     };
     try {
-        const res  = await fetch('/api/perfil',{method:'PUT',headers:{'Content-Type':'application/json','X-User-Id':user.user_id},body:JSON.stringify(payload)});
+        const res  = await fetch('/api/perfil',{method:'PUT',headers:{'Content-Type':'application/json','Authorization':`Bearer ${user.access_token}`},body:JSON.stringify(payload)});
         const data = await res.json();
         if (data.success) {
             user.nombre = payload.nombre;
