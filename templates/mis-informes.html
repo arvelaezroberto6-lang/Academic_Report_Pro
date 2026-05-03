@@ -208,10 +208,7 @@ async function cargarInformes() {
     const user = JSON.parse(raw);
 
     try {
-        const res  = await fetch('/api/mis-informes', {
-            headers: { 'Authorization': `Bearer ${user.access_token}` }
-        });
-        const data = await res.json();
+        const data = await fetchAuth('/api/mis-informes');
 
         if (!data.success) throw new Error(data.error);
 
@@ -293,11 +290,9 @@ function abrirInforme(id, tema) {
 
 async function reDescargarInforme(id, formato) {
     Swal.close();
-    const user = JSON.parse(localStorage.getItem('arp_user'));
     try {
         // Obtener datos del informe
-        const res  = await fetch(`/api/informe/${id}`, { headers: { 'Authorization': `Bearer ${user.access_token}` } });
-        const data = await res.json();
+        const data = await fetchAuth(`/api/informe/${id}`);
         if (!data.success) throw new Error(data.error || 'No se pudo obtener el informe');
 
         const endpoint = formato === 'pdf' ? '/exportar-pdf' : '/exportar-word';
@@ -341,11 +336,7 @@ async function eliminar(id, btn) {
 
     const user = JSON.parse(localStorage.getItem('arp_user'));
     try {
-        const res  = await fetch(`/api/informe/${id}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${user.access_token}` }
-        });
-        const data = await res.json();
+        const data = await fetchAuth(`/api/informe/${id}`, { method: 'DELETE' });
         if (data.success) {
             // Quitar la card del DOM sin recargar
             btn.closest('.informe-card').style.transition = 'opacity .3s';
