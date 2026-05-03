@@ -267,10 +267,11 @@ async function hacerLogin() {
     const d = await r.json();
     if (d.success) {
       localStorage.setItem('arp_user', JSON.stringify({
-        user_id:      d.user_id,
-        email:        d.email,
-        nombre:       d.nombre || email.split('@')[0],
-        access_token: d.access_token || ''   // ✅ guardar el JWT
+        user_id:       d.user_id,
+        email:         d.email,
+        nombre:        d.nombre || email.split('@')[0],
+        access_token:  d.access_token  || '',
+        refresh_token: d.refresh_token || ''
       }));
       mostrarOk('✅ ¡Bienvenido! Redirigiendo...');
       setTimeout(() => { location.href = new URLSearchParams(location.search).get('next') || '/'; }, 600);
@@ -329,10 +330,11 @@ async function hacerRegistro() {
 
 function guardarSesionYRedirigir(d, nombre, email) {
   localStorage.setItem('arp_user', JSON.stringify({
-    user_id:      d.user_id,
-    email:        d.email || email,
-    nombre:       d.nombre || nombre.split(' ')[0],
-    access_token: d.access_token || ''   // ✅ guardar el JWT
+    user_id:       d.user_id,
+    email:         d.email  || email,
+    nombre:        d.nombre || nombre.split(' ')[0],
+    access_token:  d.access_token  || '',
+    refresh_token: d.refresh_token || ''
   }));
   mostrarOk('✅ ¡Cuenta creada! Iniciando sesión...');
   setTimeout(() => {
