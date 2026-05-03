@@ -2121,6 +2121,8 @@ def api_nueva_contrasena():
         return jsonify({'success': False, 'error': 'Token inválido o expirado. Solicita un nuevo enlace.'}), 401
 
 
+@app.route('/api/auth/recuperar', methods=['POST'])
+@limit("5 per hour")
 def api_recuperar_password():
     """Envía email de recuperación a través de Supabase."""
 
