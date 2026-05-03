@@ -30,8 +30,8 @@ from database import (
     registrar_usuario, login_usuario, obtener_perfil,
     actualizar_perfil, guardar_informe, obtener_mis_informes,
     obtener_informe, eliminar_informe, DB_DISPONIBLE
-    obtener_estadisticas_usuario,   # ← NUEVO
-    obtener_resumen_actividad,      # ← NUEVO
+    obtener_estadisticas_usuario,  
+    obtener_resumen_actividad,      
 )
 
 
