@@ -2055,21 +2055,15 @@ def api_verificar_token():
 @app.route('/api/auth/refresh', methods=['POST'])
 @limit("30 per hour")
 def api_refresh_token():
-    """
-    Renueva el access_token usando el refresh_token de Supabase.
-    El frontend llama a esto automáticamente cuando recibe un 401.
-    """
+    """Renueva el access_token usando el refresh_token de Supabase."""
     try:
         from database import supabase, DB_DISPONIBLE
         data          = request.get_json(silent=True) or {}
         refresh_token = data.get('refresh_token', '').strip()
-
         if not refresh_token:
             return jsonify({'success': False, 'error': 'refresh_token requerido'}), 400
-
         if not DB_DISPONIBLE or supabase is None:
             return jsonify({'success': False, 'error': 'Base de datos no disponible'}), 503
-
         res = supabase.auth.refresh_session(refresh_token)
         if res and res.session:
             nombre = ''
@@ -2084,13 +2078,52 @@ def api_refresh_token():
                 'nombre':        nombre,
             })
         return jsonify({'success': False, 'error': 'Sesión expirada. Inicia sesión de nuevo.'}), 401
-
     except Exception as e:
         logger.warning(f"Error refrescando token: {e}")
         return jsonify({'success': False, 'error': 'Sesión expirada. Inicia sesión de nuevo.'}), 401
 
 
+@app.route('/api/auth/nueva-contrasena', methods=['POST'])
+@limit("5 per hour")
+def api_nueva_contrasena():
+    """
+    Cambia la contraseña del usuario usando un access_token válido.
+    Se usa tanto desde el flujo de recuperación (nueva-contrasena.html)
+    como desde el perfil (cambio directo con token activo).
+    """
+    try:
+        from database import supabase, DB_DISPONIBLE
+        data         = request.get_json(silent=True) or {}
+        access_token = data.get('access_token', '').strip()
+        password     = data.get('password', '')
+
+        if not access_token or not password:
+            return jsonify({'success': False, 'error': 'Token y contraseña son requeridos'}), 400
+
+        pwd_ok, pwd_msg = es_password_seguro(password)
+        if not pwd_ok:
+            return jsonify({'success': False, 'error': pwd_msg}), 400
+
+        if not DB_DISPONIBLE or supabase is None:
+            return jsonify({'success': False, 'error': 'Base de datos no disponible'}), 503
+
+        # Establecer la sesión con el token recibido y luego actualizar
+        supabase.auth.set_session(access_token, '')
+        res = supabase.auth.update_user({'password': password})
+
+        if res and res.user:
+            log_evento_seguridad('PASSWORD_CAMBIADO', f"user={res.user.id}", request)
+            return jsonify({'success': True})
+        return jsonify({'success': False, 'error': 'No se pudo actualizar la contraseña'}), 400
+
+    except Exception as e:
+        logger.error(f"Error cambiando contraseña: {e}")
+        return jsonify({'success': False, 'error': 'Token inválido o expirado. Solicita un nuevo enlace.'}), 401
+
+
+def api_recuperar_password():
     """Envía email de recuperación a través de Supabase."""
+
     try:
         from database import supabase, DB_DISPONIBLE
         data  = request.get_json(silent=True) or {}
