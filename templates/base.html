@@ -243,6 +243,24 @@
         footer strong { color: var(--text2); }
 
         .hidden { display: none !important; }
+
+        /* ── FLUIDEZ GLOBAL ── */
+        a, button { transition: all .18s ease; }
+
+        @keyframes pageEnter {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        main { animation: pageEnter .4s ease both; }
+
+        :focus-visible {
+            outline: 2px solid rgba(212,168,67,.6);
+            outline-offset: 3px;
+            border-radius: 4px;
+        }
+        .navbar.scrolled {
+            box-shadow: 0 4px 32px rgba(0,0,0,.4);
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -314,12 +332,34 @@
         // ── Auth state en navbar ──────────────────────────────
         (function() {
             const raw = localStorage.getItem('arp_user');
-            if (!raw) return;
+            // Ocultar el CTA de "Crear informe" si hay sesión iniciada
+            const navCta = document.getElementById('navCta');
+            if (!raw) {
+                // Sin sesión: mostrar el CTA normal
+                if (navCta) navCta.style.display = '';
+                return;
+            }
+            // Con sesión: ocultar CTA y mostrar avatar
+            if (navCta) navCta.style.display = 'none';
             try {
                 const user = JSON.parse(raw);
                 const area = document.getElementById('navAuthArea');
                 const inicial = user.nombre ? user.nombre.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase();
                 area.innerHTML = `
+                    <a href="/generar" title="Crear informe" style="
+                        display:inline-flex; align-items:center; gap:.4rem;
+                        padding:.35rem .9rem;
+                        background: linear-gradient(135deg,var(--gold) 0%,#9a6e18 100%);
+                        border-radius:8px;
+                        text-decoration:none;
+                        color: #000;
+                        font-size:.78rem;
+                        font-weight:700;
+                        margin-right:.3rem;
+                        transition: all .18s;
+                    " onmouseover="this.style.boxShadow='0 4px 16px var(--gold-glow)'" onmouseout="this.style.boxShadow=''">
+                        ✦ Crear informe
+                    </a>
                     <a href="/perfil" title="Mi perfil" style="
                         display:inline-flex; align-items:center; gap:.5rem;
                         padding:.35rem .75rem .35rem .4rem;
@@ -330,7 +370,8 @@
                         color: var(--gold);
                         font-size:.82rem;
                         font-weight:600;
-                    ">
+                        transition: border-color .18s;
+                    " onmouseover="this.style.borderColor='rgba(212,168,67,.5)'" onmouseout="this.style.borderColor='rgba(212,168,67,.25)'">
                         <span style="
                             width:22px; height:22px; border-radius:6px;
                             background: linear-gradient(135deg,var(--gold),#8b6412);
@@ -357,6 +398,10 @@
                 nav.classList.remove('open');
             }
         });
+        // Navbar shadow on scroll
+        window.addEventListener('scroll', () => {
+            document.querySelector('.navbar').classList.toggle('scrolled', window.scrollY > 10);
+        }, { passive: true });
     </script>
     {% block extra_js %}{% endblock %}
 </body>
