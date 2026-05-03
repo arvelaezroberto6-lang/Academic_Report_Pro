@@ -4,26 +4,29 @@
 {% block extra_css %}
 <style>
 /* ── PROGRESS ── */
-.progress-container {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 1.5rem;
-    margin-bottom: 1.2rem;
+/* ── GENERATING SCREEN ANIMATIONS ── */
+@keyframes glowPulse {
+    0%,100% { opacity:.6; transform:translateX(-50%) scale(1); }
+    50%      { opacity:1;  transform:translateX(-50%) scale(1.08); }
 }
-.progress-bar {
-    height: 4px;
-    background: var(--border);
-    border-radius: 3px;
-    overflow: hidden;
-    margin-top: .8rem;
+@keyframes iconBounce {
+    0%,100% { transform:translateY(0) rotate(0deg); }
+    25%     { transform:translateY(-6px) rotate(-3deg); }
+    75%     { transform:translateY(-3px) rotate(2deg); }
 }
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--gold), var(--gold2));
-    width: 0%;
-    transition: width .4s ease;
+@keyframes shimmer {
+    0%   { background-position: 200% center; }
+    100% { background-position: -200% center; }
 }
+@keyframes spinOnce {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+@keyframes fadeSlideIn {
+    from { opacity:0; transform:translateY(6px); }
+    to   { opacity:1; transform:translateY(0); }
+}
+.sec-chip { animation: fadeSlideIn .3s ease both; }
 
 /* ── SECTION CHIPS ── */
 .seccion-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .8rem; }
@@ -333,17 +336,74 @@ select option { background: var(--surface); }
 
 <div class="form-wrap">
 
-    <!-- BARRA DE PROGRESO -->
-    <div class="progress-container" id="progressContainer" style="display:none;">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:.6rem;">
-            <span style="font-size:.82rem; font-weight:700; color:var(--gold);">Generando tu informe…</span>
-            <span id="progressCount" style="font-size:.7rem; color:var(--text2); font-family:'JetBrains Mono',monospace;"></span>
+    <!-- PANTALLA DE GENERACIÓN -->
+    <div id="progressContainer" style="display:none;">
+        <div id="generatingScreen" style="
+            background: var(--surface);
+            border: 1px solid rgba(212,168,67,.2);
+            border-radius: var(--radius-lg);
+            padding: 2rem 1.8rem 2.2rem;
+            margin-bottom: 1.2rem;
+            position: relative;
+            overflow: hidden;
+        ">
+            <div style="
+                position:absolute; top:-60px; left:50%; transform:translateX(-50%);
+                width:400px; height:200px; border-radius:50%;
+                background: radial-gradient(ellipse, rgba(212,168,67,.06) 0%, transparent 70%);
+                pointer-events:none; animation: glowPulse 3s ease infinite;
+            "></div>
+            <div style="text-align:center; margin-bottom:1.6rem; position:relative;">
+                <div id="genIcon" style="
+                    width:60px; height:60px; border-radius:16px; margin:0 auto 1rem;
+                    background: linear-gradient(135deg,rgba(212,168,67,.15),rgba(212,168,67,.05));
+                    border: 1px solid rgba(212,168,67,.25);
+                    display:flex; align-items:center; justify-content:center;
+                    font-size:26px;
+                    animation: iconBounce 2.5s ease infinite;
+                ">📄</div>
+                <div style="font-family:'Playfair Display',serif; font-size:1.15rem; font-weight:700; color:var(--text); margin-bottom:.3rem;">
+                    Generando tu informe
+                </div>
+                <div id="genSubtitle" style="font-size:.78rem; color:var(--text2); font-family:'JetBrains Mono',monospace; min-height:1.4em;">
+                    Iniciando...
+                </div>
+            </div>
+            <div style="margin-bottom:1.4rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.5rem;">
+                    <span id="progressCount" style="font-size:.7rem; color:var(--text3); font-family:'JetBrains Mono',monospace;"></span>
+                    <span id="progressPct" style="font-size:.75rem; color:var(--gold); font-weight:700; font-family:'JetBrains Mono',monospace;">0%</span>
+                </div>
+                <div style="height:6px; background:var(--surface2); border-radius:6px; overflow:hidden; position:relative;">
+                    <div id="progressFill" style="
+                        height:100%; width:0%;
+                        background: linear-gradient(90deg, #d4a843, #f0c96a, #d4a843);
+                        background-size: 200% 100%;
+                        border-radius:6px;
+                        transition: width .6s cubic-bezier(.4,0,.2,1);
+                        animation: shimmer 2s linear infinite;
+                    "></div>
+                </div>
+            </div>
+            <div class="seccion-chips" id="seccionesStatus" style="justify-content:center; gap:.35rem;"></div>
+            <div style="
+                margin-top:1.2rem;
+                background: var(--surface2);
+                border: 1px solid var(--border);
+                border-radius: 10px;
+                padding: .7rem 1rem;
+                display:flex; align-items:center; gap:.7rem;
+            ">
+                <div id="stageIcon" style="font-size:16px; flex-shrink:0;">⚙️</div>
+                <p id="progressMessage" style="font-size:.75rem; color:var(--text2); font-family:'JetBrains Mono',monospace; margin:0; line-height:1.5;"></p>
+            </div>
+            <div id="genTip" style="
+                margin-top:.9rem; padding:.55rem 1rem;
+                border-left: 2px solid rgba(212,168,67,.3);
+                font-size:.72rem; color:var(--text3); line-height:1.5; font-style:italic;
+            "></div>
         </div>
-        <div class="seccion-chips" id="seccionesStatus"></div>
-        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-        <p id="progressMessage" style="font-size:.72rem; color:var(--text2); margin-top:.6rem; text-align:center; min-height:1.2em; font-family:'JetBrains Mono',monospace;"></p>
     </div>
-
     <!-- 1. MODO -->
     <div class="g2c" style="margin-bottom:1rem;">
         <div class="card" style="margin-bottom:0;">
@@ -761,6 +821,37 @@ function marcarChip(clave, estado) {
   }
 }
 
+// ═══ TIPS ROTATIVOS DURANTE LA GENERACIÓN ═══
+const GEN_TIPS = [
+    'La IA genera cada sección de forma independiente para máxima calidad.',
+    'Las referencias se buscan en CrossRef y OpenAlex — bases de datos reales.',
+    'Puedes editar cualquier sección después de generarla.',
+    'El contexto colombiano se aplica automáticamente cuando es relevante.',
+    'Cada norma (APA, ICONTEC, IEEE…) tiene su formato de citas aplicado.',
+    'Puedes regenerar secciones individuales sin rehacer todo el informe.',
+    'El desarrollo se genera al final para poder incluir los objetivos ya generados.',
+    'Los datos estadísticos provienen de fuentes como DANE, MinTIC y CRC.',
+];
+function iniciarTips() {
+    let idx = Math.floor(Math.random() * GEN_TIPS.length);
+    const el = document.getElementById('genTip');
+    if (!el) return;
+    el.style.opacity = '0';
+    setTimeout(() => {
+        el.textContent = GEN_TIPS[idx];
+        el.style.transition = 'opacity .5s';
+        el.style.opacity = '1';
+    }, 200);
+    window._tipsInterval = setInterval(() => {
+        idx = (idx + 1) % GEN_TIPS.length;
+        el.style.opacity = '0';
+        setTimeout(() => {
+            el.textContent = GEN_TIPS[idx];
+            el.style.opacity = '1';
+        }, 500);
+    }, 5000);
+}
+
 // ═══ GENERAR INFORME ═══
 document.getElementById('generarBtn').onclick = async () => {
   const tema = document.getElementById('tema').value.trim();
@@ -786,11 +877,12 @@ document.getElementById('generarBtn').onclick = async () => {
 
   const btn = document.getElementById('generarBtn');
   btn.disabled = true;
-  btn.innerHTML = '⏳ Generando informe…';
+  btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:.5rem;"><span style="width:14px;height:14px;border:2px solid rgba(0,0,0,.3);border-top-color:#000;border-radius:50%;animation:spinOnce .7s linear infinite;display:inline-block;"></span>Generando...</span>';
   document.getElementById('progressContainer').style.display = 'block';
   document.getElementById('progressFill').style.width = '0%';
   document.getElementById('editorPanel').style.display = 'none';
   iniciarIndicadores();
+  iniciarTips();
 
   seccionesGeneradas = {};
   let errores = 0;
@@ -799,7 +891,9 @@ document.getElementById('generarBtn').onclick = async () => {
   let contextoRefs   = '';
   let refsTextoFinal = '';
   try {
-    document.getElementById('progressMessage').textContent = '🔬 Buscando referencias académicas reales...';
+    document.getElementById('progressMessage').textContent = 'Consultando CrossRef y OpenAlex...';
+    document.getElementById('genSubtitle').textContent = 'Buscando fuentes académicas reales';
+    document.getElementById('genIcon').textContent = '🔍';
     const preRefsRes  = await fetch('/api/refs-previas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -819,9 +913,15 @@ document.getElementById('generarBtn').onclick = async () => {
   for (let i = 0; i < SECCIONES_INFO.length; i++) {
     const { clave, nombre } = SECCIONES_INFO[i];
     marcarChip(clave, 'generando');
-    document.getElementById('progressMessage').textContent = `Generando: ${nombre} (${i + 1} de ${SECCIONES_INFO.length})…`;
+    const pct = Math.round((i / SECCIONES_INFO.length) * 100);
+    document.getElementById('progressMessage').textContent = `Redactando: ${nombre}...`;
+    document.getElementById('genSubtitle').textContent     = `Sección ${i + 1} de ${SECCIONES_INFO.length}`;
     document.getElementById('progressCount').textContent   = `${i + 1}/${SECCIONES_INFO.length}`;
-    document.getElementById('progressFill').style.width   = ((i / SECCIONES_INFO.length) * 100) + '%';
+    document.getElementById('progressPct').textContent     = pct + '%';
+    document.getElementById('progressFill').style.width   = pct + '%';
+    // Cambiar ícono según sección
+    const iconos = {introduccion:'📝',objetivos:'🎯',marco_teorico:'📚',metodologia:'🔬',desarrollo:'⚡',conclusiones:'💡',recomendaciones:'🗂',referencias:'📖'};
+    document.getElementById('genIcon').textContent = iconos[clave] || '📄';
 
     try {
       // FIX 2: Pass objetivos already generated when generating 'desarrollo'
@@ -858,10 +958,14 @@ document.getElementById('generarBtn').onclick = async () => {
   }
 
   document.getElementById('progressFill').style.width = '100%';
+  document.getElementById('progressPct').textContent = '100%';
   document.getElementById('progressCount').textContent = `${SECCIONES_INFO.length}/${SECCIONES_INFO.length}`;
+  document.getElementById('genIcon').textContent = errores === 0 ? '✅' : '⚠️';
+  document.getElementById('genSubtitle').textContent = errores === 0 ? '¡Todo listo!' : `${SECCIONES_INFO.length - errores} secciones completadas`;
   document.getElementById('progressMessage').textContent = errores === 0
-    ? '✅ ¡Informe completo generado!'
-    : `⚠️ ${SECCIONES_INFO.length - errores} secciones OK, ${errores} con error.`;
+    ? 'Informe generado correctamente. Ya puedes editarlo y descargarlo.'
+    : `${SECCIONES_INFO.length - errores} secciones OK, ${errores} con error.`;
+  if (window._tipsInterval) clearInterval(window._tipsInterval);
 
   datosUsuario = {
     nombre:       nombrePrincipal,
@@ -877,7 +981,8 @@ document.getElementById('generarBtn').onclick = async () => {
 
   if (refsModo === 'auto') {
     try {
-      document.getElementById('progressMessage').textContent = '🔬 Buscando referencias reales en CrossRef…';
+      document.getElementById('progressMessage').textContent = 'Buscando referencias reales en CrossRef…';
+      document.getElementById('genIcon').textContent = '🔍';
       const refsRes  = await fetchAuth('/api/referencias-reales', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
