@@ -153,6 +153,55 @@
   const u = localStorage.getItem('arp_user');
   if (u) { location.href = new URLSearchParams(location.search).get('next') || '/'; }
 })();
+// ── Manejar link de verificación de correo ───────────────────
+// Cuando el usuario hace clic en el link del correo, Supabase redirige
+// aquí con el token en el hash: #access_token=xxx&type=signup
+(async function manejarVerificacion() {
+  const hash   = location.hash.substring(1);
+  if (!hash) return;
+  const params = new URLSearchParams(hash);
+  const token  = params.get('access_token');
+  const tipo   = params.get('type');
+
+  // Limpiar el hash de la URL para que no se vea feo
+  history.replaceState(null, '', location.pathname + location.search);
+
+  if (!token) return;
+
+  // type=signup → el usuario confirmó su correo, hacer login automático
+  if (tipo === 'signup' || tipo === 'magiclink') {
+    mostrarOk('✅ Correo verificado. Iniciando sesión...');
+    try {
+      // Obtener datos del usuario con el token
+      const res  = await fetch('/api/auth/verificar-token', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ access_token: token })
+      });
+      const data = await res.json();
+      if (data.success) {
+        localStorage.setItem('arp_user', JSON.stringify({
+          user_id:      data.user_id,
+          email:        data.email,
+          nombre:       data.nombre || data.email.split('@')[0],
+          access_token: token
+        }));
+        mostrarOk('✅ ¡Bienvenido! Redirigiendo...');
+        setTimeout(() => { location.href = '/'; }, 800);
+      } else {
+        mostrarErr('El enlace expiró o ya fue usado. Inicia sesión normalmente.');
+      }
+    } catch(e) {
+      mostrarErr('Error de conexión. Inicia sesión manualmente.');
+    }
+  }
+
+  // type=recovery → recuperación de contraseña, redirigir a nueva-contrasena
+  if (tipo === 'recovery') {
+    location.href = `/nueva-contrasena#access_token=${token}&type=recovery`;
+  }
+})();
+
 if (new URLSearchParams(location.search).get('tab') === 'registro') setTimeout(() => setTab('registro'), 50);
 
 function setTab(t) {
@@ -217,7 +266,12 @@ async function hacerLogin() {
     });
     const d = await r.json();
     if (d.success) {
-      localStorage.setItem('arp_user', JSON.stringify({ user_id:d.user_id, email:d.email, nombre:d.nombre || email.split('@')[0] }));
+      localStorage.setItem('arp_user', JSON.stringify({
+        user_id:      d.user_id,
+        email:        d.email,
+        nombre:       d.nombre || email.split('@')[0],
+        access_token: d.access_token || ''   // ✅ guardar el JWT
+      }));
       mostrarOk('✅ ¡Bienvenido! Redirigiendo...');
       setTimeout(() => { location.href = new URLSearchParams(location.search).get('next') || '/'; }, 600);
     } else {
@@ -275,9 +329,10 @@ async function hacerRegistro() {
 
 function guardarSesionYRedirigir(d, nombre, email) {
   localStorage.setItem('arp_user', JSON.stringify({
-    user_id: d.user_id,
-    email:   d.email || email,
-    nombre:  d.nombre || nombre.split(' ')[0]
+    user_id:      d.user_id,
+    email:        d.email || email,
+    nombre:       d.nombre || nombre.split(' ')[0],
+    access_token: d.access_token || ''   // ✅ guardar el JWT
   }));
   mostrarOk('✅ ¡Cuenta creada! Iniciando sesión...');
   setTimeout(() => {
