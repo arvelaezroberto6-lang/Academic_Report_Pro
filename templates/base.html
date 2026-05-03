@@ -403,6 +403,101 @@
             document.querySelector('.navbar').classList.toggle('scrolled', window.scrollY > 10);
         }, { passive: true });
     </script>
+
+    <!-- ══════════════════════════════════════════════════════
+         fetchAuth — wrapper global para llamadas autenticadas.
+         Renueva el access_token automáticamente si expira (401)
+         y reintenta la petición una sola vez.
+         Uso: const data = await fetchAuth('/api/mis-informes');
+         ══════════════════════════════════════════════════════ -->
+    <script>
+    /**
+     * Refresca la sesión usando el refresh_token guardado.
+     * Devuelve el nuevo access_token, o null si la sesión expiró del todo.
+     */
+    async function _refreshSession() {
+        const raw = localStorage.getItem('arp_user');
+        if (!raw) return null;
+        const user = JSON.parse(raw);
+        if (!user.refresh_token) return null;
+        try {
+            const res  = await fetch('/api/auth/refresh', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({ refresh_token: user.refresh_token })
+            });
+            const data = await res.json();
+            if (data.success) {
+                // Actualizar localStorage con los tokens nuevos
+                const updated = {
+                    ...user,
+                    access_token:  data.access_token,
+                    refresh_token: data.refresh_token,
+                    user_id:       data.user_id  || user.user_id,
+                    email:         data.email    || user.email,
+                    nombre:        data.nombre   || user.nombre,
+                };
+                localStorage.setItem('arp_user', JSON.stringify(updated));
+                return data.access_token;
+            }
+        } catch (_) {}
+        return null;
+    }
+
+    /**
+     * Fetch autenticado con renovación automática de token.
+     * Si el servidor responde 401, intenta refrescar la sesión y reintenta.
+     * Si sigue fallando, redirige al login.
+     *
+     * @param {string} url
+     * @param {RequestInit} [options]
+     * @returns {Promise<any>} — el JSON de la respuesta
+     */
+    async function fetchAuth(url, options = {}) {
+        const raw  = localStorage.getItem('arp_user');
+        const user = raw ? JSON.parse(raw) : null;
+
+        const buildHeaders = (token) => ({
+            'Content-Type': 'application/json',
+            ...(options.headers || {}),
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        });
+
+        // Primera petición
+        let res = await fetch(url, {
+            ...options,
+            headers: buildHeaders(user?.access_token),
+        });
+
+        // Si no es 401 → devolver la respuesta normal
+        if (res.status !== 401) return res.json();
+
+        // Es 401 → intentar refrescar el token
+        const newToken = await _refreshSession();
+        if (!newToken) {
+            // Sesión completamente expirada → mandar al login
+            localStorage.removeItem('arp_user');
+            window.location.href = '/auth?next=' + encodeURIComponent(location.pathname);
+            return { success: false, error: 'Sesión expirada' };
+        }
+
+        // Reintentar la petición original con el token nuevo
+        res = await fetch(url, {
+            ...options,
+            headers: buildHeaders(newToken),
+        });
+
+        if (res.status === 401) {
+            // Sigue fallando → logout forzado
+            localStorage.removeItem('arp_user');
+            window.location.href = '/auth?next=' + encodeURIComponent(location.pathname);
+            return { success: false, error: 'Sesión expirada' };
+        }
+
+        return res.json();
+    }
+    </script>
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>
