@@ -71,7 +71,7 @@ async function enviarRecuperacion() {
     const res  = await fetch('/api/auth/recuperar', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ email, redirect_url: location.origin })
+      body:    JSON.stringify({ email, redirect_url: location.origin + '/nueva-contrasena' })
     });
     // Siempre mostrar éxito (no revelar si el email existe)
     document.getElementById('formRecuperar').style.display = 'none';
