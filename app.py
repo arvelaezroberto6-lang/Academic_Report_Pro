@@ -30,7 +30,10 @@ from database import (
     registrar_usuario, login_usuario, obtener_perfil,
     actualizar_perfil, guardar_informe, obtener_mis_informes,
     obtener_informe, eliminar_informe, DB_DISPONIBLE
+    obtener_estadisticas_usuario,   # ← NUEVO
+    obtener_resumen_actividad,      # ← NUEVO
 )
+
 
 # ── Importar módulo de seguridad ───────────────────────────────
 from security import (
@@ -1843,6 +1846,60 @@ def api_eliminar_informe(user_id, informe_id):
         logger.error(f"Error eliminando informe: {e}")
         return jsonify({'success': False, 'error': 'Error interno'}), 500
 
+@app.route('/api/estadisticas', methods=['GET'])
+@requiere_auth
+def api_estadisticas(user_id):
+    """
+    Devuelve estadísticas agregadas del usuario autenticado.
+ 
+    Respuesta ejemplo:
+    {
+        "success": true,
+        "stats": {
+            "total_informes":     8,
+            "total_referencias":  62,
+            "norma_mas_usada":    "APA 7",
+            "tipo_mas_usado":     "academico",
+            "nivel_mas_usado":    "universitario",
+            "dias_activo":        5,
+            "primer_informe":     "2025-01-10T...",
+            "ultimo_informe":     "2025-05-01T...",
+            "informes_por_norma": {"APA 7": 5, "ICONTEC": 3},
+            "informes_por_tipo":  {"academico": 6, "tesis": 2},
+            "racha_actual":       2
+        }
+    }
+    """
+    stats = obtener_estadisticas_usuario(user_id)
+    if stats is None:
+        return jsonify({'success': False, 'error': 'No se pudieron obtener estadísticas'}), 500
+    return jsonify({'success': True, 'stats': stats})
+ 
+ 
+@app.route('/api/estadisticas/actividad', methods=['GET'])
+@requiere_auth
+def api_actividad(user_id):
+    """
+    Devuelve la actividad diaria del usuario en los últimos N días.
+    Query param opcional: ?dias=30  (default 30, máximo 90)
+ 
+    Respuesta ejemplo:
+    {
+        "success": true,
+        "actividad": [
+            {"fecha": "2025-04-28", "cantidad": 1},
+            {"fecha": "2025-05-01", "cantidad": 3}
+        ],
+        "dias": 30
+    }
+    """
+    try:
+        dias = min(int(request.args.get('dias', 30)), 90)
+    except (ValueError, TypeError):
+        dias = 30
+ 
+    actividad = obtener_resumen_actividad(user_id, dias=dias)
+    return jsonify({'success': True, 'actividad': actividad, 'dias': dias})
 
 @app.route('/health')
 def health():
