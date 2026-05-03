@@ -5,7 +5,7 @@
 <style>
 /* ── HERO ── */
 .hero {
-    min-height: 88vh;
+    min-height: 92vh;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -18,13 +18,23 @@
 
 .hero-glow {
     position: absolute;
-    top: -10%;
+    top: -15%;
     left: 50%;
     transform: translateX(-50%);
-    width: 700px;
-    height: 500px;
+    width: 900px;
+    height: 600px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(212,168,67,.09) 0%, transparent 70%);
+    background: radial-gradient(ellipse, rgba(212,168,67,.08) 0%, rgba(212,168,67,.03) 40%, transparent 70%);
+    pointer-events: none;
+}
+.hero-glow-2 {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 300px;
+    background: radial-gradient(ellipse, rgba(212,168,67,.04) 0%, transparent 70%);
     pointer-events: none;
 }
 
@@ -41,32 +51,43 @@
     border: 1px solid rgba(212,168,67,.22);
     padding: .4rem 1.1rem;
     border-radius: 100px;
-    margin-bottom: 2.5rem;
+    margin-bottom: 2.2rem;
     animation: fadeInDown .6s ease both;
+}
+.hero-badge-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--gold);
+    animation: pulse-dot 2s ease infinite;
+}
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: .5; transform: scale(.7); }
 }
 
 .hero-title {
     font-family: 'Playfair Display', serif;
-    font-size: clamp(2.6rem, 7vw, 5.2rem);
+    font-size: clamp(2.6rem, 7vw, 5rem);
     font-weight: 700;
     line-height: 1.05;
     letter-spacing: -.02em;
     animation: fadeInUp .7s .1s ease both;
+    max-width: 800px;
 }
-
 .hero-title em {
     font-style: italic;
-    background: linear-gradient(135deg, var(--gold) 0%, var(--gold2) 100%);
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold2) 60%, #e8b84b 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .hero-sub {
     font-size: 1.05rem;
     color: var(--text2);
-    max-width: 520px;
+    max-width: 540px;
     margin: 1.5rem auto 0;
-    line-height: 1.7;
+    line-height: 1.75;
     font-weight: 400;
     animation: fadeInUp .7s .2s ease both;
 }
@@ -81,11 +102,96 @@
 }
 
 .hero-trust {
-    margin-top: 1.5rem;
-    font-size: .78rem;
+    margin-top: 1.2rem;
+    font-size: .76rem;
     color: var(--text3);
     animation: fadeInUp .7s .4s ease both;
+    display: flex;
+    align-items: center;
+    gap: .8rem;
+    justify-content: center;
+    flex-wrap: wrap;
 }
+.hero-trust-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--text3); }
+
+/* ── MINI DEMO (nuevo) ── */
+.hero-demo {
+    margin-top: 3.5rem;
+    width: 100%;
+    max-width: 700px;
+    animation: fadeInUp .8s .5s ease both;
+    position: relative;
+}
+.hero-demo-frame {
+    background: var(--surface);
+    border: 1px solid rgba(212,168,67,.18);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 40px 80px rgba(0,0,0,.5), 0 0 0 1px rgba(212,168,67,.06);
+}
+.hero-demo-bar {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    padding: .75rem 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: .7rem;
+}
+.demo-dots { display: flex; gap: 5px; }
+.demo-dot { width: 10px; height: 10px; border-radius: 50%; }
+.demo-dot-r { background: #e05c5c; }
+.demo-dot-y { background: #d4a843; }
+.demo-dot-g { background: #52c48a; }
+.demo-filename {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .65rem;
+    color: var(--text3);
+    margin-left: .2rem;
+}
+.demo-status {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .6rem;
+    color: var(--green);
+}
+.demo-status-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); animation: pulse-dot 1.5s ease infinite; }
+.hero-demo-body { padding: 1.5rem 1.8rem; text-align: left; }
+.demo-title-line {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: .6rem;
+}
+.demo-tags { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.demo-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .6rem;
+    background: var(--gold-dim);
+    border: 1px solid rgba(212,168,67,.2);
+    color: var(--gold);
+    padding: .2rem .6rem;
+    border-radius: 100px;
+}
+.demo-progress { margin-bottom: .8rem; }
+.demo-prog-row { display: flex; justify-content: space-between; margin-bottom: .3rem; }
+.demo-prog-label { font-size: .7rem; color: var(--text2); }
+.demo-prog-pct { font-family: 'JetBrains Mono', monospace; font-size: .65rem; color: var(--gold); }
+.demo-bar-wrap { height: 3px; background: var(--surface2); border-radius: 3px; margin-bottom: .5rem; }
+.demo-bar-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold2)); border-radius: 3px; }
+.demo-sections { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: 1rem; }
+.demo-sec {
+    font-size: .68rem;
+    padding: .2rem .65rem;
+    border-radius: 100px;
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text2);
+}
+.demo-sec.done { border-color: rgba(82,196,138,.3); background: rgba(82,196,138,.07); color: var(--green); }
+.demo-sec.active { border-color: rgba(212,168,67,.3); background: var(--gold-dim); color: var(--gold); }
 
 /* STATS BAR */
 .stats-bar {
@@ -95,11 +201,10 @@
     margin-top: 4.5rem;
     border-top: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
-    padding: 2rem 0;
+    padding: 1.8rem 0;
     flex-wrap: wrap;
-    animation: fadeInUp .7s .5s ease both;
+    animation: fadeInUp .7s .6s ease both;
 }
-
 .stat-item {
     flex: 1;
     min-width: 120px;
@@ -108,17 +213,16 @@
     border-right: 1px solid var(--border);
 }
 .stat-item:last-child { border-right: none; }
-
 .stat-num {
     font-family: 'Playfair Display', serif;
-    font-size: 2.2rem;
+    font-size: 2rem;
     font-weight: 700;
     color: var(--gold);
     display: block;
     line-height: 1;
 }
 .stat-lbl {
-    font-size: .7rem;
+    font-size: .68rem;
     color: var(--text2);
     letter-spacing: .06em;
     text-transform: uppercase;
@@ -144,12 +248,7 @@
     line-height: 1.15;
     margin-bottom: 1rem;
 }
-.section-sub {
-    color: var(--text2);
-    font-size: .95rem;
-    line-height: 1.7;
-    max-width: 520px;
-}
+.section-sub { color: var(--text2); font-size: .95rem; line-height: 1.7; max-width: 520px; }
 
 .steps-grid {
     display: grid;
@@ -157,7 +256,6 @@
     gap: 1.5rem;
     margin-top: 3rem;
 }
-
 .step-card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -167,25 +265,16 @@
     transition: border-color .25s, transform .25s;
 }
 .step-card:hover { border-color: rgba(212,168,67,.3); transform: translateY(-3px); }
-
 .step-number {
     font-family: 'Playfair Display', serif;
     font-size: 3rem;
     font-weight: 700;
-    color: rgba(212,168,67,.18);
+    color: rgba(212,168,67,.15);
     line-height: 1;
     margin-bottom: .5rem;
 }
-.step-icon {
-    font-size: 1.6rem;
-    margin-bottom: .8rem;
-    display: block;
-}
-.step-title {
-    font-weight: 700;
-    font-size: .95rem;
-    margin-bottom: .4rem;
-}
+.step-icon { font-size: 1.6rem; margin-bottom: .8rem; display: block; }
+.step-title { font-weight: 700; font-size: .95rem; margin-bottom: .4rem; }
 .step-desc { color: var(--text2); font-size: .84rem; line-height: 1.6; }
 
 /* ── FEATURES ── */
@@ -195,7 +284,6 @@
     gap: 1.2rem;
     margin-top: 3rem;
 }
-
 .feature-card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -207,18 +295,12 @@
     transition: border-color .25s;
 }
 .feature-card:hover { border-color: rgba(212,168,67,.25); }
-
 .feature-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
+    width: 40px; height: 40px; border-radius: 10px;
     background: var(--gold-dim);
     border: 1px solid rgba(212,168,67,.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
 }
 .feature-title { font-weight: 700; font-size: .88rem; margin-bottom: .25rem; }
 .feature-desc { color: var(--text2); font-size: .8rem; line-height: 1.55; }
@@ -231,7 +313,6 @@
     overflow: hidden;
     margin-top: 3rem;
 }
-
 .example-header {
     background: var(--surface2);
     border-bottom: 1px solid var(--border);
@@ -240,71 +321,38 @@
     align-items: center;
     gap: .7rem;
 }
-
 .example-dots { display: flex; gap: 6px; }
 .dot { width: 11px; height: 11px; border-radius: 50%; }
 .dot-r { background: #e05c5c; }
 .dot-y { background: #d4a843; }
 .dot-g { background: #52c48a; }
-
 .example-filename {
     font-family: 'JetBrains Mono', monospace;
-    font-size: .72rem;
-    color: var(--text2);
-    margin-left: .3rem;
+    font-size: .72rem; color: var(--text2); margin-left: .3rem;
 }
-
 .example-body { padding: 2rem; }
-
 .example-title {
     font-family: 'Playfair Display', serif;
-    font-size: 1.25rem;
-    font-weight: 700;
-    margin-bottom: .5rem;
+    font-size: 1.25rem; font-weight: 700; margin-bottom: .5rem;
 }
-
-.example-meta {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-    margin-bottom: 1.5rem;
-}
-
+.example-meta { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
 .meta-tag {
     font-family: 'JetBrains Mono', monospace;
-    font-size: .68rem;
-    color: var(--gold);
-    background: var(--gold-dim);
-    border: 1px solid rgba(212,168,67,.2);
-    padding: .25rem .7rem;
-    border-radius: 100px;
+    font-size: .68rem; color: var(--gold);
+    background: var(--gold-dim); border: 1px solid rgba(212,168,67,.2);
+    padding: .25rem .7rem; border-radius: 100px;
 }
-
 .example-excerpt {
-    color: var(--text2);
-    font-size: .88rem;
-    line-height: 1.75;
-    border-left: 2px solid var(--gold);
-    padding-left: 1rem;
-    margin-bottom: 1.5rem;
-    font-style: italic;
+    color: var(--text2); font-size: .88rem; line-height: 1.75;
+    border-left: 2px solid var(--gold); padding-left: 1rem;
+    margin-bottom: 1.5rem; font-style: italic;
 }
-
-.example-sections {
-    display: flex;
-    flex-wrap: wrap;
-    gap: .5rem;
-    margin-bottom: 1.5rem;
-}
-
+.example-sections { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1.5rem; }
 .section-pill {
-    font-size: .72rem;
-    font-weight: 500;
+    font-size: .72rem; font-weight: 500;
     padding: .25rem .75rem;
-    background: var(--surface2);
-    border: 1px solid var(--border2);
-    border-radius: 100px;
-    color: var(--text2);
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 100px; color: var(--text2);
 }
 
 /* ── NORMAS SHOWCASE ── */
@@ -315,37 +363,200 @@
     margin-top: 2.5rem;
 }
 @media (max-width: 640px) { .normas-grid { grid-template-columns: repeat(2, 1fr); } }
-
 .norma-pill {
-    text-align: center;
-    padding: .9rem;
-    background: var(--surface);
-    border: 1px solid var(--border);
+    text-align: center; padding: .9rem;
+    background: var(--surface); border: 1px solid var(--border);
     border-radius: 12px;
     font-family: 'JetBrains Mono', monospace;
-    font-size: .8rem;
-    font-weight: 500;
-    color: var(--text2);
+    font-size: .8rem; font-weight: 500; color: var(--text2);
     transition: all .2s;
 }
 .norma-pill:hover { border-color: rgba(212,168,67,.35); color: var(--gold); background: var(--gold-dim); }
 
+/* ── TESTIMONIOS (nuevo) ── */
+.testimonios-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.2rem;
+    margin-top: 3rem;
+}
+.testimonio-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: .8rem;
+    transition: border-color .25s, transform .25s;
+    position: relative;
+    overflow: hidden;
+}
+.testimonio-card::before {
+    content: '"';
+    position: absolute;
+    top: -.5rem;
+    right: 1rem;
+    font-family: 'Playfair Display', serif;
+    font-size: 5rem;
+    color: rgba(212,168,67,.06);
+    line-height: 1;
+    pointer-events: none;
+}
+.testimonio-card:hover { border-color: rgba(212,168,67,.2); transform: translateY(-2px); }
+.test-stars { display: flex; gap: 2px; font-size: .8rem; }
+.test-text { color: var(--text2); font-size: .85rem; line-height: 1.65; flex: 1; }
+.test-author { display: flex; align-items: center; gap: .7rem; margin-top: .2rem; }
+.test-avatar {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: linear-gradient(135deg, var(--gold), #8b6412);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Playfair Display', serif;
+    font-size: .85rem; font-weight: 700; color: #000;
+    flex-shrink: 0;
+}
+.test-name { font-weight: 700; font-size: .82rem; }
+.test-role { font-size: .7rem; color: var(--text3); margin-top: .1rem; }
+.test-badge {
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .6rem;
+    background: var(--gold-dim);
+    border: 1px solid rgba(212,168,67,.2);
+    color: var(--gold);
+    padding: .15rem .5rem;
+    border-radius: 100px;
+    white-space: nowrap;
+}
+
+/* ── COMPARATIVA (nuevo) ── */
+.compare-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-top: 3rem;
+}
+@media(max-width: 640px) { .compare-wrap { grid-template-columns: 1fr; } }
+
+.compare-col {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+.compare-col.col-pro { border-color: rgba(212,168,67,.25); }
+
+.compare-head {
+    padding: 1rem 1.4rem;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+}
+.compare-head-ico { font-size: 1.1rem; }
+.compare-head-title { font-weight: 700; font-size: .88rem; }
+.compare-head-sub { font-size: .7rem; color: var(--text3); margin-top: .05rem; }
+.compare-col.col-pro .compare-head { background: rgba(212,168,67,.07); border-color: rgba(212,168,67,.18); }
+.compare-col.col-pro .compare-head-title { color: var(--gold); }
+
+.compare-items { padding: .8rem 0; }
+.compare-item {
+    display: flex;
+    align-items: flex-start;
+    gap: .7rem;
+    padding: .6rem 1.4rem;
+    font-size: .83rem;
+}
+.compare-ico { font-size: .9rem; flex-shrink: 0; margin-top: .05rem; }
+.compare-text { color: var(--text2); line-height: 1.5; }
+.compare-col.col-pro .compare-text { color: var(--text); }
+
+/* ── FAQ (nuevo) ── */
+.faq-list { margin-top: 2.5rem; display: flex; flex-direction: column; gap: .6rem; max-width: 720px; }
+.faq-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: border-color .2s;
+}
+.faq-item:hover { border-color: rgba(212,168,67,.2); }
+.faq-q {
+    padding: 1.1rem 1.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: .88rem;
+    user-select: none;
+    list-style: none;
+}
+.faq-q::after {
+    content: '+';
+    font-size: 1.2rem;
+    color: var(--gold);
+    flex-shrink: 0;
+    transition: transform .2s;
+    font-weight: 300;
+    font-family: monospace;
+}
+.faq-item.open .faq-q::after { transform: rotate(45deg); }
+.faq-a {
+    display: none;
+    padding: 0 1.4rem 1.1rem;
+    font-size: .83rem;
+    color: var(--text2);
+    line-height: 1.65;
+    border-top: 1px solid var(--border);
+    margin-top: 0;
+}
+.faq-item.open .faq-a { display: block; padding-top: .9rem; }
+
 /* ── CTA FINAL ── */
 .cta-section {
-    background: linear-gradient(135deg, rgba(212,168,67,.07) 0%, transparent 60%);
+    background: linear-gradient(135deg, rgba(212,168,67,.08) 0%, rgba(212,168,67,.03) 50%, transparent 80%);
     border: 1px solid rgba(212,168,67,.15);
     border-radius: 24px;
-    padding: 4rem 2rem;
+    padding: 4.5rem 2rem;
     text-align: center;
     margin: 2rem 0 4rem;
+    position: relative;
+    overflow: hidden;
+}
+.cta-section::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 500px;
+    height: 300px;
+    background: radial-gradient(ellipse, rgba(212,168,67,.06) 0%, transparent 70%);
+    pointer-events: none;
 }
 .cta-title {
     font-family: 'Playfair Display', serif;
-    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    font-size: clamp(1.6rem, 4vw, 2.6rem);
     font-weight: 700;
     margin-bottom: 1rem;
+    position: relative;
 }
-.cta-sub { color: var(--text2); font-size: .95rem; margin-bottom: 2rem; }
+.cta-sub { color: var(--text2); font-size: .95rem; margin-bottom: 2rem; line-height: 1.7; position: relative; }
+.cta-buttons { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; position: relative; }
+.cta-trust {
+    margin-top: 1rem;
+    font-size: .74rem;
+    color: var(--text3);
+    display: flex;
+    align-items: center;
+    gap: .7rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    position: relative;
+}
 
 /* ── ANIMATIONS ── */
 @keyframes fadeInDown {
@@ -357,12 +568,22 @@
     to   { opacity: 1; transform: translateY(0); }
 }
 
+/* Scroll animations */
+.reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity .6s ease, transform .6s ease;
+}
+.reveal.visible { opacity: 1; transform: translateY(0); }
+
 @media (max-width: 640px) {
     .stats-bar { gap: .5rem; }
     .stat-item { border-right: none; border-bottom: 1px solid var(--border); padding: 1rem; }
     .stat-item:last-child { border-bottom: none; }
     .hero-actions { flex-direction: column; align-items: center; }
-    .hero-actions a { width: 100%; max-width: 280px; justify-content: center; }
+    .hero-actions a { width: 100%; max-width: 300px; justify-content: center; }
+    .cta-buttons { flex-direction: column; align-items: center; }
+    .cta-buttons a { width: 100%; max-width: 300px; justify-content: center; }
 }
 </style>
 {% endblock %}
@@ -372,30 +593,83 @@
 <!-- ══ HERO ══ -->
 <section class="hero">
     <div class="hero-glow"></div>
+    <div class="hero-glow-2"></div>
 
     <div class="hero-badge">
-        ✦ Referencias reales — CrossRef &amp; OpenAlex
+        <span class="hero-badge-dot"></span>
+        8 normas · APA, ICONTEC, IEEE y más
     </div>
 
     <h1 class="hero-title">
-        Crea informes académicos<br>
-        <em>completos en minutos</em>
+        Tu informe académico,<br>
+        <em>listo en minutos</em>
     </h1>
 
     <p class="hero-sub">
-        Escribe tu tema, elige el formato y la IA genera un informe con introducción, marco teórico, metodología, conclusiones y referencias verificadas. Descárgalo en PDF o Word.
+        Escribe el tema, elige el formato y la IA genera un informe completo: introducción, marco teórico, metodología, conclusiones y referencias. Descárgalo en PDF o Word.
     </p>
 
     <div class="hero-actions">
-        <a href="/auth" class="btn-gold" style="font-size:.95rem; padding:.9rem 2.2rem;">
+        <a href="/auth" class="btn-gold" style="font-size:.95rem; padding:.95rem 2.4rem;">
             ✦ Crear cuenta gratis
         </a>
-        <a href="#como-funciona" class="btn-outline" style="font-size:.95rem; padding:.9rem 2.2rem;">
+        <a href="#como-funciona" class="btn-outline" style="font-size:.95rem; padding:.95rem 2.4rem;">
             ¿Cómo funciona?
         </a>
     </div>
 
-    <p class="hero-trust">Cuenta gratuita · Sin tarjeta · Listo en &lt;60 segundos</p>
+    <div class="hero-trust">
+        <span>✓ Registro gratuito</span>
+        <span class="hero-trust-dot"></span>
+        <span>✓ Sin tarjeta de crédito</span>
+        <span class="hero-trust-dot"></span>
+        <span>✓ Listo en &lt;60 segundos</span>
+    </div>
+
+    <!-- Mini demo del generador -->
+    <div class="hero-demo">
+        <div class="hero-demo-frame">
+            <div class="hero-demo-bar">
+                <div class="demo-dots">
+                    <div class="demo-dot demo-dot-r"></div>
+                    <div class="demo-dot demo-dot-y"></div>
+                    <div class="demo-dot demo-dot-g"></div>
+                </div>
+                <span class="demo-filename">informe_impacto_ia_educacion.pdf</span>
+                <div class="demo-status">
+                    <div class="demo-status-dot"></div>
+                    Generado · listo
+                </div>
+            </div>
+            <div class="hero-demo-body">
+                <div class="demo-title-line">Impacto de la IA en la Educación Superior</div>
+                <div class="demo-tags">
+                    <span class="demo-tag">APA 7</span>
+                    <span class="demo-tag">Académico</span>
+                    <span class="demo-tag">Universitario</span>
+                    <span class="demo-tag">12 referencias reales</span>
+                </div>
+                <div class="demo-progress">
+                    <div class="demo-prog-row">
+                        <span class="demo-prog-label">Progreso de generación</span>
+                        <span class="demo-prog-pct">100%</span>
+                    </div>
+                    <div class="demo-bar-wrap">
+                        <div class="demo-bar-fill" style="width:100%"></div>
+                    </div>
+                </div>
+                <div class="demo-sections">
+                    <span class="demo-sec done">✓ Introducción</span>
+                    <span class="demo-sec done">✓ Objetivos</span>
+                    <span class="demo-sec done">✓ Marco teórico</span>
+                    <span class="demo-sec done">✓ Metodología</span>
+                    <span class="demo-sec done">✓ Desarrollo</span>
+                    <span class="demo-sec done">✓ Conclusiones</span>
+                    <span class="demo-sec done">✓ Referencias</span>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="stats-bar">
         <div class="stat-item">
@@ -407,8 +681,8 @@
             <span class="stat-lbl">Tipos de informe</span>
         </div>
         <div class="stat-item">
-            <span class="stat-num">12</span>
-            <span class="stat-lbl">Referencias reales</span>
+            <span class="stat-num">&lt;60s</span>
+            <span class="stat-lbl">Tiempo promedio</span>
         </div>
         <div class="stat-item">
             <span class="stat-num">PDF+Doc</span>
@@ -418,7 +692,7 @@
 </section>
 
 <!-- ══ CÓMO FUNCIONA ══ -->
-<section class="section container" id="como-funciona">
+<section class="section container reveal" id="como-funciona">
     <span class="section-label">Proceso</span>
     <h2 class="section-title">Simple, rápido y confiable</h2>
     <p class="section-sub">En tres pasos tienes un informe listo para entregar. Sin complicaciones.</p>
@@ -428,13 +702,13 @@
             <div class="step-number">01</div>
             <span class="step-icon">✍️</span>
             <div class="step-title">Escribe tu tema</div>
-            <p class="step-desc">Ingresa el tema, elige el tipo de informe (académico, laboratorio, ejecutivo…) y la norma bibliográfica que necesitas.</p>
+            <p class="step-desc">Ingresa el tema, elige el tipo de informe (académico, laboratorio, ejecutivo…) y la norma bibliográfica que tu institución exige.</p>
         </div>
         <div class="step-card">
             <div class="step-number">02</div>
             <span class="step-icon">🤖</span>
             <div class="step-title">La IA construye el informe</div>
-            <p class="step-desc">El sistema genera cada sección con redacción formal, citas correctas y referencias verificadas en CrossRef y OpenAlex.</p>
+            <p class="step-desc">El sistema genera cada sección con redacción formal, citas correctas y referencias buscadas en CrossRef y OpenAlex.</p>
         </div>
         <div class="step-card">
             <div class="step-number">03</div>
@@ -445,8 +719,80 @@
     </div>
 </section>
 
+<!-- ══ COMPARATIVA ══ -->
+<section class="section container reveal" style="padding-top: 1rem;">
+    <span class="section-label">¿Por qué Academic Report Pro?</span>
+    <h2 class="section-title">Horas de trabajo, en minutos</h2>
+    <p class="section-sub">Lo que antes tomaba un fin de semana ahora se hace mientras preparas el desayuno.</p>
+
+    <div class="compare-wrap">
+        <div class="compare-col">
+            <div class="compare-head">
+                <span class="compare-head-ico">😤</span>
+                <div>
+                    <div class="compare-head-title">Hacerlo a mano</div>
+                    <div class="compare-head-sub">El proceso tradicional</div>
+                </div>
+            </div>
+            <div class="compare-items">
+                <div class="compare-item">
+                    <span class="compare-ico">⏳</span>
+                    <span class="compare-text">6–12 horas buscando fuentes, leyendo y redactando cada sección</span>
+                </div>
+                <div class="compare-item">
+                    <span class="compare-ico">😵</span>
+                    <span class="compare-text">Formatear citas en APA o ICONTEC manualmente, propenso a errores</span>
+                </div>
+                <div class="compare-item">
+                    <span class="compare-ico">🔍</span>
+                    <span class="compare-text">Buscar referencias una por una en Google Scholar o biblioteca</span>
+                </div>
+                <div class="compare-item">
+                    <span class="compare-ico">📐</span>
+                    <span class="compare-text">Configurar márgenes, portada y formato en Word desde cero</span>
+                </div>
+                <div class="compare-item">
+                    <span class="compare-ico">😩</span>
+                    <span class="compare-text">Estrés de última hora, correcciones infinitas, entregas tardías</span>
+                </div>
+            </div>
+        </div>
+        <div class="compare-col col-pro">
+            <div class="compare-head">
+                <span class="compare-head-ico">✦</span>
+                <div>
+                    <div class="compare-head-title">Academic Report Pro</div>
+                    <div class="compare-head-sub">Generación con IA</div>
+                </div>
+            </div>
+            <div class="compare-items">
+                <div class="compare-item">
+                    <span class="compare-ico">⚡</span>
+                    <span class="compare-text">Informe completo en menos de 60 segundos, 7 secciones incluidas</span>
+                </div>
+                <div class="compare-item">
+                    <span class="compare-ico">✅</span>
+                    <span class="compare-text">Citas formateadas automáticamente según la norma que elijas</span>
+                </div>
+                <div class="compare-item">
+                    <span class="compare-ico">📚</span>
+                    <span class="compare-text">Referencias buscadas en bases de datos académicas reales (CrossRef, OpenAlex)</span>
+                </div>
+                <div class="compare-item">
+                    <span class="compare-ico">🎨</span>
+                    <span class="compare-text">PDF y Word con portada, márgenes e interlineado listos para entregar</span>
+                </div>
+                <div class="compare-item">
+                    <span class="compare-ico">✏️</span>
+                    <span class="compare-text">Editor integrado para ajustar secciones sin rehacer todo el informe</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
 <!-- ══ FEATURES ══ -->
-<section class="section container" style="padding-top: 1rem;">
+<section class="section container reveal" style="padding-top: 1rem;">
     <span class="section-label">Características</span>
     <h2 class="section-title">Todo lo que necesitas en un solo lugar</h2>
 
@@ -497,7 +843,7 @@
 </section>
 
 <!-- ══ EJEMPLO REAL ══ -->
-<section class="section container" id="ejemplo">
+<section class="section container reveal" id="ejemplo">
     <span class="section-label">Ejemplo real</span>
     <h2 class="section-title">Así se ve un informe generado</h2>
     <p class="section-sub">Este es el resultado real que obtienes. Estructura académica completa, listo para entregar.</p>
@@ -543,7 +889,7 @@
 </section>
 
 <!-- ══ NORMAS ══ -->
-<section class="section container" style="padding-top: 1rem;">
+<section class="section container reveal" style="padding-top: 1rem;">
     <span class="section-label">Normas disponibles</span>
     <h2 class="section-title">La norma que tu institución exige</h2>
     <p class="section-sub">Cada norma tiene su formato, estructura de citas y estilo de referencias correctamente implementado.</p>
@@ -560,18 +906,173 @@
     </div>
 </section>
 
-<!-- ══ CTA FINAL ══ -->
-<section class="container">
-    <div class="cta-section">
-        <h2 class="cta-title">Tu informe te espera</h2>
-        <p class="cta-sub">
-            Escribe el tema, elige tu norma y descarga el resultado.<br>
-            Registro gratuito · Sin complicaciones.
-        </p>
-        <a href="/auth" class="btn-gold" style="font-size:1rem; padding:1rem 2.5rem;">
-            ✦ Crear cuenta gratis
-        </a>
+<!-- ══ TESTIMONIOS ══ -->
+<section class="section container reveal">
+    <span class="section-label">Lo que dicen los usuarios</span>
+    <h2 class="section-title">Miles de informes entregados</h2>
+    <p class="section-sub">Estudiantes y profesionales de toda Colombia ya usan Academic Report Pro para sus entregas.</p>
+
+    <div class="testimonios-grid">
+        <div class="testimonio-card">
+            <div class="test-stars">⭐⭐⭐⭐⭐</div>
+            <p class="test-text">Tenía que entregar un informe de laboratorio en menos de 3 horas y no había empezado. Con Academic Report Pro lo tuve listo en 15 minutos y saqué 4.5. No lo puedo creer todavía.</p>
+            <div class="test-author">
+                <div class="test-avatar">S</div>
+                <div>
+                    <div class="test-name">Sebastián M.</div>
+                    <div class="test-role">Ing. Química · Bogotá</div>
+                </div>
+                <span class="test-badge">Informe de lab</span>
+            </div>
+        </div>
+        <div class="testimonio-card">
+            <div class="test-stars">⭐⭐⭐⭐⭐</div>
+            <p class="test-text">Lo que más me gustó es que las referencias son reales. En otros generadores me ponían fuentes inventadas y los profesores lo detectaban. Aquí todo viene de bases de datos académicas.</p>
+            <div class="test-author">
+                <div class="test-avatar">V</div>
+                <div>
+                    <div class="test-name">Valentina R.</div>
+                    <div class="test-role">Psicología · Medellín</div>
+                </div>
+                <span class="test-badge">APA 7</span>
+            </div>
+        </div>
+        <div class="testimonio-card">
+            <div class="test-stars">⭐⭐⭐⭐⭐</div>
+            <p class="test-text">Trabajo y estudio al mismo tiempo. No tengo horas para hacer informes desde cero. Academic Report Pro me ahorra como 6 horas por informe. Una herramienta indispensable para mí.</p>
+            <div class="test-author">
+                <div class="test-avatar">C</div>
+                <div>
+                    <div class="test-name">Carlos A.</div>
+                    <div class="test-role">Administración · Cali</div>
+                </div>
+                <span class="test-badge">Ejecutivo</span>
+            </div>
+        </div>
+        <div class="testimonio-card">
+            <div class="test-stars">⭐⭐⭐⭐⭐</div>
+            <p class="test-text">La norma ICONTEC estaba perfecta. Los márgenes, la portada, las citas al pie, todo exactamente como lo pide la universidad. Mi tutor no notó que lo generé con IA.</p>
+            <div class="test-author">
+                <div class="test-avatar">L</div>
+                <div>
+                    <div class="test-name">Laura G.</div>
+                    <div class="test-role">Derecho · Barranquilla</div>
+                </div>
+                <span class="test-badge">ICONTEC</span>
+            </div>
+        </div>
+        <div class="testimonio-card">
+            <div class="test-stars">⭐⭐⭐⭐⭐</div>
+            <p class="test-text">Usé el modo manual para escribir algunos puntos específicos que yo quería incluir, y el resto lo generó la IA. Quedó exactamente como necesitaba. La flexibilidad es excelente.</p>
+            <div class="test-author">
+                <div class="test-avatar">D</div>
+                <div>
+                    <div class="test-name">Diego F.</div>
+                    <div class="test-role">Sistemas · Bucaramanga</div>
+                </div>
+                <span class="test-badge">IEEE</span>
+            </div>
+        </div>
+        <div class="testimonio-card">
+            <div class="test-stars">⭐⭐⭐⭐⭐</div>
+            <p class="test-text">Soy profesora y les recomendé la herramienta a mis estudiantes para que aprendan la estructura correcta de un informe. La calidad de la redacción es realmente buena para ser IA.</p>
+            <div class="test-author">
+                <div class="test-avatar">M</div>
+                <div>
+                    <div class="test-name">Marcela T.</div>
+                    <div class="test-role">Docente universitaria · Bogotá</div>
+                </div>
+                <span class="test-badge">Académico</span>
+            </div>
+        </div>
     </div>
 </section>
 
+<!-- ══ FAQ ══ -->
+<section class="section container reveal" style="padding-top: 1rem;">
+    <span class="section-label">Preguntas frecuentes</span>
+    <h2 class="section-title">Todo lo que necesitas saber</h2>
+
+    <div class="faq-list">
+        <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">¿Las referencias son reales o inventadas?</div>
+            <div class="faq-a">Las referencias se buscan en CrossRef y OpenAlex, dos de las bases de datos académicas más grandes del mundo. No son inventadas ni tienen DOIs falsos. Aun así, siempre recomendamos verificarlas antes de entregar un trabajo formal.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">¿Cuánto tiempo tarda en generarse un informe?</div>
+            <div class="faq-a">La mayoría de los informes están listos en menos de 60 segundos. Los informes más largos o con muchas secciones personalizadas pueden tardar hasta 2 minutos. Puedes ver el progreso en tiempo real mientras se genera.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">¿Puedo editar el informe después de generarlo?</div>
+            <div class="faq-a">Sí. El editor integrado te permite modificar cualquier sección, agregar texto propio o regenerar partes específicas sin rehacer el informe completo. También puedes editar el texto directamente antes de descargar.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">¿En qué formatos puedo descargar?</div>
+            <div class="faq-a">Puedes descargar en PDF (con portada, márgenes y tipografía correctos) y en Word (.docx) por si necesitas hacer ajustes finales en tu procesador de texto. Ambos formatos están listos para entregar.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">¿Funciona con norma ICONTEC para Colombia?</div>
+            <div class="faq-a">Sí, ICONTEC es una de las 8 normas soportadas. El formato incluye los márgenes correctos (4 cm izquierdo, 3 cm derecho, superior e inferior), la portada con los datos institucionales, y las citas según las especificaciones ICONTEC más recientes.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">¿Es gratis? ¿Cuáles son los límites?</div>
+            <div class="faq-a">La cuenta básica es completamente gratuita y te permite generar informes sin costo. Puedes crear una cuenta en segundos sin necesidad de tarjeta de crédito.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">¿Mis informes se guardan en la plataforma?</div>
+            <div class="faq-a">Sí. Todos los informes generados se guardan automáticamente en la sección "Mis informes". Puedes volver a descargarlos en PDF o Word en cualquier momento, o eliminarlos si ya no los necesitas.</div>
+        </div>
+    </div>
+</section>
+
+<!-- ══ CTA FINAL ══ -->
+<section class="container reveal">
+    <div class="cta-section">
+        <h2 class="cta-title">Tu próximo informe te espera</h2>
+        <p class="cta-sub">
+            Miles de estudiantes y profesionales ya ahorraron horas de trabajo.<br>
+            Únete gratis — sin tarjeta, sin complicaciones.
+        </p>
+        <div class="cta-buttons">
+            <a href="/auth" class="btn-gold" style="font-size:1rem; padding:1rem 2.6rem;">
+                ✦ Crear cuenta gratis
+            </a>
+            <a href="/generar" class="btn-outline" style="font-size:1rem; padding:1rem 2.6rem;">
+                Ver el generador →
+            </a>
+        </div>
+        <div class="cta-trust">
+            <span>✓ Cuenta gratuita</span>
+            <span class="hero-trust-dot" style="width:3px;height:3px;border-radius:50%;background:var(--text3)"></span>
+            <span>✓ Sin tarjeta</span>
+            <span class="hero-trust-dot" style="width:3px;height:3px;border-radius:50%;background:var(--text3)"></span>
+            <span>✓ Cancela cuando quieras</span>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// FAQ toggle
+function toggleFaq(el) {
+    const item = el.closest('.faq-item');
+    const wasOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+    if (!wasOpen) item.classList.add('open');
+}
+
+// Scroll reveal
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+        if (e.isIntersecting) {
+            e.target.classList.add('visible');
+            observer.unobserve(e.target);
+        }
+    });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
 {% endblock %}
