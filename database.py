@@ -14,7 +14,7 @@ Variables de entorno necesarias (agregar a tu .env o Render):
 
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,6 @@ def registrar_usuario(nombre: str = "", email: str = "", password: str = "") -> 
         if not res.user:
             return {"success": False, "error": "No se pudo crear el usuario"}
 
-        # Si Supabase tiene confirmación desactivada, ya hay sesión activa
         if res.session:
             return {
                 "success":      True,
@@ -68,7 +67,6 @@ def registrar_usuario(nombre: str = "", email: str = "", password: str = "") -> 
                 "access_token": res.session.access_token,
                 "auto_login":   True,
             }
-        # Si requiere confirmación de email, devolver solo user_id
         return {
             "success":    True,
             "user_id":    res.user.id,
@@ -92,7 +90,6 @@ def login_usuario(email: str, password: str) -> dict:
             "password": password
         })
         if res.session:
-            # Intentar obtener el nombre desde user_metadata
             nombre = ""
             if res.user and res.user.user_metadata:
                 nombre = res.user.user_metadata.get("nombre", "")
@@ -126,18 +123,15 @@ def actualizar_perfil(user_id: str, nombre_o_datos=None, institucion: str = "",
     """
     Actualiza el perfil del usuario.
     Acepta dos formas de llamada:
-      - actualizar_perfil(user_id, datos_dict)          ← desde database.py original
-      - actualizar_perfil(user_id, nombre, inst, carr, ciudad, tel) ← desde app.py
-    Devuelve siempre {"success": bool, "error": str (opcional)}.
+      - actualizar_perfil(user_id, datos_dict)
+      - actualizar_perfil(user_id, nombre, inst, carr, ciudad, tel)
     """
     if not DB_DISPONIBLE:
         return {"success": False, "error": "Base de datos no disponible"}
 
-    # Normalizar argumentos
     if isinstance(nombre_o_datos, dict):
         datos = nombre_o_datos
     else:
-        # Forma legacy: actualizar_perfil(user_id, nombre, inst, carr, ciudad, tel)
         datos = {
             "nombre":      nombre_o_datos or "",
             "institucion": institucion,
@@ -149,8 +143,6 @@ def actualizar_perfil(user_id: str, nombre_o_datos=None, institucion: str = "",
     campos_permitidos = {"nombre", "institucion", "carrera", "ciudad", "telefono",
                          "norma_favorita", "nivel_favorito"}
 
-    # BUG FIX: incluir campos aunque estén vacíos (el usuario puede querer borrarlos)
-    # Solo excluir claves que no están en campos_permitidos o que son None
     datos_limpios = {
         k: v for k, v in datos.items()
         if k in campos_permitidos and v is not None
@@ -161,9 +153,7 @@ def actualizar_perfil(user_id: str, nombre_o_datos=None, institucion: str = "",
 
     try:
         res = supabase.table("usuarios").update(datos_limpios).eq("id", user_id).execute()
-        # Verificar que la fila existe — si no hay filas afectadas, hacer upsert
         if res.data is not None and len(res.data) == 0:
-            # La fila no existe todavía (usuario nuevo sin fila en tabla usuarios)
             datos_limpios["id"] = user_id
             supabase.table("usuarios").upsert(datos_limpios).execute()
         return {"success": True}
@@ -183,10 +173,6 @@ def guardar_informe(user_id: str, datos_usuario: dict,
     """
     Guarda un informe completo en Supabase.
     Devuelve el UUID del informe guardado, o None si falla.
-
-    Uso en app.py:
-        from database import guardar_informe
-        informe_id = guardar_informe(user_id, datos_usuario, secciones, refs_reales)
     """
     if not DB_DISPONIBLE:
         return None
@@ -203,7 +189,6 @@ def guardar_informe(user_id: str, datos_usuario: dict,
             "profesor":         datos_usuario.get("profesor", ""),
             "institucion":      datos_usuario.get("institucion", ""),
             "ciudad":           datos_usuario.get("ciudad", ""),
-            # Secciones
             "sec_introduccion":    secciones.get("introduccion", ""),
             "sec_objetivos":       secciones.get("objetivos", ""),
             "sec_marco_teorico":   secciones.get("marco_teorico", ""),
@@ -212,7 +197,6 @@ def guardar_informe(user_id: str, datos_usuario: dict,
             "sec_conclusiones":    secciones.get("conclusiones", ""),
             "sec_recomendaciones": secciones.get("recomendaciones", ""),
             "sec_referencias":     secciones.get("referencias", ""),
-            # Metadata
             "refs_fuente":  "crossref_openalex" if refs_reales else "ia_fallback",
             "refs_total":   len(refs_reales) if refs_reales else 0,
             "estado":       "completo",
@@ -225,7 +209,6 @@ def guardar_informe(user_id: str, datos_usuario: dict,
         informe_id = res.data[0]["id"]
         logger.info(f"Informe guardado: {informe_id}")
 
-        # Guardar referencias individuales si las hay
         if refs_reales:
             _guardar_referencias(informe_id, refs_reales)
 
@@ -321,88 +304,159 @@ def eliminar_informe(informe_id: str, user_id: str) -> dict:
 
 
 # ============================================================
-# RUTAS FLASK — pega esto en tu app.py
+# ESTADÍSTICAS DE USUARIO
 # ============================================================
-"""
-INSTRUCCIONES DE INTEGRACIÓN EN app.py:
-========================================
 
-1. Agrega al inicio de app.py:
-   from database import (
-       registrar_usuario, login_usuario, obtener_perfil,
-       actualizar_perfil, guardar_informe, obtener_mis_informes,
-       obtener_informe, eliminar_informe, DB_DISPONIBLE
-   )
+def obtener_estadisticas_usuario(user_id: str) -> dict | None:
+    """
+    Devuelve estadísticas agregadas del historial de informes del usuario.
 
-2. En api_generar(), después de generar el informe, guárdalo:
+    Retorna un dict con:
+        total_informes      int   — total de informes completados
+        total_referencias   int   — suma de todas las referencias
+        norma_mas_usada     str   — norma que más usa (ej. "APA 7")
+        tipo_mas_usado      str   — tipo de informe más frecuente
+        nivel_mas_usado     str   — nivel más frecuente
+        dias_activo         int   — días únicos con al menos 1 informe
+        primer_informe      str   — fecha ISO del primer informe
+        ultimo_informe      str   — fecha ISO del último informe
+        informes_por_norma  dict  — {"APA 7": 5, "ICONTEC": 2, ...}
+        informes_por_tipo   dict  — {"academico": 4, "tesis": 1, ...}
+        racha_actual        int   — días consecutivos recientes con actividad
+    """
+    if not DB_DISPONIBLE:
+        return None
+    try:
+        res = (
+            supabase.table("informes")
+            .select("norma, tipo_informe, nivel, refs_total, created_at")
+            .eq("user_id", user_id)
+            .eq("estado", "completo")
+            .order("created_at", desc=False)
+            .execute()
+        )
+        rows = res.data or []
 
-   # Guardar en Supabase si el usuario está autenticado
-   user_id = request.headers.get('X-User-Id')  # el frontend lo manda
-   if user_id and DB_DISPONIBLE:
-       guardar_informe(
-           user_id=user_id,
-           datos_usuario=datos_usuario,
-           secciones=secciones,
-           refs_reales=refs_reales,   # necesitas pasar refs_reales desde generar_informe_completo
-           tipo_informe=tipo_informe,
-           norma=norma,
-           nivel=nivel,
-           modo=data.get('modo', 'rapido')
-       )
+        if not rows:
+            return {
+                "total_informes":     0,
+                "total_referencias":  0,
+                "norma_mas_usada":    None,
+                "tipo_mas_usado":     None,
+                "nivel_mas_usado":    None,
+                "dias_activo":        0,
+                "primer_informe":     None,
+                "ultimo_informe":     None,
+                "informes_por_norma": {},
+                "informes_por_tipo":  {},
+                "racha_actual":       0,
+            }
 
-3. Agrega estas rutas nuevas:
+        total_informes    = len(rows)
+        total_referencias = sum(r.get("refs_total") or 0 for r in rows)
 
-@app.route('/api/auth/registro', methods=['POST'])
-def api_registro():
-    data = request.json
-    return jsonify(registrar_usuario(
-        data.get('email',''), data.get('password',''), data.get('nombre','')
-    ))
+        conteo_norma = {}
+        conteo_tipo  = {}
+        conteo_nivel = {}
+        fechas       = set()
 
-@app.route('/api/auth/login', methods=['POST'])
-def api_login():
-    data = request.json
-    return jsonify(login_usuario(data.get('email',''), data.get('password','')))
+        for r in rows:
+            norma = r.get("norma") or "Desconocida"
+            tipo  = r.get("tipo_informe") or "academico"
+            nivel = r.get("nivel") or "universitario"
+            fecha_iso = r.get("created_at", "")
 
-@app.route('/api/mis-informes', methods=['GET'])
-def api_mis_informes():
-    user_id = request.headers.get('X-User-Id')
-    if not user_id:
-        return jsonify({'success': False, 'error': 'No autenticado'}), 401
-    informes = obtener_mis_informes(user_id)
-    return jsonify({'success': True, 'informes': informes})
+            conteo_norma[norma] = conteo_norma.get(norma, 0) + 1
+            conteo_tipo[tipo]   = conteo_tipo.get(tipo, 0) + 1
+            conteo_nivel[nivel] = conteo_nivel.get(nivel, 0) + 1
 
-@app.route('/api/informe/<informe_id>', methods=['GET'])
-def api_obtener_informe(informe_id):
-    user_id = request.headers.get('X-User-Id')
-    if not user_id:
-        return jsonify({'success': False, 'error': 'No autenticado'}), 401
-    informe = obtener_informe(informe_id, user_id)
-    if not informe:
-        return jsonify({'success': False, 'error': 'No encontrado'}), 404
-    return jsonify({'success': True, 'informe': informe})
+            if fecha_iso:
+                try:
+                    fechas.add(fecha_iso[:10])
+                except Exception:
+                    pass
 
-@app.route('/api/informe/<informe_id>', methods=['DELETE'])
-def api_eliminar_informe(informe_id):
-    user_id = request.headers.get('X-User-Id')
-    if not user_id:
-        return jsonify({'success': False, 'error': 'No autenticado'}), 401
-    ok = eliminar_informe(informe_id, user_id)
-    return jsonify({'success': ok})
+        norma_mas_usada = max(conteo_norma, key=conteo_norma.get) if conteo_norma else None
+        tipo_mas_usado  = max(conteo_tipo,  key=conteo_tipo.get)  if conteo_tipo  else None
+        nivel_mas_usado = max(conteo_nivel, key=conteo_nivel.get) if conteo_nivel else None
 
-@app.route('/api/perfil', methods=['GET'])
-def api_perfil():
-    user_id = request.headers.get('X-User-Id')
-    if not user_id:
-        return jsonify({'success': False, 'error': 'No autenticado'}), 401
-    perfil = obtener_perfil(user_id)
-    return jsonify({'success': True, 'perfil': perfil})
+        primer_informe = rows[0].get("created_at")
+        ultimo_informe = rows[-1].get("created_at")
 
-@app.route('/api/perfil', methods=['PUT'])
-def api_actualizar_perfil():
-    user_id = request.headers.get('X-User-Id')
-    if not user_id:
-        return jsonify({'success': False, 'error': 'No autenticado'}), 401
-    ok = actualizar_perfil(user_id, request.json)
-    return jsonify({'success': ok})
-"""
+        racha_actual = _calcular_racha(sorted(fechas))
+
+        return {
+            "total_informes":     total_informes,
+            "total_referencias":  total_referencias,
+            "norma_mas_usada":    norma_mas_usada,
+            "tipo_mas_usado":     tipo_mas_usado,
+            "nivel_mas_usado":    nivel_mas_usado,
+            "dias_activo":        len(fechas),
+            "primer_informe":     primer_informe,
+            "ultimo_informe":     ultimo_informe,
+            "informes_por_norma": conteo_norma,
+            "informes_por_tipo":  conteo_tipo,
+            "racha_actual":       racha_actual,
+        }
+
+    except Exception as e:
+        logger.error(f"Error obteniendo estadísticas de {user_id}: {e}")
+        return None
+
+
+def _calcular_racha(fechas_ordenadas: list) -> int:
+    """
+    Calcula cuántos días consecutivos hacia atrás desde hoy
+    el usuario generó al menos un informe.
+    """
+    if not fechas_ordenadas:
+        return 0
+
+    hoy       = datetime.now(timezone.utc).date()
+    racha     = 0
+    dia       = hoy
+    fechas_set = set(fechas_ordenadas)
+
+    if str(hoy) not in fechas_set:
+        dia = hoy - timedelta(days=1)
+
+    while str(dia) in fechas_set:
+        racha += 1
+        dia   -= timedelta(days=1)
+
+    return racha
+
+
+def obtener_resumen_actividad(user_id: str, dias: int = 30) -> list:
+    """
+    Devuelve la actividad diaria del usuario en los últimos N días.
+    Retorna: [{"fecha": "2025-05-01", "cantidad": 2}, ...]
+    Solo incluye días con al menos 1 informe.
+    """
+    if not DB_DISPONIBLE:
+        return []
+    try:
+        desde = (datetime.now(timezone.utc) - timedelta(days=dias)).isoformat()
+        res = (
+            supabase.table("informes")
+            .select("created_at")
+            .eq("user_id", user_id)
+            .eq("estado", "completo")
+            .gte("created_at", desde)
+            .execute()
+        )
+        rows = res.data or []
+
+        conteo = {}
+        for r in rows:
+            fecha_str = (r.get("created_at") or "")[:10]
+            if fecha_str:
+                conteo[fecha_str] = conteo.get(fecha_str, 0) + 1
+
+        return [
+            {"fecha": f, "cantidad": c}
+            for f, c in sorted(conteo.items())
+        ]
+    except Exception as e:
+        logger.error(f"Error obteniendo actividad de {user_id}: {e}")
+        return []
