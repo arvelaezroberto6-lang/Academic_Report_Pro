@@ -59,7 +59,7 @@ try:
     limiter = Limiter(
         get_remote_address,
         app=app,
-        default_limits=["2000 per day", "300 per hour"],
+        default_limits=["500 per day", "100 per hour"],
         storage_uri="memory://",   # cambiar a Redis en producción con: redis://localhost:6379
         headers_enabled=True
     )
@@ -1476,7 +1476,7 @@ def perfil():
 # RUTAS — API (POST)
 # ============================================================
 @app.route('/api/generar', methods=['POST'])
-@limit("25 per hour")   # máx 25 generaciones por IP por hora
+@limit("15 per hour")   # máx 15 generaciones por IP por hora (protege la API de DeepSeek)
 @requiere_auth
 def api_generar(user_id):
     try:
@@ -1544,7 +1544,7 @@ def api_generar(user_id):
 
 
 @app.route('/api/generar-seccion', methods=['POST'])
-@limit("60 per hour")
+@limit("30 per hour")
 @requiere_auth
 def api_generar_seccion(user_id):
     try:
@@ -1683,7 +1683,7 @@ def exportar_word():
 # RUTAS DE AUTENTICACIÓN Y PERFIL (CAMBIO 3)
 # ============================================================
 @app.route('/api/auth/registro', methods=['POST'])
-@limit("30 per hour")  # máx 30 registros por IP por hora
+@limit("5 per hour")   # máx 5 registros por IP por hora (anti-spam)
 def api_registro():
     """Registrar un nuevo usuario con validaciones de seguridad."""
     try:
@@ -1720,7 +1720,7 @@ def api_registro():
 
 
 @app.route('/api/auth/login', methods=['POST'])
-@limit("20 per hour")   # máx 20 intentos por IP por hora (anti-brute-force)
+@limit("10 per hour")   # máx 10 intentos por IP por hora (anti-brute-force)
 def api_login():
     """Iniciar sesión — devuelve el access_token JWT."""
     try:
@@ -1866,7 +1866,7 @@ def health():
 # FEEDBACK / RECOMENDACIONES  →  envío por email al dueño
 # ─────────────────────────────────────────────────────────────
 @app.route('/api/feedback', methods=['POST'])
-@limit("15 per hour")  # máx 15 feedbacks por IP por hora
+@limit("5 per hour")   # máx 5 feedbacks por IP por hora
 def api_feedback():
     """Recibe una sugerencia y la envía al correo del dueño."""
     try:
@@ -1952,8 +1952,45 @@ def api_feedback():
 # ─────────────────────────────────────────────────────────────
 # RECUPERACIÓN DE CONTRASEÑA  (Supabase lo maneja)
 # ─────────────────────────────────────────────────────────────
-@app.route('/api/auth/recuperar', methods=['POST'])
-@limit("10 per hour")  # máx 10 recuperaciones por IP por hora
+@app.route('/api/auth/verificar-token', methods=['POST'])
+@limit("10 per hour")
+def api_verificar_token():
+    """
+    Verifica un access_token de Supabase y devuelve los datos del usuario.
+    Se usa cuando el usuario llega desde el link de verificación de correo.
+    """
+    try:
+        from database import supabase, DB_DISPONIBLE
+        data  = request.get_json(silent=True) or {}
+        token = data.get('access_token', '').strip()
+
+        if not token:
+            return jsonify({'success': False, 'error': 'Token requerido'}), 400
+
+        if not DB_DISPONIBLE or supabase is None:
+            return jsonify({'success': False, 'error': 'Base de datos no disponible'}), 503
+
+        # Verificar el token con Supabase
+        user_response = supabase.auth.get_user(token)
+        if not user_response or not user_response.user:
+            return jsonify({'success': False, 'error': 'Token inválido o expirado'}), 401
+
+        user   = user_response.user
+        nombre = ''
+        if user.user_metadata:
+            nombre = user.user_metadata.get('nombre', '')
+
+        log_evento_seguridad('VERIFICACION_CORREO', f"email={user.email}", request)
+        return jsonify({
+            'success':  True,
+            'user_id':  str(user.id),
+            'email':    user.email,
+            'nombre':   nombre,
+        })
+
+    except Exception as e:
+        logger.error(f"Error verificando token: {e}")
+        return jsonify({'success': False, 'error': 'Token inválido'}), 401
 def api_recuperar_password():
     """Envía email de recuperación a través de Supabase."""
     try:
