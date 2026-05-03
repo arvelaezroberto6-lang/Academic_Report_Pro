@@ -1712,7 +1712,8 @@ def api_registro():
             log_evento_seguridad('REGISTRO_EXITOSO', f"email={email}", request)
             return jsonify({'success': True, 'user_id': resultado['user_id'],
                             'auto_login': resultado.get('auto_login', False),
-                            'access_token': resultado.get('access_token', '')})
+                            'access_token': resultado.get('access_token', ''),
+                            'refresh_token': resultado.get('refresh_token', '')})
         else:
             log_evento_seguridad('REGISTRO_FALLIDO', f"email={email}", request)
             return jsonify({'success': False, 'error': resultado['error']}), 400
@@ -1742,11 +1743,12 @@ def api_login():
         if resultado['success']:
             log_evento_seguridad('LOGIN_EXITOSO', f"email={email}", request)
             return jsonify({
-                'success':      True,
-                'user_id':      resultado['user_id'],
-                'nombre':       resultado['nombre'],
-                'email':        resultado['email'],
-                'access_token': resultado.get('access_token', ''),  # JWT para verificar en el backend
+                'success':       True,
+                'user_id':       resultado['user_id'],
+                'nombre':        resultado['nombre'],
+                'email':         resultado['email'],
+                'access_token':  resultado.get('access_token', ''),
+                'refresh_token': resultado.get('refresh_token', ''),
             })
         else:
             log_evento_seguridad('LOGIN_FALLIDO', f"email={email}", request)
@@ -2048,7 +2050,46 @@ def api_verificar_token():
     except Exception as e:
         logger.error(f"Error verificando token: {e}")
         return jsonify({'success': False, 'error': 'Token inválido'}), 401
-def api_recuperar_password():
+
+
+@app.route('/api/auth/refresh', methods=['POST'])
+@limit("30 per hour")
+def api_refresh_token():
+    """
+    Renueva el access_token usando el refresh_token de Supabase.
+    El frontend llama a esto automáticamente cuando recibe un 401.
+    """
+    try:
+        from database import supabase, DB_DISPONIBLE
+        data          = request.get_json(silent=True) or {}
+        refresh_token = data.get('refresh_token', '').strip()
+
+        if not refresh_token:
+            return jsonify({'success': False, 'error': 'refresh_token requerido'}), 400
+
+        if not DB_DISPONIBLE or supabase is None:
+            return jsonify({'success': False, 'error': 'Base de datos no disponible'}), 503
+
+        res = supabase.auth.refresh_session(refresh_token)
+        if res and res.session:
+            nombre = ''
+            if res.user and res.user.user_metadata:
+                nombre = res.user.user_metadata.get('nombre', '')
+            return jsonify({
+                'success':       True,
+                'access_token':  res.session.access_token,
+                'refresh_token': res.session.refresh_token,
+                'user_id':       str(res.user.id),
+                'email':         res.user.email,
+                'nombre':        nombre,
+            })
+        return jsonify({'success': False, 'error': 'Sesión expirada. Inicia sesión de nuevo.'}), 401
+
+    except Exception as e:
+        logger.warning(f"Error refrescando token: {e}")
+        return jsonify({'success': False, 'error': 'Sesión expirada. Inicia sesión de nuevo.'}), 401
+
+
     """Envía email de recuperación a través de Supabase."""
     try:
         from database import supabase, DB_DISPONIBLE
