@@ -9,7 +9,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     flex-wrap: wrap;
     gap: 1rem;
 }
@@ -19,6 +19,97 @@
     font-weight: 700;
 }
 .page-hd p { font-size: .83rem; color: var(--text2); margin-top: .2rem; }
+
+/* ── SEARCH + FILTER BAR ── */
+.filter-bar {
+    display: flex;
+    gap: .6rem;
+    margin-bottom: 1.2rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.search-wrap {
+    flex: 1;
+    min-width: 200px;
+    position: relative;
+}
+.search-wrap input {
+    width: 100%;
+    padding: .65rem .9rem .65rem 2.3rem;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: .85rem;
+    outline: none;
+    transition: border-color .18s, box-shadow .18s;
+}
+.search-wrap input:focus { border-color: rgba(212,168,67,.4); box-shadow: 0 0 0 3px var(--gold-dim); }
+.search-wrap input::placeholder { color: var(--text3); }
+.search-ico {
+    position: absolute;
+    left: .75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: .85rem;
+    pointer-events: none;
+    opacity: .5;
+}
+.filter-select {
+    padding: .62rem .85rem;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    color: var(--text2);
+    font-family: 'DM Sans', sans-serif;
+    font-size: .8rem;
+    outline: none;
+    cursor: pointer;
+    transition: border-color .18s;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%237a7870' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right .7rem center;
+    padding-right: 2rem;
+}
+.filter-select:focus { border-color: rgba(212,168,67,.3); }
+.filter-select option { background: var(--surface2); }
+
+/* Chips de filtro activos */
+.active-filters {
+    display: flex;
+    gap: .4rem;
+    flex-wrap: wrap;
+    margin-bottom: .8rem;
+}
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .22rem .65rem;
+    background: var(--gold-dim);
+    border: 1px solid rgba(212,168,67,.25);
+    border-radius: 100px;
+    font-size: .68rem;
+    font-weight: 600;
+    color: var(--gold);
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+    transition: all .18s;
+}
+.filter-chip:hover { background: rgba(212,168,67,.2); }
+.filter-chip-x { font-size: .75rem; opacity: .7; }
+
+/* Results count */
+.results-count {
+    font-size: .72rem;
+    color: var(--text3);
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: .9rem;
+    min-height: 1.2em;
+}
+.results-count span { color: var(--gold); }
 
 /* Estado vacío */
 .empty-state {
@@ -64,6 +155,7 @@
     color: inherit;
 }
 .informe-card:hover { border-color: rgba(212,168,67,.35); transform: translateY(-1px); }
+.informe-card[data-hidden="true"] { display: none; }
 
 .inf-ico {
     width: 38px;
@@ -139,6 +231,14 @@
 .no-auth .ico { font-size: 2.5rem; margin-bottom: 1rem; }
 .no-auth h3 { margin-bottom: .5rem; }
 .no-auth p { font-size: .85rem; color: var(--text2); margin-bottom: 1.5rem; }
+
+/* Highlight searched text */
+mark {
+    background: rgba(212,168,67,.22);
+    color: var(--gold);
+    border-radius: 3px;
+    padding: 0 1px;
+}
 </style>
 {% endblock %}
 
@@ -152,6 +252,44 @@
         <a href="/generar" class="btn-gold" style="font-size:.83rem; padding:.65rem 1.4rem;">
             ➕ Nuevo informe
         </a>
+    </div>
+
+    <!-- Barra de búsqueda y filtros (solo visible cuando hay informes) -->
+    <div id="filterBar" style="display:none;">
+        <div class="filter-bar">
+            <div class="search-wrap">
+                <span class="search-ico">🔍</span>
+                <input type="text" id="searchInput" placeholder="Buscar por tema..." oninput="aplicarFiltros()" autocomplete="off">
+            </div>
+            <select class="filter-select" id="filterNorma" onchange="aplicarFiltros()">
+                <option value="">Todas las normas</option>
+                <option value="APA 7">APA 7</option>
+                <option value="APA 6">APA 6</option>
+                <option value="ICONTEC">ICONTEC</option>
+                <option value="IEEE">IEEE</option>
+                <option value="Vancouver">Vancouver</option>
+                <option value="Chicago">Chicago</option>
+                <option value="MLA">MLA</option>
+                <option value="Harvard">Harvard</option>
+            </select>
+            <select class="filter-select" id="filterTipo" onchange="aplicarFiltros()">
+                <option value="">Todos los tipos</option>
+                <option value="academico">Académico</option>
+                <option value="laboratorio">Laboratorio</option>
+                <option value="ejecutivo">Ejecutivo</option>
+                <option value="tesis">Tesis</option>
+                <option value="pasantia">Pasantía</option>
+                <option value="proyecto">Proyecto</option>
+            </select>
+            <select class="filter-select" id="filterOrden" onchange="aplicarFiltros()">
+                <option value="reciente">Más recientes</option>
+                <option value="antiguo">Más antiguos</option>
+                <option value="az">A → Z</option>
+                <option value="za">Z → A</option>
+            </select>
+        </div>
+        <div class="active-filters" id="activeFilters"></div>
+        <div class="results-count" id="resultsCount"></div>
     </div>
 
     <div id="contenido">
@@ -183,10 +321,22 @@ const ICONOS_TIPO = {
     proyecto:    '📋',
 };
 
+let _todosInformes = [];
+
 function formatearFecha(iso) {
     if (!iso) return '';
     const d = new Date(iso);
     return d.toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' });
+}
+
+function escape(s) {
+    return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function highlight(text, query) {
+    if (!query) return escape(text);
+    const re = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi');
+    return escape(text).replace(re, '<mark>$1</mark>');
 }
 
 async function cargarInformes() {
@@ -205,20 +355,18 @@ async function cargarInformes() {
         return;
     }
 
-    const user = JSON.parse(raw);
-
     try {
         const data = await fetchAuth('/api/mis-informes');
-
         if (!data.success) throw new Error(data.error);
 
-        const informes = data.informes || [];
+        _todosInformes = data.informes || [];
+
         document.getElementById('subtitulo').textContent =
-            informes.length > 0
-                ? `${informes.length} informe${informes.length !== 1 ? 's' : ''} guardado${informes.length !== 1 ? 's' : ''}`
+            _todosInformes.length > 0
+                ? `${_todosInformes.length} informe${_todosInformes.length !== 1 ? 's' : ''} guardado${_todosInformes.length !== 1 ? 's' : ''}`
                 : 'Sin informes aún';
 
-        if (informes.length === 0) {
+        if (_todosInformes.length === 0) {
             document.getElementById('contenido').innerHTML = `
                 <div class="empty-state">
                     <div class="ico">📭</div>
@@ -231,27 +379,12 @@ async function cargarInformes() {
             return;
         }
 
-        document.getElementById('contenido').innerHTML = informes.map(inf => `
-            <div class="informe-card" onclick="abrirInforme('${inf.id}', ${JSON.stringify(inf.tema)})">
-                <div class="inf-ico">${ICONOS_TIPO[inf.tipo_informe] || '📄'}</div>
-                <div class="inf-body">
-                    <div class="inf-tema">${inf.tema}</div>
-                    <div class="inf-meta">
-                        <span class="inf-badge gold">${inf.norma}</span>
-                        <span class="inf-badge">${inf.tipo_informe}</span>
-                        <span class="inf-badge">${inf.nivel || 'universitario'}</span>
-                        ${inf.asignatura ? `<span class="inf-badge">${inf.asignatura}</span>` : ''}
-                        ${inf.refs_total > 0 ? `<span class="inf-badge">📚 ${inf.refs_total} refs</span>` : ''}
-                        <span class="inf-fecha">${formatearFecha(inf.created_at)}</span>
-                    </div>
-                </div>
-                <div class="inf-actions" onclick="event.stopPropagation()">
-                    <a class="btn-icon btn-dl" href="/editar/${inf.id}" title="Editar secciones" style="color:var(--text2);text-decoration:none;display:flex;align-items:center;justify-content:center">✏️</a>
-                    <button class="btn-icon btn-dl" title="Descargar PDF" onclick="reDescargarInforme('${inf.id}','pdf')" style="color:var(--gold);border-color:rgba(212,168,67,.25)">📄</button>
-                    <button class="btn-icon btn-dl" title="Descargar Word" onclick="reDescargarInforme('${inf.id}','word')" style="color:var(--text2)">📝</button>
-                    <button class="btn-icon" title="Eliminar" onclick="eliminar('${inf.id}', this)">🗑</button>
-                </div>
-            </div>`).join('');
+        // Mostrar barra de filtros solo si hay informes
+        if (_todosInformes.length > 1) {
+            document.getElementById('filterBar').style.display = 'block';
+        }
+
+        renderInformes(_todosInformes);
 
     } catch(e) {
         document.getElementById('subtitulo').textContent = '';
@@ -262,6 +395,104 @@ async function cargarInformes() {
                 <p style="color:var(--red)">${e.message}</p>
             </div>`;
     }
+}
+
+function renderInformes(informes, searchQuery = '') {
+    if (informes.length === 0) {
+        document.getElementById('contenido').innerHTML = `
+            <div class="empty-state">
+                <div class="ico">🔍</div>
+                <h3>Sin resultados</h3>
+                <p>Ningún informe coincide con los filtros aplicados.</p>
+                <button onclick="limpiarFiltros()" class="btn-gold" style="display:inline-flex; margin-top:1.2rem; font-size:.83rem; padding:.6rem 1.3rem;">
+                    ✕ Limpiar filtros
+                </button>
+            </div>`;
+        return;
+    }
+
+    document.getElementById('contenido').innerHTML = informes.map(inf => `
+        <div class="informe-card" onclick="abrirInforme('${inf.id}', ${JSON.stringify(escape(inf.tema))})">
+            <div class="inf-ico">${ICONOS_TIPO[inf.tipo_informe] || '📄'}</div>
+            <div class="inf-body">
+                <div class="inf-tema">${highlight(inf.tema, searchQuery)}</div>
+                <div class="inf-meta">
+                    <span class="inf-badge gold">${escape(inf.norma)}</span>
+                    <span class="inf-badge">${escape(inf.tipo_informe)}</span>
+                    <span class="inf-badge">${escape(inf.nivel || 'universitario')}</span>
+                    ${inf.asignatura ? `<span class="inf-badge">${escape(inf.asignatura)}</span>` : ''}
+                    ${inf.refs_total > 0 ? `<span class="inf-badge">📚 ${inf.refs_total} refs</span>` : ''}
+                    <span class="inf-fecha">${formatearFecha(inf.created_at)}</span>
+                </div>
+            </div>
+            <div class="inf-actions" onclick="event.stopPropagation()">
+                <a class="btn-icon btn-dl" href="/editar/${inf.id}" title="Editar secciones" style="color:var(--text2);text-decoration:none;display:flex;align-items:center;justify-content:center">✏️</a>
+                <button class="btn-icon btn-dl" title="Descargar PDF" onclick="reDescargarInforme('${inf.id}','pdf')" style="color:var(--gold);border-color:rgba(212,168,67,.25)">📄</button>
+                <button class="btn-icon btn-dl" title="Descargar Word" onclick="reDescargarInforme('${inf.id}','word')" style="color:var(--text2)">📝</button>
+                <button class="btn-icon" title="Eliminar" onclick="eliminar('${inf.id}', this)">🗑</button>
+            </div>
+        </div>`).join('');
+}
+
+function aplicarFiltros() {
+    const query     = document.getElementById('searchInput').value.trim().toLowerCase();
+    const norma     = document.getElementById('filterNorma').value;
+    const tipo      = document.getElementById('filterTipo').value;
+    const orden     = document.getElementById('filterOrden').value;
+
+    let resultado = _todosInformes.filter(inf => {
+        const matchSearch = !query || inf.tema.toLowerCase().includes(query);
+        const matchNorma  = !norma || inf.norma === norma;
+        const matchTipo   = !tipo  || inf.tipo_informe === tipo;
+        return matchSearch && matchNorma && matchTipo;
+    });
+
+    // Ordenar
+    resultado = [...resultado].sort((a, b) => {
+        if (orden === 'reciente') return new Date(b.created_at) - new Date(a.created_at);
+        if (orden === 'antiguo')  return new Date(a.created_at) - new Date(b.created_at);
+        if (orden === 'az')       return a.tema.localeCompare(b.tema);
+        if (orden === 'za')       return b.tema.localeCompare(a.tema);
+        return 0;
+    });
+
+    // Actualizar chips activos
+    const chips = [];
+    if (query) chips.push({ label: `"${query}"`, clear: () => { document.getElementById('searchInput').value = ''; aplicarFiltros(); } });
+    if (norma) chips.push({ label: norma, clear: () => { document.getElementById('filterNorma').value = ''; aplicarFiltros(); } });
+    if (tipo)  chips.push({ label: tipo,  clear: () => { document.getElementById('filterTipo').value = '';  aplicarFiltros(); } });
+
+    const chipContainer = document.getElementById('activeFilters');
+    chipContainer.innerHTML = chips.map((c,i) =>
+        `<span class="filter-chip" onclick="clearChip(${i})">✕ <span class="filter-chip-x"></span>${c.label}</span>`
+    ).join('');
+
+    // Store chips for removal
+    window._filterChips = chips;
+
+    // Count
+    const countEl = document.getElementById('resultsCount');
+    if (chips.length > 0) {
+        countEl.innerHTML = `Mostrando <span>${resultado.length}</span> de ${_todosInformes.length} informes`;
+    } else {
+        countEl.innerHTML = '';
+    }
+
+    renderInformes(resultado, document.getElementById('searchInput').value.trim());
+}
+
+function clearChip(idx) {
+    if (window._filterChips && window._filterChips[idx]) {
+        window._filterChips[idx].clear();
+    }
+}
+
+function limpiarFiltros() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('filterNorma').value = '';
+    document.getElementById('filterTipo').value = '';
+    document.getElementById('filterOrden').value = 'reciente';
+    aplicarFiltros();
 }
 
 function abrirInforme(id, tema) {
@@ -279,7 +510,6 @@ function abrirInforme(id, tema) {
         color: '#eae8e1',
         customClass: { popup: 'swal-popup-custom' },
         didOpen: () => {
-          // Inyectar estilos para los botones del swal
           const style = document.createElement('style');
           style.textContent = `.swal-btn-gold{padding:.65rem 1.3rem;background:linear-gradient(135deg,#d4a843,#9a6e18);color:#000;font-weight:700;font-size:.85rem;border:none;border-radius:9px;cursor:pointer;font-family:'DM Sans',sans-serif}
           .swal-btn-outline{padding:.65rem 1.3rem;background:transparent;color:#eae8e1;font-weight:600;font-size:.85rem;border:1px solid rgba(255,255,255,.15);border-radius:9px;cursor:pointer;font-family:'DM Sans',sans-serif}
@@ -292,7 +522,6 @@ function abrirInforme(id, tema) {
 async function reDescargarInforme(id, formato) {
     Swal.close();
     try {
-        // Obtener datos del informe
         const data = await fetchAuth(`/api/informe/${id}`);
         if (!data.success) throw new Error(data.error || 'No se pudo obtener el informe');
 
@@ -335,22 +564,24 @@ async function eliminar(id, btn) {
     });
     if (!confirmado.isConfirmed) return;
 
-    const user = JSON.parse(localStorage.getItem('arp_user'));
     try {
         const data = await fetchAuth(`/api/informe/${id}`, { method: 'DELETE' });
         if (data.success) {
-            // Quitar la card del DOM sin recargar
-            btn.closest('.informe-card').style.transition = 'opacity .3s';
-            btn.closest('.informe-card').style.opacity = '0';
+            const card = btn.closest('.informe-card');
+            card.style.transition = 'opacity .3s, transform .3s';
+            card.style.opacity = '0';
+            card.style.transform = 'translateX(10px)';
+            // Remove from master array too
+            _todosInformes = _todosInformes.filter(i => i.id !== id);
             setTimeout(() => {
-                btn.closest('.informe-card').remove();
-                // Actualizar contador
-                const cards = document.querySelectorAll('.informe-card');
-                document.getElementById('subtitulo').textContent =
-                    cards.length > 0
-                        ? `${cards.length} informe${cards.length !== 1 ? 's' : ''} guardado${cards.length !== 1 ? 's' : ''}`
-                        : 'Sin informes aún';
-                if (cards.length === 0) cargarInformes();
+                card.remove();
+                const subtitulo = document.getElementById('subtitulo');
+                subtitulo.textContent = _todosInformes.length > 0
+                    ? `${_todosInformes.length} informe${_todosInformes.length !== 1 ? 's' : ''} guardado${_todosInformes.length !== 1 ? 's' : ''}`
+                    : 'Sin informes aún';
+                // Update count display
+                aplicarFiltros();
+                if (_todosInformes.length === 0) cargarInformes();
             }, 300);
         } else {
             Swal.fire({ title: 'Error', text: data.error, icon: 'error', background: '#0e1118', color: '#eae8e1' });
@@ -359,6 +590,26 @@ async function eliminar(id, btn) {
         Swal.fire({ title: 'Error de conexión', text: e.message, icon: 'error', background: '#0e1118', color: '#eae8e1' });
     }
 }
+
+// fetchAuth global (also used in mis-informes)
+function fetchAuth(url, options = {}) {
+    const raw  = localStorage.getItem('arp_user');
+    const user = raw ? JSON.parse(raw) : null;
+    options.headers = options.headers || {};
+    if (user && user.access_token) {
+        options.headers['Authorization'] = `Bearer ${user.access_token}`;
+    }
+    return fetch(url, options).then(r => r.json());
+}
+
+// Keyboard shortcut: focus search on /
+document.addEventListener('keydown', e => {
+    if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
+        e.preventDefault();
+        const input = document.getElementById('searchInput');
+        if (input) { input.focus(); input.select(); }
+    }
+});
 
 cargarInformes();
 </script>
