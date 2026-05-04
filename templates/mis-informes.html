@@ -246,6 +246,7 @@ async function cargarInformes() {
                     </div>
                 </div>
                 <div class="inf-actions" onclick="event.stopPropagation()">
+                    <a class="btn-icon btn-dl" href="/editar/${inf.id}" title="Editar secciones" style="color:var(--text2);text-decoration:none;display:flex;align-items:center;justify-content:center">✏️</a>
                     <button class="btn-icon btn-dl" title="Descargar PDF" onclick="reDescargarInforme('${inf.id}','pdf')" style="color:var(--gold);border-color:rgba(212,168,67,.25)">📄</button>
                     <button class="btn-icon btn-dl" title="Descargar Word" onclick="reDescargarInforme('${inf.id}','word')" style="color:var(--text2)">📝</button>
                     <button class="btn-icon" title="Eliminar" onclick="eliminar('${inf.id}', this)">🗑</button>
