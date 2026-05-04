@@ -1,0 +1,1072 @@
+{% extends "base.html" %}
+{% block title %}Editor de Informe — Academic Report Pro{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Layout principal ── */
+.editor-wrap {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    min-height: calc(100vh - 60px);
+    max-width: 1400px;
+    margin: 0 auto;
+    gap: 0;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+    position: sticky;
+    top: 60px;
+    height: calc(100vh - 60px);
+    overflow-y: auto;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    padding: 1.4rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+}
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.sidebar-title {
+    font-size: .65rem;
+    font-weight: 700;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    padding: .4rem .6rem;
+    margin-bottom: .2rem;
+}
+
+.sec-nav-btn {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    padding: .6rem .8rem;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
+    color: var(--text2);
+    font-family: 'DM Sans', sans-serif;
+    font-size: .8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .15s;
+    text-align: left;
+    width: 100%;
+    position: relative;
+}
+.sec-nav-btn:hover { background: var(--surface2); color: var(--text); }
+.sec-nav-btn.active {
+    background: var(--gold-dim);
+    color: var(--gold);
+    border: 1px solid rgba(212,168,67,.18);
+}
+.sec-nav-btn .sec-ico {
+    width: 26px;
+    height: 26px;
+    border-radius: 7px;
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+.sec-nav-btn.active .sec-ico {
+    background: rgba(212,168,67,.15);
+}
+.sec-nav-btn .sec-saved {
+    margin-left: auto;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity .2s;
+}
+.sec-nav-btn.saved .sec-saved { opacity: 1; }
+
+.sidebar-divider {
+    height: 1px;
+    background: var(--border);
+    margin: .6rem 0;
+}
+
+.sidebar-actions {
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+}
+.btn-export {
+    width: 100%;
+    padding: .7rem;
+    border-radius: 10px;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: .8rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    transition: all .18s;
+}
+.btn-export-pdf {
+    background: linear-gradient(135deg, var(--gold), #9a6e18);
+    color: #000;
+}
+.btn-export-pdf:hover { box-shadow: 0 4px 18px var(--gold-glow); transform: translateY(-1px); }
+.btn-export-word {
+    background: var(--surface2);
+    color: var(--text2);
+    border: 1px solid var(--border2);
+}
+.btn-export-word:hover { border-color: rgba(212,168,67,.3); color: var(--text); }
+
+/* ── Área principal del editor ── */
+.editor-main {
+    padding: 2rem 2.5rem 4rem;
+    min-width: 0;
+}
+
+.editor-topbar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+.editor-topbar-left h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: .3rem;
+}
+.editor-topbar-left p {
+    font-size: .78rem;
+    color: var(--text2);
+}
+.editor-meta-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .35rem;
+    margin-top: .5rem;
+}
+.meta-chip {
+    padding: .2rem .65rem;
+    border-radius: 100px;
+    font-size: .67rem;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text2);
+}
+.meta-chip.gold {
+    background: var(--gold-dim);
+    border-color: rgba(212,168,67,.25);
+    color: var(--gold);
+}
+
+/* ── Sección editor card ── */
+.sec-card {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    animation: fadeIn .2s ease;
+}
+.sec-card.visible { display: block; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.sec-card-header {
+    padding: 1rem 1.4rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    background: var(--surface2);
+}
+.sec-card-header-left {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+}
+.sec-card-ico {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: var(--gold-dim);
+    border: 1px solid rgba(212,168,67,.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+}
+.sec-card-header h2 {
+    font-size: .95rem;
+    font-weight: 700;
+}
+.sec-card-header p {
+    font-size: .72rem;
+    color: var(--text2);
+    margin-top: .1rem;
+}
+.sec-card-actions {
+    display: flex;
+    gap: .5rem;
+    flex-shrink: 0;
+    align-items: center;
+}
+.btn-regen {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .5rem 1rem;
+    border-radius: 8px;
+    border: 1px solid rgba(212,168,67,.25);
+    background: var(--gold-dim);
+    color: var(--gold);
+    font-family: 'DM Sans', sans-serif;
+    font-size: .75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .18s;
+}
+.btn-regen:hover { background: rgba(212,168,67,.2); box-shadow: 0 2px 12px var(--gold-glow); }
+.btn-regen:disabled { opacity: .4; cursor: not-allowed; }
+.btn-regen .spin { animation: spin .7s linear infinite; display: none; }
+.btn-regen.loading .spin { display: inline-block; }
+.btn-regen.loading .ico { display: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.btn-save-sec {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .5rem 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    font-family: 'DM Sans', sans-serif;
+    font-size: .75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .18s;
+}
+.btn-save-sec:hover { border-color: var(--green); color: var(--green); }
+.btn-save-sec.saved { border-color: var(--green); color: var(--green); background: rgba(82,196,138,.07); }
+
+/* ── Toolbar de formato ── */
+.editor-toolbar {
+    padding: .6rem 1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: .25rem;
+    flex-wrap: wrap;
+    align-items: center;
+    background: var(--surface);
+}
+.toolbar-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all .15s;
+}
+.toolbar-btn:hover { background: var(--surface2); border-color: var(--border2); color: var(--text); }
+.toolbar-btn.active { background: var(--gold-dim); border-color: rgba(212,168,67,.25); color: var(--gold); }
+.toolbar-sep { width: 1px; height: 20px; background: var(--border2); margin: 0 .15rem; }
+.toolbar-chars {
+    margin-left: auto;
+    font-size: .67rem;
+    color: var(--text3);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── Textarea del editor ── */
+.sec-editor {
+    width: 100%;
+    min-height: 340px;
+    padding: 1.4rem 1.6rem;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 1rem;
+    line-height: 1.85;
+    resize: vertical;
+    outline: none;
+    display: block;
+}
+.sec-editor::placeholder { color: var(--text3); font-style: italic; }
+
+/* Overlay de regeneración */
+.regen-overlay {
+    display: none;
+    position: relative;
+    min-height: 200px;
+}
+.regen-overlay.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+}
+.regen-pulse {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    color: var(--text2);
+    font-size: .85rem;
+}
+.regen-dots {
+    display: flex;
+    gap: .4rem;
+}
+.regen-dots span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--gold);
+    animation: dotBounce 1.2s ease-in-out infinite;
+}
+.regen-dots span:nth-child(2) { animation-delay: .2s; }
+.regen-dots span:nth-child(3) { animation-delay: .4s; }
+@keyframes dotBounce {
+    0%, 80%, 100% { transform: scale(.7); opacity: .4; }
+    40%           { transform: scale(1);  opacity: 1; }
+}
+
+/* ── Instrucción para regenerar ── */
+.regen-instruction {
+    padding: .8rem 1.4rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: .6rem;
+    align-items: flex-start;
+    background: var(--surface2);
+}
+.regen-instruction textarea {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: .8rem;
+    padding: .55rem .8rem;
+    resize: none;
+    height: 38px;
+    outline: none;
+    transition: border-color .18s, height .2s;
+    line-height: 1.5;
+}
+.regen-instruction textarea:focus {
+    border-color: rgba(212,168,67,.35);
+    height: 70px;
+}
+.regen-instruction textarea::placeholder { color: var(--text3); }
+.regen-instr-btn {
+    padding: .5rem .9rem;
+    border-radius: 8px;
+    border: none;
+    background: linear-gradient(135deg, var(--gold), #9a6e18);
+    color: #000;
+    font-family: 'DM Sans', sans-serif;
+    font-size: .75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .18s;
+    flex-shrink: 0;
+    align-self: flex-end;
+}
+.regen-instr-btn:hover { box-shadow: 0 3px 12px var(--gold-glow); }
+
+/* ── Estado vacío / loading inicial ── */
+.loading-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    flex-direction: column;
+    gap: 1rem;
+    color: var(--text2);
+    font-size: .85rem;
+}
+.no-auth-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+}
+.no-auth-state .ico { font-size: 2.5rem; margin-bottom: 1rem; }
+.no-auth-state h3 { margin-bottom: .5rem; }
+.no-auth-state p { font-size: .85rem; color: var(--text2); margin-bottom: 1.5rem; }
+
+/* ── Toast de guardado ── */
+.toast {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    padding: .7rem 1.2rem;
+    border-radius: 10px;
+    font-size: .82rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    z-index: 9999;
+    transform: translateY(20px);
+    opacity: 0;
+    transition: all .25s ease;
+    pointer-events: none;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.success { background: rgba(82,196,138,.15); border: 1px solid rgba(82,196,138,.3); color: var(--green); }
+.toast.error   { background: rgba(224,92,92,.15);  border: 1px solid rgba(224,92,92,.3);  color: var(--red); }
+.toast.info    { background: var(--gold-dim); border: 1px solid rgba(212,168,67,.25); color: var(--gold); }
+
+/* ── Mobile ── */
+@media (max-width: 860px) {
+    .editor-wrap { grid-template-columns: 1fr; }
+    .sidebar {
+        position: static;
+        height: auto;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding: .7rem;
+        gap: .3rem;
+    }
+    .sidebar::-webkit-scrollbar { height: 3px; }
+    .sidebar-title, .sidebar-divider, .sidebar-actions { display: none; }
+    .sec-nav-btn {
+        flex-direction: column;
+        align-items: center;
+        gap: .3rem;
+        padding: .5rem .65rem;
+        font-size: .67rem;
+        white-space: nowrap;
+        min-width: 64px;
+    }
+    .sec-nav-btn .sec-saved { position: absolute; top: 4px; right: 4px; }
+    .editor-main { padding: 1.2rem 1rem 3rem; }
+    .sec-card-actions { flex-wrap: wrap; gap: .35rem; }
+    .mobile-export-bar {
+        display: flex !important;
+        gap: .5rem;
+        margin-top: 1.5rem;
+    }
+}
+.mobile-export-bar {
+    display: none;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="rootContent">
+    <!-- El contenido real se inyecta por JS -->
+    <div class="loading-state" style="min-height:calc(100vh - 60px)">
+        <div class="regen-dots">
+            <span></span><span></span><span></span>
+        </div>
+        <span>Cargando informe...</span>
+    </div>
+</div>
+
+<!-- Toast global -->
+<div class="toast" id="toast"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ══════════════════════════════════════════════════════════════
+//  CONSTANTES Y ESTADO GLOBAL
+// ══════════════════════════════════════════════════════════════
+const SECCIONES_CONFIG = [
+    { key: 'introduccion',   label: 'Introducción',     ico: '📖', desc: 'Contexto y justificación del tema' },
+    { key: 'objetivos',      label: 'Objetivos',        ico: '🎯', desc: 'Objetivo general y específicos' },
+    { key: 'marco_teorico',  label: 'Marco Teórico',    ico: '📚', desc: 'Fundamentos y estado del arte' },
+    { key: 'metodologia',    label: 'Metodología',      ico: '🔬', desc: 'Enfoque y proceso de investigación' },
+    { key: 'desarrollo',     label: 'Desarrollo',       ico: '⚙️',  desc: 'Análisis principal y resultados' },
+    { key: 'conclusiones',   label: 'Conclusiones',     ico: '✅', desc: 'Hallazgos y reflexiones finales' },
+    { key: 'recomendaciones',label: 'Recomendaciones',  ico: '💡', desc: 'Acciones propuestas para actores clave' },
+    { key: 'referencias',    label: 'Referencias',      ico: '📄', desc: 'Bibliografía en la norma seleccionada' },
+];
+
+let informeId    = null;
+let informeData  = null;       // { secciones, datos_usuario }
+let seccionActual = 'introduccion';
+let cambiosSinGuardar = {};    // { key: true/false }
+let guardadoEnDB = {};         // secciones guardadas remotamente
+
+// ══════════════════════════════════════════════════════════════
+//  INICIO
+// ══════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+    // Leer el ID del informe de la URL: /editar/<id>
+    const partes = location.pathname.split('/');
+    informeId = partes[partes.length - 1];
+
+    const raw = localStorage.getItem('arp_user');
+    if (!raw) {
+        renderNoAuth();
+        return;
+    }
+
+    if (!informeId || informeId === 'editar') {
+        // Sin ID → intentar cargar desde localStorage (informe recién generado)
+        const temp = localStorage.getItem('arp_informe_temp');
+        if (temp) {
+            informeData = JSON.parse(temp);
+            renderEditor();
+        } else {
+            renderError('No se encontró el informe. <a href="/mis-informes" style="color:var(--gold)">Ver mis informes →</a>');
+        }
+        return;
+    }
+
+    cargarInformeDesdeDB(informeId);
+});
+
+// ══════════════════════════════════════════════════════════════
+//  CARGA DESDE BASE DE DATOS
+// ══════════════════════════════════════════════════════════════
+async function cargarInformeDesdeDB(id) {
+    try {
+        const data = await fetchAuth(`/api/informe/${id}`);
+        if (!data.success) throw new Error(data.error || 'Informe no encontrado');
+        informeData = {
+            secciones:    data.informe.secciones,
+            datos_usuario: data.informe.datos_usuario
+        };
+        // Marcar todas como guardadas inicialmente
+        SECCIONES_CONFIG.forEach(s => { guardadoEnDB[s.key] = true; });
+        renderEditor();
+    } catch(e) {
+        renderError(`Error: ${e.message}. <a href="/mis-informes" style="color:var(--gold)">Ver mis informes →</a>`);
+    }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  RENDER PRINCIPAL
+// ══════════════════════════════════════════════════════════════
+function renderEditor() {
+    const du = informeData.datos_usuario || {};
+    const chips = [
+        du.norma   && `<span class="meta-chip gold">${du.norma}</span>`,
+        du.nivel   && `<span class="meta-chip">${du.nivel}</span>`,
+        du.asignatura && `<span class="meta-chip">${du.asignatura}</span>`,
+    ].filter(Boolean).join('');
+
+    const sidebarItems = SECCIONES_CONFIG.map(s => `
+        <button class="sec-nav-btn ${s.key === seccionActual ? 'active' : ''}"
+                id="nav-${s.key}"
+                onclick="cambiarSeccion('${s.key}')">
+            <span class="sec-ico">${s.ico}</span>
+            <span>${s.label}</span>
+            <span class="sec-saved" id="saved-dot-${s.key}"></span>
+        </button>
+    `).join('');
+
+    const seccionCards = SECCIONES_CONFIG.map(s => `
+        <div class="sec-card ${s.key === seccionActual ? 'visible' : ''}" id="card-${s.key}">
+            <div class="sec-card-header">
+                <div class="sec-card-header-left">
+                    <div class="sec-card-ico">${s.ico}</div>
+                    <div>
+                        <h2>${s.label}</h2>
+                        <p>${s.desc}</p>
+                    </div>
+                </div>
+                <div class="sec-card-actions">
+                    <button class="btn-save-sec" id="btn-save-${s.key}" onclick="guardarSeccion('${s.key}')">
+                        💾 Guardar
+                    </button>
+                    <button class="btn-regen" id="btn-regen-${s.key}" onclick="regenerarSeccion('${s.key}')">
+                        <span class="ico">✦ Regenerar</span>
+                        <span class="spin">↻</span>
+                    </button>
+                </div>
+            </div>
+            <div class="editor-toolbar">
+                <button class="toolbar-btn" onclick="formatear('bold')" title="Negrita"><b>B</b></button>
+                <button class="toolbar-btn" onclick="formatear('italic')" title="Cursiva"><i>I</i></button>
+                <button class="toolbar-btn" onclick="formatear('underline')" title="Subrayado"><u>U</u></button>
+                <div class="toolbar-sep"></div>
+                <button class="toolbar-btn" onclick="aumentarFuente()" title="Fuente +" style="font-size:11px">A+</button>
+                <button class="toolbar-btn" onclick="disminuirFuente()" title="Fuente -" style="font-size:11px">A−</button>
+                <div class="toolbar-sep"></div>
+                <button class="toolbar-btn" onclick="limpiarFormato()" title="Limpiar formato" style="font-size:10px">✕fmt</button>
+                <div class="toolbar-sep"></div>
+                <button class="toolbar-btn" onclick="copiarSeccion('${s.key}')" title="Copiar texto">📋</button>
+                <span class="toolbar-chars" id="chars-${s.key}">0 chars</span>
+            </div>
+            <div id="editor-wrap-${s.key}" style="position:relative">
+                <div class="regen-overlay" id="regen-overlay-${s.key}">
+                    <div class="regen-pulse">
+                        <div class="regen-dots"><span></span><span></span><span></span></div>
+                        <span id="regen-msg-${s.key}">Regenerando con IA...</span>
+                    </div>
+                </div>
+                <textarea
+                    class="sec-editor"
+                    id="editor-${s.key}"
+                    placeholder="Contenido de ${s.label.toLowerCase()}..."
+                    oninput="onEditorInput('${s.key}')"
+                    spellcheck="true"
+                >${limpiarTexto(informeData.secciones?.[s.key] || '')}</textarea>
+            </div>
+            <div class="regen-instruction">
+                <textarea
+                    id="instr-${s.key}"
+                    placeholder="Instrucción opcional: 'hazlo más corto', 'agrega más citas', 'enfócate en Colombia'..."
+                    rows="1"
+                ></textarea>
+                <button class="regen-instr-btn" onclick="regenerarSeccion('${s.key}', true)">
+                    ✦ Regenerar con instrucción
+                </button>
+            </div>
+        </div>
+    `).join('');
+
+    document.getElementById('rootContent').innerHTML = `
+        <div class="editor-wrap">
+            <aside class="sidebar">
+                <div class="sidebar-title">Secciones</div>
+                ${sidebarItems}
+                <div class="sidebar-divider"></div>
+                <div class="sidebar-actions">
+                    <button class="btn-export btn-export-pdf" onclick="exportar('pdf')">
+                        📄 Descargar PDF
+                    </button>
+                    <button class="btn-export btn-export-word" onclick="exportar('word')">
+                        📝 Descargar Word
+                    </button>
+                    ${informeId ? `<button class="btn-export" style="background:var(--surface2);color:var(--text3);border:1px solid var(--border);font-size:.72rem" onclick="guardarTodo()">
+                        💾 Guardar todo
+                    </button>` : ''}
+                </div>
+            </aside>
+            <div class="editor-main">
+                <div class="editor-topbar">
+                    <div class="editor-topbar-left">
+                        <h1>✏️ Editando informe</h1>
+                        <p>${du.tema || 'Sin título'}</p>
+                        <div class="editor-meta-chips">${chips}</div>
+                    </div>
+                    <a href="/mis-informes" style="font-size:.78rem;color:var(--text2);text-decoration:none;padding:.4rem .8rem;border:1px solid var(--border2);border-radius:8px;transition:all .18s"
+                       onmouseover="this.style.borderColor='rgba(212,168,67,.3)';this.style.color='var(--gold)'"
+                       onmouseout="this.style.borderColor='';this.style.color=''">
+                        ← Mis informes
+                    </a>
+                </div>
+                ${seccionCards}
+                <!-- Botones de exportar en mobile -->
+                <div class="mobile-export-bar">
+                    <button class="btn-export btn-export-pdf" style="flex:1" onclick="exportar('pdf')">📄 PDF</button>
+                    <button class="btn-export btn-export-word" style="flex:1;background:var(--surface2);color:var(--text2);border:1px solid var(--border2)" onclick="exportar('word')">📝 Word</button>
+                </div>
+            </div>
+        </div>`;
+
+    // Inicializar contadores de chars
+    SECCIONES_CONFIG.forEach(s => actualizarChars(s.key));
+
+    // Marcar guardados iniciales
+    if (informeId) {
+        SECCIONES_CONFIG.forEach(s => marcarGuardado(s.key));
+    }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  NAVEGACIÓN ENTRE SECCIONES
+// ══════════════════════════════════════════════════════════════
+function cambiarSeccion(key) {
+    // Ocultar la actual
+    document.getElementById(`card-${seccionActual}`)?.classList.remove('visible');
+    document.getElementById(`nav-${seccionActual}`)?.classList.remove('active');
+    // Mostrar la nueva
+    seccionActual = key;
+    document.getElementById(`card-${key}`)?.classList.add('visible');
+    document.getElementById(`nav-${key}`)?.classList.add('active');
+    // Scroll al inicio del editor en mobile
+    if (window.innerWidth <= 860) {
+        document.getElementById(`card-${key}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  EDITOR INPUT
+// ══════════════════════════════════════════════════════════════
+function onEditorInput(key) {
+    actualizarChars(key);
+    // Marcar como con cambios sin guardar
+    cambiosSinGuardar[key] = true;
+    const btn = document.getElementById(`btn-save-${key}`);
+    if (btn) {
+        btn.classList.remove('saved');
+        btn.style.borderColor = 'rgba(212,168,67,.35)';
+        btn.style.color = 'var(--gold)';
+    }
+    const navBtn = document.getElementById(`nav-${key}`);
+    if (navBtn) navBtn.classList.remove('saved');
+    // Sync al objeto en memoria
+    if (informeData?.secciones) {
+        informeData.secciones[key] = document.getElementById(`editor-${key}`)?.value || '';
+    }
+}
+
+function actualizarChars(key) {
+    const el  = document.getElementById(`editor-${key}`);
+    const cnt = document.getElementById(`chars-${key}`);
+    if (el && cnt) cnt.textContent = (el.value?.length || 0).toLocaleString('es') + ' chars';
+}
+
+// ══════════════════════════════════════════════════════════════
+//  FORMATO DE TEXTO (básico, sobre textarea)
+// ══════════════════════════════════════════════════════════════
+function formatear(tipo) {
+    const ta = document.getElementById(`editor-${seccionActual}`);
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end   = ta.selectionEnd;
+    if (start === end) return; // nada seleccionado
+    const sel = ta.value.substring(start, end);
+    const markers = { bold: '**', italic: '_', underline: '__' };
+    const m = markers[tipo];
+    ta.value = ta.value.substring(0, start) + m + sel + m + ta.value.substring(end);
+    ta.selectionStart = start;
+    ta.selectionEnd   = end + m.length * 2;
+    ta.focus();
+    onEditorInput(seccionActual);
+}
+
+function aumentarFuente() {
+    const ta = document.getElementById(`editor-${seccionActual}`);
+    if (!ta) return;
+    const cur = parseFloat(window.getComputedStyle(ta).fontSize);
+    ta.style.fontSize = Math.min(cur + 1, 20) + 'px';
+}
+function disminuirFuente() {
+    const ta = document.getElementById(`editor-${seccionActual}`);
+    if (!ta) return;
+    const cur = parseFloat(window.getComputedStyle(ta).fontSize);
+    ta.style.fontSize = Math.max(cur - 1, 11) + 'px';
+}
+function limpiarFormato() {
+    const ta = document.getElementById(`editor-${seccionActual}`);
+    if (!ta) return;
+    ta.value = ta.value.replace(/\*\*|__|_/g, '');
+    onEditorInput(seccionActual);
+}
+
+async function copiarSeccion(key) {
+    const ta = document.getElementById(`editor-${key}`);
+    if (!ta) return;
+    try {
+        await navigator.clipboard.writeText(ta.value);
+        mostrarToast('✅ Texto copiado al portapapeles', 'success');
+    } catch(e) {
+        mostrarToast('No se pudo copiar', 'error');
+    }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  GUARDAR SECCIÓN
+// ══════════════════════════════════════════════════════════════
+async function guardarSeccion(key) {
+    if (!informeId) {
+        // Sin ID de DB → solo guardar en memoria y localStorage
+        if (informeData?.secciones) {
+            informeData.secciones[key] = document.getElementById(`editor-${key}`)?.value || '';
+            localStorage.setItem('arp_informe_temp', JSON.stringify(informeData));
+        }
+        marcarGuardado(key);
+        mostrarToast('💾 Guardado localmente', 'info');
+        return;
+    }
+
+    const btn = document.getElementById(`btn-save-${key}`);
+    if (btn) { btn.textContent = '...'; btn.disabled = true; }
+
+    try {
+        // Actualizar el objeto completo en DB
+        const secciones = {};
+        SECCIONES_CONFIG.forEach(s => {
+            secciones[s.key] = document.getElementById(`editor-${s.key}`)?.value
+                               || informeData?.secciones?.[s.key] || '';
+        });
+        const res = await fetchAuth(`/api/informe-secciones/${informeId}`, {
+            method: 'PUT',
+            body: JSON.stringify({ secciones })
+        });
+        if (res.success) {
+            marcarGuardado(key);
+            mostrarToast('✅ Sección guardada', 'success');
+        } else {
+            throw new Error(res.error);
+        }
+    } catch(e) {
+        mostrarToast('Error al guardar: ' + e.message, 'error');
+    } finally {
+        if (btn) { btn.textContent = '💾 Guardar'; btn.disabled = false; }
+    }
+}
+
+async function guardarTodo() {
+    mostrarToast('💾 Guardando todo...', 'info');
+    for (const s of SECCIONES_CONFIG) {
+        await guardarSeccion(s.key);
+    }
+    mostrarToast('✅ Todo guardado', 'success');
+}
+
+function marcarGuardado(key) {
+    cambiosSinGuardar[key] = false;
+    const btn = document.getElementById(`btn-save-${key}`);
+    if (btn) {
+        btn.classList.add('saved');
+        btn.textContent = '✅ Guardado';
+        btn.style.borderColor = '';
+        btn.style.color = '';
+        setTimeout(() => {
+            if (btn) btn.textContent = '💾 Guardar';
+            btn.classList.remove('saved');
+        }, 2500);
+    }
+    const navBtn = document.getElementById(`nav-${key}`);
+    if (navBtn) navBtn.classList.add('saved');
+}
+
+// ══════════════════════════════════════════════════════════════
+//  REGENERAR SECCIÓN CON IA
+// ══════════════════════════════════════════════════════════════
+async function regenerarSeccion(key, conInstruccion = false) {
+    const du     = informeData?.datos_usuario || {};
+    const btnReg = document.getElementById(`btn-regen-${key}`);
+    const overlay = document.getElementById(`regen-overlay-${key}`);
+    const editor  = document.getElementById(`editor-${key}`);
+    const msgEl   = document.getElementById(`regen-msg-${key}`);
+
+    // Instrucción personalizada
+    let instruccion = '';
+    if (conInstruccion) {
+        instruccion = document.getElementById(`instr-${key}`)?.value?.trim() || '';
+    }
+
+    // Confirmar si ya hay contenido
+    if (editor?.value?.trim().length > 100) {
+        const conf = await Swal.fire({
+            title: '¿Regenerar esta sección?',
+            html: `<p style="color:var(--text2);font-size:.86rem">El contenido actual será reemplazado por la nueva versión generada con IA.</p>`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '✦ Sí, regenerar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#d4a843',
+            cancelButtonColor: '#3d3c38',
+            background: '#0e1118',
+            color: '#eae8e1',
+        });
+        if (!conf.isConfirmed) return;
+    }
+
+    // UI loading
+    if (btnReg) { btnReg.classList.add('loading'); btnReg.disabled = true; }
+    if (overlay) { overlay.classList.add('loading'); }
+    if (editor)  { editor.style.opacity = '.3'; editor.disabled = true; }
+
+    const mensajes = [
+        'Consultando fuentes académicas...',
+        'Redactando con norma ' + (du.norma || 'APA 7') + '...',
+        'Aplicando contexto colombiano...',
+        'Revisando citas y coherencia...',
+    ];
+    let mi = 0;
+    const interval = setInterval(() => {
+        if (msgEl) msgEl.textContent = mensajes[mi % mensajes.length];
+        mi++;
+    }, 2200);
+
+    try {
+        const payload = {
+            seccion:        key,
+            tema:           du.tema || '',
+            norma:          du.norma || 'APA 7',
+            tipo_informe:   du.tipo_informe || 'academico',
+            nivel:          du.nivel || 'universitario',
+            modo:           'rapido',
+            objetivos_texto: informeData?.secciones?.objetivos || '',
+        };
+
+        // Si hay instrucción personalizada, agregarla al tema
+        if (instruccion) {
+            payload.instruccion_extra = instruccion;
+            payload.tema = `${du.tema}. INSTRUCCIÓN ADICIONAL: ${instruccion}`;
+        }
+
+        const data = await fetchAuth('/api/generar-seccion', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+
+        if (!data.success) throw new Error(data.error || 'Error desconocido');
+
+        // Actualizar editor con el nuevo contenido
+        if (editor) {
+            editor.value = data.contenido || '';
+            editor.style.opacity = '1';
+            editor.disabled = false;
+        }
+        if (informeData?.secciones) informeData.secciones[key] = data.contenido || '';
+
+        actualizarChars(key);
+        cambiosSinGuardar[key] = true;
+
+        // Limpiar instrucción
+        const instrEl = document.getElementById(`instr-${key}`);
+        if (instrEl) instrEl.value = '';
+
+        mostrarToast('✦ Sección regenerada', 'info');
+
+    } catch(e) {
+        mostrarToast('Error al regenerar: ' + e.message, 'error');
+        if (editor) { editor.style.opacity = '1'; editor.disabled = false; }
+    } finally {
+        clearInterval(interval);
+        if (btnReg) { btnReg.classList.remove('loading'); btnReg.disabled = false; }
+        if (overlay) { overlay.classList.remove('loading'); }
+    }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  EXPORTAR PDF / WORD
+// ══════════════════════════════════════════════════════════════
+async function exportar(formato) {
+    // Recoger el contenido actual de todos los editores
+    const secciones = {};
+    SECCIONES_CONFIG.forEach(s => {
+        secciones[s.key] = document.getElementById(`editor-${s.key}`)?.value
+                           || informeData?.secciones?.[s.key] || '';
+    });
+
+    const endpoint = formato === 'pdf' ? '/exportar-pdf' : '/exportar-word';
+    const ext      = formato === 'pdf' ? 'pdf' : 'docx';
+
+    Swal.fire({
+        title: `Generando ${formato.toUpperCase()}…`,
+        html: '<div style="color:var(--text2);font-size:.85rem">Preparando tu documento...</div>',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        background: '#0e1118',
+        color: '#eae8e1',
+        didOpen: () => Swal.showLoading()
+    });
+
+    try {
+        const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                secciones,
+                datos_usuario: informeData?.datos_usuario || {}
+            })
+        });
+        if (!res.ok) throw new Error('Error del servidor al generar el archivo');
+        const blob = await res.blob();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        const nombreTema = (informeData?.datos_usuario?.tema || 'informe')
+            .replace(/[^a-z0-9]/gi, '_').toLowerCase().slice(0, 40);
+        a.href = url; a.download = `${nombreTema}.${ext}`; a.click();
+        URL.revokeObjectURL(url);
+        Swal.fire({ icon: 'success', title: '¡Descargado!', timer: 1500, showConfirmButton: false, background: '#0e1118', color: '#eae8e1' });
+    } catch(e) {
+        Swal.fire({ icon: 'error', title: 'Error', text: e.message, confirmButtonColor: '#d4a843', background: '#0e1118', color: '#eae8e1' });
+    }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  UTILIDADES
+// ══════════════════════════════════════════════════════════════
+function limpiarTexto(txt) {
+    if (!txt) return '';
+    return txt.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function mostrarToast(msg, tipo = 'info') {
+    const t = document.getElementById('toast');
+    if (!t) return;
+    t.textContent = msg;
+    t.className = `toast ${tipo} show`;
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => { t.classList.remove('show'); }, 2800);
+}
+
+function renderNoAuth() {
+    document.getElementById('rootContent').innerHTML = `
+        <div style="padding:3rem 1.5rem;max-width:500px;margin:0 auto">
+            <div class="no-auth-state">
+                <div class="ico">🔐</div>
+                <h3>Inicia sesión para editar</h3>
+                <p>Necesitas una cuenta para acceder al editor de informes.</p>
+                <a href="/auth?next=${location.pathname}" class="btn-gold" style="display:inline-flex;font-size:.85rem">
+                    Iniciar sesión →
+                </a>
+            </div>
+        </div>`;
+}
+
+function renderError(msg) {
+    document.getElementById('rootContent').innerHTML = `
+        <div style="padding:3rem 1.5rem;max-width:500px;margin:0 auto">
+            <div class="no-auth-state">
+                <div class="ico">⚠️</div>
+                <h3>No se pudo cargar</h3>
+                <p>${msg}</p>
+            </div>
+        </div>`;
+}
+
+// Aviso de cambios sin guardar al salir
+window.addEventListener('beforeunload', (e) => {
+    const hayCambios = Object.values(cambiosSinGuardar).some(v => v);
+    if (hayCambios) {
+        e.preventDefault();
+        e.returnValue = '';
+    }
+});
+</script>
+{% endblock %}
