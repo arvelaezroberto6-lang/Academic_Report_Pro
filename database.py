@@ -429,6 +429,47 @@ def _calcular_racha(fechas_ordenadas: list) -> int:
     return racha
 
 
+def obtener_usos_mes(user_id: str) -> dict:
+    """
+    Devuelve el conteo de informes generados en el mes calendario actual.
+
+    Retorna:
+        {
+            "usos_mes":    int,   — informes generados este mes
+            "mes_nombre":  str,   — ej. "mayo 2026"
+            # Preparado para límites futuros:
+            "limite_mes":  None,  — None = sin límite activo aún
+            "plan":        "free" — placeholder para futuros planes
+        }
+    """
+    if not DB_DISPONIBLE:
+        return {"usos_mes": 0, "mes_nombre": "", "limite_mes": None, "plan": "free"}
+    try:
+        ahora    = datetime.now(timezone.utc)
+        inicio   = ahora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        res = (
+            supabase.table("informes")
+            .select("id", count="exact")
+            .eq("user_id", user_id)
+            .eq("estado", "completo")
+            .gte("created_at", inicio.isoformat())
+            .execute()
+        )
+        usos = res.count if res.count is not None else len(res.data or [])
+        meses_es = ["enero","febrero","marzo","abril","mayo","junio",
+                    "julio","agosto","septiembre","octubre","noviembre","diciembre"]
+        mes_nombre = f"{meses_es[ahora.month - 1]} {ahora.year}"
+        return {
+            "usos_mes":   usos,
+            "mes_nombre": mes_nombre,
+            "limite_mes": None,   # ← cuando haya planes, poner el número aquí
+            "plan":       "free", # ← actualizar cuando existan planes de pago
+        }
+    except Exception as e:
+        logger.error(f"Error obteniendo usos del mes para {user_id}: {e}")
+        return {"usos_mes": 0, "mes_nombre": "", "limite_mes": None, "plan": "free"}
+
+
 def obtener_resumen_actividad(user_id: str, dias: int = 30) -> list:
     """
     Devuelve la actividad diaria del usuario en los últimos N días.
