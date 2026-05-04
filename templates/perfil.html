@@ -356,16 +356,56 @@ async function cargarPerfil() {
     }
 
     try {
+        const _token = () => {
+            const r = localStorage.getItem('arp_user');
+            return r ? JSON.parse(r).access_token : null;
+        };
+        const _refresh = async () => {
+            const raw = localStorage.getItem('arp_user');
+            if (!raw) return null;
+            const u = JSON.parse(raw);
+            if (!u.refresh_token) return null;
+            try {
+                const r = await fetch('/api/auth/refresh', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refresh_token: u.refresh_token })
+                });
+                const d = await r.json();
+                if (d.success) {
+                    localStorage.setItem('arp_user', JSON.stringify({
+                        ...u, access_token: d.access_token, refresh_token: d.refresh_token
+                    }));
+                    return d.access_token;
+                }
+            } catch (_) {}
+            return null;
+        };
+        const authFetch = async (url) => {
+            let token = _token();
+            let res   = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (res.status === 401) {
+                token = await _refresh();
+                if (!token) {
+                    localStorage.removeItem('arp_user');
+                    location.href = '/auth?next=/perfil';
+                    return { ok: false };
+                }
+                res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            }
+            return res.json();
+        };
+
         const [resPerfil, resInformes, resStats, resUsos] = await Promise.all([
-            fetch('/api/perfil',        { headers: { 'Authorization': `Bearer ${user.access_token}` } }),
-            fetch('/api/mis-informes',  { headers: { 'Authorization': `Bearer ${user.access_token}` } }),
-            fetch('/api/estadisticas',  { headers: { 'Authorization': `Bearer ${user.access_token}` } }),
-            fetch('/api/usos-mes',      { headers: { 'Authorization': `Bearer ${user.access_token}` } }),
+            authFetch('/api/perfil'),
+            authFetch('/api/mis-informes'),
+            authFetch('/api/estadisticas'),
+            authFetch('/api/usos-mes'),
         ]);
-        const dp = await resPerfil.json();
-        const di = await resInformes.json();
-        const ds = await resStats.json();
-        const du = await resUsos.json();
+        const dp = resPerfil;
+        const di = resInformes;
+        const ds = resStats;
+        const du = resUsos;
 
         const perfil    = dp.success ? (dp.perfil || {})              : {};
         const informes  = di.success ? (di.informes || [])            : [];
