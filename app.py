@@ -32,6 +32,7 @@ from database import (
     obtener_informe, eliminar_informe, DB_DISPONIBLE,
     obtener_estadisticas_usuario,
     obtener_resumen_actividad,
+    obtener_usos_mes,
 )
 
 
@@ -1878,6 +1879,25 @@ def api_estadisticas(user_id):
     return jsonify({'success': True, 'stats': stats})
  
  
+@app.route('/api/usos-mes', methods=['GET'])
+@requiere_auth
+def api_usos_mes(user_id):
+    """
+    Devuelve el número de informes generados por el usuario en el mes actual.
+
+    Respuesta:
+    {
+        "success":    true,
+        "usos_mes":   3,
+        "mes_nombre": "mayo 2026",
+        "limite_mes": null,   // null = sin límite activo aún
+        "plan":       "free"
+    }
+    """
+    data = obtener_usos_mes(user_id)
+    return jsonify({'success': True, **data})
+
+
 @app.route('/api/estadisticas/actividad', methods=['GET'])
 @requiere_auth
 def api_actividad(user_id):
