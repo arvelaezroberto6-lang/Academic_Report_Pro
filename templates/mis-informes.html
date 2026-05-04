@@ -591,15 +591,57 @@ async function eliminar(id, btn) {
     }
 }
 
-// fetchAuth global (also used in mis-informes)
-function fetchAuth(url, options = {}) {
-    const raw  = localStorage.getItem('arp_user');
-    const user = raw ? JSON.parse(raw) : null;
-    options.headers = options.headers || {};
-    if (user && user.access_token) {
-        options.headers['Authorization'] = `Bearer ${user.access_token}`;
+// fetchAuth con renovación automática de token
+async function fetchAuth(url, options = {}) {
+    const _getUser = () => {
+        const raw = localStorage.getItem('arp_user');
+        return raw ? JSON.parse(raw) : null;
+    };
+
+    const _buildHeaders = (token) => ({
+        'Content-Type': 'application/json',
+        ...(options.headers || {}),
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    });
+
+    const _refresh = async () => {
+        const u = _getUser();
+        if (!u?.refresh_token) return null;
+        try {
+            const r = await fetch('/api/auth/refresh', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ refresh_token: u.refresh_token })
+            });
+            const d = await r.json();
+            if (d.success) {
+                localStorage.setItem('arp_user', JSON.stringify({
+                    ...u,
+                    access_token:  d.access_token,
+                    refresh_token: d.refresh_token,
+                }));
+                return d.access_token;
+            }
+        } catch (_) {}
+        return null;
+    };
+
+    const user = _getUser();
+    let res = await fetch(url, { ...options, headers: _buildHeaders(user?.access_token) });
+
+    if (res.status !== 401) return res.json();
+
+    // Token expirado — intentar refrescar
+    const newToken = await _refresh();
+    if (!newToken) {
+        localStorage.removeItem('arp_user');
+        window.location.href = '/auth?next=' + encodeURIComponent(location.pathname);
+        return { success: false, error: 'Sesión expirada' };
     }
-    return fetch(url, options).then(r => r.json());
+
+    // Reintentar con el token nuevo
+    res = await fetch(url, { ...options, headers: _buildHeaders(newToken) });
+    return res.json();
 }
 
 // Keyboard shortcut: focus search on /
