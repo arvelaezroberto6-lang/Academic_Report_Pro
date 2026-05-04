@@ -2232,6 +2232,68 @@ def recuperar_page():
 def sugerencias_page():
     return render_template('sugerencias.html')
 
+# ─────────────────────────────────────────────────────────────
+# EDITOR DE INFORME
+# ─────────────────────────────────────────────────────────────
+@app.route('/editar')
+@app.route('/editar/<informe_id>')
+def editar_page(informe_id=None):
+    """Página de edición de un informe por secciones."""
+    return render_template('editar.html')
+
+
+@app.route('/api/informe-secciones/<informe_id>', methods=['PUT'])
+@requiere_auth
+def api_actualizar_secciones(user_id, informe_id):
+    """
+    Actualiza las secciones de un informe existente.
+    El frontend envía el JSON completo de secciones editadas.
+    Solo el dueño del informe puede editarlo (verificado por user_id del JWT).
+    """
+    try:
+        if not es_uuid_valido(informe_id):
+            return jsonify({'success': False, 'error': 'ID de informe inválido'}), 400
+
+        data     = request.get_json(silent=True) or {}
+        secciones = data.get('secciones', {})
+
+        if not secciones or not isinstance(secciones, dict):
+            return jsonify({'success': False, 'error': 'Secciones inválidas'}), 400
+
+        # Sanitizar cada sección antes de guardar
+        secciones_limpias = {}
+        claves_validas = {'introduccion', 'objetivos', 'marco_teorico', 'metodologia',
+                          'desarrollo', 'conclusiones', 'recomendaciones', 'referencias'}
+        for clave, contenido in secciones.items():
+            if clave in claves_validas:
+                secciones_limpias[clave] = sanitizar_texto(str(contenido), 50000)
+
+        if not DB_DISPONIBLE:
+            return jsonify({'success': False, 'error': 'Base de datos no disponible'}), 503
+
+        # Verificar que el informe pertenece al usuario antes de actualizar
+        informe_existente = obtener_informe(informe_id, user_id)
+        if not informe_existente:
+            return jsonify({'success': False, 'error': 'Informe no encontrado o sin permiso'}), 404
+
+        # Actualizar las secciones en Supabase
+        from database import supabase
+        resultado = supabase.table('informes').update({
+            'secciones': secciones_limpias,
+        }).eq('id', informe_id).eq('user_id', user_id).execute()
+
+        if resultado.data:
+            log_evento_seguridad('INFORME_EDITADO', f"user={user_id} informe={informe_id}", request)
+            logger.info(f"Secciones actualizadas: informe={informe_id} user={user_id}")
+            return jsonify({'success': True})
+        else:
+            return jsonify({'success': False, 'error': 'No se pudo actualizar'}), 500
+
+    except Exception as e:
+        logger.error(f"Error actualizando secciones: {e}")
+        return jsonify({'success': False, 'error': 'Error interno'}), 500
+
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port, debug=False)
