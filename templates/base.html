@@ -214,6 +214,26 @@
             font-size: .88rem;
         }
 
+        /* ── Badge de usos del mes en el nav ── */
+        .nav-uso-badge {
+            display: none;
+            align-items: center;
+            gap: .35rem;
+            padding: .2rem .55rem;
+            background: var(--gold-dim);
+            border: 1px solid rgba(212,168,67,.2);
+            border-radius: 20px;
+            font-size: .68rem;
+            font-weight: 700;
+            color: var(--gold);
+            white-space: nowrap;
+            cursor: default;
+        }
+        .nav-uso-dot {
+            width: 5px; height: 5px; border-radius: 50%;
+            background: var(--gold); flex-shrink: 0;
+        }
+
         /* ── THEME TOGGLE ── */
         .theme-toggle {
             width: 36px; height: 36px;
@@ -350,7 +370,13 @@
 
         <div class="nav-links">
             <a href="/" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">Inicio</a>
-            <a href="/generar" class="nav-link {% if request.endpoint == 'generar_page' %}active{% endif %}">Generador</a>
+            <a href="/generar" class="nav-link {% if request.endpoint == 'generar_page' %}active{% endif %}" style="display:inline-flex;align-items:center;gap:.4rem;">
+                Generador
+                <span class="nav-uso-badge" id="navUsoBadge" title="Informes generados este mes">
+                    <span class="nav-uso-dot"></span>
+                    <span id="navUsoBadgeNum">0</span>
+                </span>
+            </a>
             <a href="/mis-informes" class="nav-link {% if request.endpoint == 'mis_informes' %}active{% endif %}">Mis informes</a>
             <a href="/perfil" class="nav-link {% if request.endpoint == 'perfil' %}active{% endif %}">Perfil</a>
             <a href="/sugerencias" class="nav-link {% if request.endpoint == 'sugerencias_page' %}active{% endif %}">Sugerencias</a>
@@ -557,6 +583,40 @@
 
         return res.json();
     }
+    </script>
+
+    <!-- ══════════════════════════════════════════════════════
+         BADGE DE USOS DEL MES — se carga en todas las páginas
+         para que el navbar siempre muestre el contador actualizado.
+         ══════════════════════════════════════════════════════ -->
+    <script>
+    (async function cargarNavBadge() {
+        const raw = localStorage.getItem('arp_user');
+        if (!raw) return;
+        let user;
+        try { user = JSON.parse(raw); } catch(e) { return; }
+        if (!user.access_token) return;
+
+        try {
+            const res  = await fetch('/api/usos-mes', {
+                headers: { 'Authorization': `Bearer ${user.access_token}` }
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            if (!data.success) return;
+
+            const n = data.usos_mes || 0;
+            if (n <= 0) return;
+
+            // Badge en desktop nav
+            const badge    = document.getElementById('navUsoBadge');
+            const badgeNum = document.getElementById('navUsoBadgeNum');
+            if (badge && badgeNum) {
+                badgeNum.textContent  = n;
+                badge.style.display   = 'inline-flex';
+            }
+        } catch(e) { /* silencioso — no interrumpir la navegación */ }
+    })();
     </script>
 
     <!-- ══════════════════════════════════════════════════════
