@@ -323,6 +323,43 @@ select option { background: var(--surface); }
     .editor-actions { flex-direction: column; }
     .editor-actions button { min-width: unset; }
 }
+
+/* ── Banner usos del mes ── */
+#usoBannerMes {
+    display: none;
+    align-items: center;
+    gap: .8rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: .75rem 1.2rem;
+    margin-bottom: 1.5rem;
+    font-size: .8rem;
+    color: var(--text2);
+}
+#usoBannerMes .uso-num {
+    font-size: 1.05rem; font-weight: 700;
+    color: var(--gold);
+    font-family: 'Playfair Display', serif;
+    white-space: nowrap;
+}
+#usoBannerMes .uso-bar-wrap {
+    flex: 1; height: 4px;
+    background: var(--surface2);
+    border-radius: 2px; overflow: hidden;
+    min-width: 60px;
+}
+#usoBannerMes .uso-bar-fill {
+    height: 100%; border-radius: 2px;
+    background: linear-gradient(90deg, var(--gold) 0%, #f0c96a 100%);
+    transition: width .5s ease;
+    min-width: 3px;
+}
+#usoBannerMes a {
+    color: var(--gold); text-decoration: none;
+    font-weight: 600; font-size: .75rem; white-space: nowrap;
+}
+#usoBannerMes a:hover { text-decoration: underline; }
 </style>
 {% endblock %}
 
@@ -335,6 +372,17 @@ select option { background: var(--surface); }
 </div>
 
 <div class="form-wrap">
+
+    <!-- BANNER USOS DEL MES -->
+    <div id="usoBannerMes">
+        <span>📊</span>
+        <span class="uso-num" id="usoNumBanner">0</span>
+        <span id="usoLabelBanner">informes este mes</span>
+        <div class="uso-bar-wrap">
+            <div class="uso-bar-fill" id="usoBarBanner" style="width:0%"></div>
+        </div>
+        <a href="/perfil">Ver perfil →</a>
+    </div>
 
     <!-- PANTALLA DE GENERACIÓN -->
     <div id="progressContainer" style="display:none;">
@@ -638,6 +686,39 @@ const _arpUser = _arpRaw ? JSON.parse(_arpRaw) : null;
     }
   } catch(e) { /* silencioso */ }
 })();
+
+// ═══ CONTADOR DE USOS DEL MES ═══
+(async function cargarUsosMes() {
+    if (!_arpUser || !_arpUser.access_token) return;
+    try {
+        const res  = await fetch('/api/usos-mes', {
+            headers: { 'Authorization': `Bearer ${_arpUser.access_token}` }
+        });
+        const data = await res.json();
+        if (!data.success) return;
+
+        const n   = data.usos_mes || 0;
+        const mes = data.mes_nombre || '';
+
+        // Actualizar banner
+        document.getElementById('usoNumBanner').textContent   = n;
+        document.getElementById('usoLabelBanner').textContent =
+            `informe${n !== 1 ? 's' : ''} este mes${mes ? ' · ' + mes : ''}`;
+        document.getElementById('usoBarBanner').style.width   =
+            Math.max(Math.min(n * 10, 100), n > 0 ? 4 : 0) + '%';
+        document.getElementById('usoBannerMes').style.display = 'flex';
+
+        // Actualizar badge navbar (si existe)
+        _actualizarNavBadge(n);
+    } catch(e) { /* silencioso */ }
+})();
+
+function _actualizarNavBadge(n) {
+    const badge = document.getElementById('navUsoBadge');
+    if (!badge) return;
+    badge.textContent = n;
+    badge.style.display = n > 0 ? 'inline-flex' : 'none';
+}
 
 // Wrapper global para fetch — adjunta el JWT y maneja 401
 async function fetchAuth(url, options = {}) {
