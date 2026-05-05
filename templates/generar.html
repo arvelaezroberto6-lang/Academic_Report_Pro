@@ -755,6 +755,114 @@ async function fetchAuth(url, options = {}) {
     fechaEl.value = new Date().toISOString().split('T')[0];
   }
 })();
+
+// ═══ BORRADOR AUTOMÁTICO (localStorage) ═══
+// Guarda el estado del formulario cada vez que cambia un campo.
+// Al cargar la página, restaura el último borrador si existe.
+(function() {
+    const DRAFT_KEY   = 'arp_draft_generar';
+    const DRAFT_MSG   = 'arp_draft_restored';
+    // Campos de texto simples a guardar / restaurar
+    const TEXT_FIELDS = ['tema', 'nombre', 'institucion', 'ciudad', 'profesor',
+                         'asignatura', 'texto_usuario', 'fecha'];
+
+    function guardarBorrador() {
+        try {
+            const draft = { ts: Date.now() };
+            TEXT_FIELDS.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) draft[id] = el.value;
+            });
+            // Selectores con ID directo
+            const nivel = document.getElementById('nivel');
+            if (nivel) draft.nivel = nivel.value;
+            // Valores controlados por variables globales (modo, norma, tipo)
+            // Se leen de los botones activos para no depender del timing
+            const modoBtn = document.querySelector('.modo-btn.active, [data-modo].active');
+            if (modoBtn) draft.modo = modoBtn.dataset.modo || modoBtn.dataset.mode;
+            const normaChip = document.querySelector('[data-norma].active, .norma-chip.active');
+            if (normaChip) draft.norma = normaChip.dataset.norma;
+            const tipoChip = document.querySelector('[data-tipo].active, .tipo-chip.active');
+            if (tipoChip) draft.tipo = tipoChip.dataset.tipo;
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+        } catch(e) { /* cuota llena u otro error — falla silencioso */ }
+    }
+
+    function restaurarBorrador() {
+        try {
+            const raw = localStorage.getItem(DRAFT_KEY);
+            if (!raw) return;
+            const draft = JSON.parse(raw);
+            // Ignorar borradores muy viejos (más de 7 días)
+            if (!draft.ts || Date.now() - draft.ts > 7 * 24 * 3600 * 1000) {
+                localStorage.removeItem(DRAFT_KEY); return;
+            }
+            // Restaurar campos de texto
+            TEXT_FIELDS.forEach(id => {
+                const el = document.getElementById(id);
+                if (el && draft[id] !== undefined && !el.value) el.value = draft[id];
+            });
+            // Selector de nivel
+            if (draft.nivel) {
+                const nivEl = document.getElementById('nivel');
+                if (nivEl) nivEl.value = draft.nivel;
+            }
+            // Chips de norma, tipo y modo — click() para que disparen el handler original
+            if (draft.norma) {
+                const chip = document.querySelector(`[data-norma="${draft.norma}"]`);
+                if (chip) chip.click();
+            }
+            if (draft.tipo) {
+                const chip = document.querySelector(`[data-tipo="${draft.tipo}"]`);
+                if (chip) chip.click();
+            }
+            if (draft.modo) {
+                const btn = document.querySelector(`[data-modo="${draft.modo}"], [data-mode="${draft.modo}"]`);
+                if (btn) btn.click();
+            }
+            // Mostrar aviso sutil solo si el tema tenía contenido
+            if (draft.tema && draft.tema.trim().length > 3 && !sessionStorage.getItem(DRAFT_MSG)) {
+                sessionStorage.setItem(DRAFT_MSG, '1');
+                setTimeout(() => {
+                    if (typeof arpToast === 'function') {
+                        arpToast('📝 Borrador restaurado — tus datos anteriores han sido recuperados.', 'info', 4500);
+                    }
+                }, 900);
+            }
+        } catch(e) { /* borrador corrupto — ignorar */ }
+    }
+
+    // Escuchar cambios en todos los campos
+    function adjuntarListeners() {
+        TEXT_FIELDS.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('input', guardarBorrador);
+        });
+        const nivel = document.getElementById('nivel');
+        if (nivel) nivel.addEventListener('change', guardarBorrador);
+        // Chips y botones — escuchar click en el documento para capturar los que se creen dinámicamente
+        document.addEventListener('click', function(e) {
+            if (e.target.dataset.norma || e.target.dataset.tipo || e.target.dataset.modo ||
+                e.target.dataset.mode  || e.target.closest('[data-norma]') ||
+                e.target.closest('[data-tipo]')  || e.target.closest('[data-modo]')) {
+                setTimeout(guardarBorrador, 50); // pequeño delay para que el estado se actualice
+            }
+        });
+    }
+
+    // Limpiar borrador cuando se genera con éxito
+    window._arpClearDraft = function() {
+        try { localStorage.removeItem(DRAFT_KEY); } catch(e) {}
+    };
+
+    // Ejecutar al cargar el DOM
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() { restaurarBorrador(); adjuntarListeners(); });
+    } else {
+        restaurarBorrador(); adjuntarListeners();
+    }
+})();
+
 let modo              = 'rapido';
 let tipoActual        = 'academico';
 let normaActual       = 'APA 7';
@@ -1047,6 +1155,8 @@ document.getElementById('generarBtn').onclick = async () => {
     ? 'Informe generado correctamente. Ya puedes editarlo y descargarlo.'
     : `${SECCIONES_INFO.length - errores} secciones OK, ${errores} con error.`;
   if (window._tipsInterval) clearInterval(window._tipsInterval);
+  // Borrar el borrador guardado — el informe ya fue generado
+  if (errores === 0 && typeof window._arpClearDraft === 'function') window._arpClearDraft();
 
   datosUsuario = {
     nombre:       nombrePrincipal,
