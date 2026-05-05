@@ -11,3 +11,4 @@ httpcore>=1.0.0,<2.0.0
 # ── Seguridad ──────────────────────────────────────────────────
 flask-limiter==3.5.0       # Rate limiting (anti-spam, anti-brute-force)
 bleach==6.1.0              # Sanitización de HTML (extra protección XSS)
+redis>=4.0.0
