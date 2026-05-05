@@ -96,10 +96,23 @@
 
 {% block extra_js %}
 <script>
-// Supabase ya fue cargado en base.html — solo creamos el cliente aquí
-const _SUPA_URL = 'https://yvcllhtklulbyxfidham.supabase.co';
-const _SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2Y2xsaHRrbHVsYnl4ZmlkaGFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTU3NTQsImV4cCI6MjA5MjczMTc1NH0.Sx5aAQ2427V3GHjfhE5S-HLw6XPPpe_eJhXFU7-62cM';
-const supabase = window.supabase.createClient(_SUPA_URL, _SUPA_KEY);
+// Carga el SDK solo si base.html no lo cargó ya
+(function() {
+  if (window.supabase && window.supabase.createClient) { initSupabase(); return; }
+  var s = document.createElement('script');
+  s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+  s.onload = initSupabase;
+  document.head.appendChild(s);
+})();
+
+var _supaClient = null;
+function initSupabase() {
+  var url = 'https://yvcllhtklulbyxfidham.supabase.co';
+  var key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2Y2xsaHRrbHVsYnl4ZmlkaGFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTU3NTQsImV4cCI6MjA5MjczMTc1NH0.Sx5aAQ2427V3GHjfhE5S-HLw6XPPpe_eJhXFU7-62cM';
+  _supaClient = window.supabase.createClient(url, key);
+}
+// Alias para que el resto del código use "supabase" igual que antes
+Object.defineProperty(window, 'supabase_nc', { get: function(){ return _supaClient; } });
 
 // Supabase manda el token en el hash: #access_token=xxx&type=recovery
 (async function init() {
@@ -128,7 +141,7 @@ const supabase = window.supabase.createClient(_SUPA_URL, _SUPA_KEY);
 
   // Establecer la sesión con el token de recuperación directamente en Supabase JS
   try {
-    const { error: sessionError } = await supabase.auth.setSession({
+    const { error: sessionError } = await _supaClient.auth.setSession({
       access_token:  accessToken,
       refresh_token: refreshToken
     });
@@ -188,7 +201,7 @@ async function cambiarContrasena() {
 
   try {
     // Actualizar contraseña directamente con el SDK de Supabase
-    const { error } = await supabase.auth.updateUser({ password: pass });
+    const { error } = await _supaClient.auth.updateUser({ password: pass });
     if (error) {
       mostrarErr(error.message || 'No se pudo cambiar la contraseña. Solicita un nuevo enlace.');
       btn.disabled = false;
@@ -201,7 +214,7 @@ async function cambiarContrasena() {
     document.getElementById('msgOk').innerHTML =
       '✅ <strong>¡Contraseña actualizada!</strong><br>Ya puedes iniciar sesión con tu nueva contraseña.';
     document.getElementById('msgOk').style.display = 'block';
-    await supabase.auth.signOut();
+    await _supaClient.auth.signOut();
     setTimeout(() => { location.href = '/auth'; }, 2500);
   } catch(e) {
     mostrarErr('Error de conexión. Intenta de nuevo.');
