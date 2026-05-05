@@ -3,6 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- ── SEO ──────────────────────────────────────────────── -->
+    <meta name="description" content="{% block meta_description %}Academic Report Pro — Genera informes académicos profesionales con IA en segundos. 8 normas (APA 7, ICONTEC, Vancouver…), referencias reales y exportación a PDF y Word.{% endblock %}">
+    <meta name="keywords" content="{% block meta_keywords %}informes académicos, generador de informes, APA 7, ICONTEC, normas bibliográficas, inteligencia artificial, informe de laboratorio, tesis{% endblock %}">
+    <meta name="robots" content="index, follow">
+    <meta name="author" content="Academic Report Pro">
+    <!-- ── Open Graph (WhatsApp, Facebook, LinkedIn) ────────── -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Academic Report Pro">
+    <meta property="og:title" content="{% block og_title %}Academic Report Pro — Informes académicos con IA{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Genera informes académicos completos en segundos. APA 7, ICONTEC, Vancouver y 5 normas más. Referencias reales verificadas. Exporta a PDF y Word.{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}/static/og-preview.png{% endblock %}">
+    <meta property="og:url" content="{{ request.url }}">
+    <!-- ── Twitter Card ──────────────────────────────────────── -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{% block twitter_title %}Academic Report Pro{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}Informes académicos con IA: APA 7, ICONTEC, Vancouver y más. Gratis, en minutos.{% endblock %}">
+    <meta name="twitter:image" content="{% block twitter_image %}/static/og-preview.png{% endblock %}">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23b8892a'/%3E%3C!-- book left page --%3E%3Crect x='3' y='6' width='12' height='20' rx='2' fill='%238a6520'/%3E%3Crect x='4' y='7' width='10' height='18' rx='1.5' fill='%23c9963a'/%3E%3Cline x1='9' y1='10' x2='9' y2='23' stroke='%238a6520' stroke-width='1'/%3E%3Crect x='5.5' y='11' width='5' height='1.2' rx='.6' fill='%23f5e6c0'/%3E%3Crect x='5.5' y='14' width='5' height='1.2' rx='.6' fill='%23f5e6c0'/%3E%3Crect x='5.5' y='17' width='4' height='1.2' rx='.6' fill='%23f5e6c0'/%3E%3Crect x='5.5' y='20' width='5' height='1.2' rx='.6' fill='%23f5e6c0'/%3E%3C!-- book right page --%3E%3Crect x='17' y='6' width='12' height='20' rx='2' fill='%238a6520'/%3E%3Crect x='18' y='7' width='10' height='18' rx='1.5' fill='%23c9963a'/%3E%3Cline x1='23' y1='10' x2='23' y2='23' stroke='%238a6520' stroke-width='1'/%3E%3Crect x='19.5' y='11' width='5' height='1.2' rx='.6' fill='%23f5e6c0'/%3E%3Crect x='19.5' y='14' width='5' height='1.2' rx='.6' fill='%23f5e6c0'/%3E%3Crect x='19.5' y='17' width='4' height='1.2' rx='.6' fill='%23f5e6c0'/%3E%3Crect x='19.5' y='20' width='5' height='1.2' rx='.6' fill='%23f5e6c0'/%3E%3C!-- badge --%3E%3Ccircle cx='26' cy='7' r='5' fill='white'/%3E%3Ctext x='26' y='9.5' text-anchor='middle' font-size='6' fill='%23b8892a' font-family='serif' font-weight='bold'%3E✦%3C/text%3E%3C/svg%3E">
     <title>{% block title %}Academic Report Pro{% endblock %}</title>
     <!-- Anti-flash: aplica el tema guardado antes de que cargue el CSS -->
@@ -979,5 +996,101 @@
     </script>
 
     {% block extra_js %}{% endblock %}
+
+    <!-- ── Toast / Notificaciones globales (ARP) ────────────────────────
+         Uso desde cualquier página:
+           arpToast('¡Guardado!', 'success')
+           arpToast('Algo falló', 'error')
+           arpToast('Procesando...', 'info')
+           arpToast('Atención', 'warning')
+         Reemplaza los divs inline tipo msg-ok / msg-err en toda la app.
+    ──────────────────────────────────────────────────────────────────── -->
+    <style>
+    #arp-toast-container {
+        position: fixed;
+        bottom: 1.5rem;
+        right: 1.5rem;
+        z-index: 99999;
+        display: flex;
+        flex-direction: column;
+        gap: .55rem;
+        pointer-events: none;
+        max-width: 360px;
+    }
+    .arp-toast {
+        display: flex;
+        align-items: flex-start;
+        gap: .65rem;
+        padding: .82rem 1.1rem;
+        border-radius: 12px;
+        background: var(--surface);
+        border: 1px solid var(--border2);
+        box-shadow: 0 8px 32px rgba(0,0,0,.35);
+        font-family: 'DM Sans', sans-serif;
+        font-size: .84rem;
+        color: var(--text);
+        pointer-events: all;
+        animation: arp-toast-in .25s cubic-bezier(.22,.68,0,1.2) both;
+        line-height: 1.5;
+    }
+    .arp-toast.hiding { animation: arp-toast-out .2s ease forwards; }
+    .arp-toast-icon { font-size: 1.05rem; flex-shrink: 0; margin-top: .05rem; }
+    .arp-toast-msg  { flex: 1; }
+    .arp-toast-close {
+        background: none; border: none; cursor: pointer; color: var(--text3);
+        font-size: .9rem; padding: 0 0 0 .4rem; flex-shrink: 0;
+        transition: color .15s;
+    }
+    .arp-toast-close:hover { color: var(--text); }
+    .arp-toast.success { border-color: rgba(82,196,138,.28); }
+    .arp-toast.success .arp-toast-icon { color: var(--green); }
+    .arp-toast.error   { border-color: rgba(224,92,92,.28); }
+    .arp-toast.error   .arp-toast-icon { color: var(--red); }
+    .arp-toast.warning { border-color: rgba(240,160,48,.28); }
+    .arp-toast.warning .arp-toast-icon { color: #f0a030; }
+    .arp-toast.info    { border-color: rgba(212,168,67,.22); }
+    .arp-toast.info    .arp-toast-icon { color: var(--gold); }
+    @keyframes arp-toast-in  { from { opacity:0; transform: translateY(14px) scale(.95); } to { opacity:1; transform: none; } }
+    @keyframes arp-toast-out { from { opacity:1; transform: none; } to { opacity:0; transform: translateY(8px); } }
+    @media (max-width: 520px) {
+        #arp-toast-container { left: 1rem; right: 1rem; bottom: 1rem; max-width: none; }
+    }
+    </style>
+    <div id="arp-toast-container" role="region" aria-live="polite" aria-label="Notificaciones"></div>
+    <script>
+    (function() {
+        const ICONS = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+        const DURATIONS = { success: 3800, error: 5500, warning: 4500, info: 3500 };
+
+        window.arpToast = function(msg, type = 'info', duration) {
+            const container = document.getElementById('arp-toast-container');
+            if (!container || !msg) return;
+            const kind = ['success','error','warning','info'].includes(type) ? type : 'info';
+            const ms   = duration || DURATIONS[kind];
+
+            const el = document.createElement('div');
+            el.className = `arp-toast ${kind}`;
+            el.setAttribute('role', 'alert');
+            el.innerHTML = `
+                <span class="arp-toast-icon" aria-hidden="true">${ICONS[kind]}</span>
+                <span class="arp-toast-msg">${msg}</span>
+                <button class="arp-toast-close" aria-label="Cerrar notificación">✕</button>`;
+
+            const dismiss = () => {
+                el.classList.add('hiding');
+                setTimeout(() => el.remove(), 200);
+            };
+            el.querySelector('.arp-toast-close').addEventListener('click', dismiss);
+            container.appendChild(el);
+            setTimeout(dismiss, ms);
+        };
+
+        // Shorthand helpers available globally
+        window.arpOk   = (m) => arpToast(m, 'success');
+        window.arpErr  = (m) => arpToast(m, 'error');
+        window.arpWarn = (m) => arpToast(m, 'warning');
+        window.arpInfo = (m) => arpToast(m, 'info');
+    })();
+    </script>
 </body>
 </html>
