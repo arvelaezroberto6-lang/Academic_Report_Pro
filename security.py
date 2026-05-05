@@ -238,7 +238,7 @@ def aplicar_headers_seguridad(response):
         "style-src 'self' 'unsafe-inline' fonts.googleapis.com cdn.jsdelivr.net; "
         "font-src 'self' fonts.gstatic.com; "
         "img-src 'self' data: https:; "
-        "connect-src 'self' api.deepseek.com *.supabase.co; "
+        "connect-src 'self' api.deepseek.com *.supabase.co https://cdn.jsdelivr.net; "
         "frame-ancestors 'none';"
     )
     # Fuerza HTTPS en navegadores que ya visitaron el sitio
