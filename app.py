@@ -60,11 +60,16 @@ app.after_request(aplicar_headers_seguridad)
 try:
     from flask_limiter import Limiter
     from flask_limiter.util import get_remote_address
+    _redis_url   = os.environ.get('REDIS_URL', '')
+    _storage_uri = _redis_url if _redis_url else "memory://"
+    if not _redis_url:
+        logger.warning("REDIS_URL no configurado — rate limiter usa memoria local (no compartida entre workers). "
+                       "Agrega REDIS_URL a las variables de entorno de Render para proteccion real.")
     limiter = Limiter(
         get_remote_address,
         app=app,
         default_limits=["500 per day", "100 per hour"],
-        storage_uri="memory://",   # cambiar a Redis en producción con: redis://localhost:6379
+        storage_uri=_storage_uri,
         headers_enabled=True
     )
     LIMITER_DISPONIBLE = True
@@ -2139,6 +2144,140 @@ def api_nueva_contrasena():
     except Exception as e:
         logger.error(f"Error cambiando contraseña: {e}")
         return jsonify({'success': False, 'error': 'Token inválido o expirado. Solicita un nuevo enlace.'}), 401
+
+
+@app.route('/api/auth/cambiar-password', methods=['POST'])
+@limit("10 per hour")
+@requiere_auth
+def api_cambiar_password(user_id):
+    """
+    Cambia la contraseña del usuario autenticado verificando la contraseña actual.
+    A diferencia de /api/auth/nueva-contrasena (flujo de recuperación), este endpoint
+    requiere JWT activo y contraseña actual como segundo factor.
+    """
+    try:
+        from database import supabase, DB_DISPONIBLE
+        data             = request.get_json(silent=True) or {}
+        password_actual  = data.get('password_actual', '')
+        password_nueva   = data.get('password_nueva', '')
+
+        if not password_actual or not password_nueva:
+            return jsonify({'success': False, 'error': 'Se requieren la contraseña actual y la nueva'}), 400
+
+        pwd_ok, pwd_msg = es_password_seguro(password_nueva)
+        if not pwd_ok:
+            return jsonify({'success': False, 'error': pwd_msg}), 400
+
+        if not DB_DISPONIBLE or supabase is None:
+            return jsonify({'success': False, 'error': 'Base de datos no disponible'}), 503
+
+        # Verificar la contraseña actual haciendo un login real
+        perfil = obtener_perfil(user_id)
+        if not perfil:
+            return jsonify({'success': False, 'error': 'Usuario no encontrado'}), 404
+
+        from database import login_usuario
+        verificacion = login_usuario(perfil['email'], password_actual)
+        if not verificacion['success']:
+            log_evento_seguridad('CAMBIO_PASS_FALLIDO', f"user={user_id}", request)
+            return jsonify({'success': False, 'error': 'La contraseña actual no es correcta'}), 401
+
+        # Contraseña actual correcta → actualizar con el token del usuario
+        auth_header  = request.headers.get('Authorization', '')
+        access_token = auth_header.split(' ', 1)[1].strip() if auth_header.startswith('Bearer ') else ''
+
+        supabase.auth.set_session(access_token, '')
+        res = supabase.auth.update_user({'password': password_nueva})
+
+        if res and res.user:
+            log_evento_seguridad('PASSWORD_CAMBIADO_PERFIL', f"user={user_id}", request)
+            return jsonify({'success': True})
+        return jsonify({'success': False, 'error': 'No se pudo actualizar la contraseña'}), 400
+
+    except Exception as e:
+        logger.error(f"Error en cambiar-password: {e}")
+        return jsonify({'success': False, 'error': 'Error interno. Intenta de nuevo.'}), 500
+
+
+@app.route('/api/cuenta/eliminar', methods=['DELETE'])
+@limit("3 per hour")
+@requiere_auth
+def api_eliminar_cuenta(user_id):
+    """
+    Elimina permanentemente la cuenta del usuario autenticado.
+    Borra todos sus informes (CASCADE en la BD) y luego el usuario en Supabase Auth.
+    """
+    try:
+        from database import supabase, DB_DISPONIBLE
+        if not DB_DISPONIBLE or supabase is None:
+            return jsonify({'success': False, 'error': 'Base de datos no disponible'}), 503
+
+        # 1. Eliminar todos los informes del usuario (las referencias se borran por CASCADE)
+        supabase.table('informes').delete().eq('user_id', user_id).execute()
+        logger.info(f"Informes eliminados para usuario {user_id}")
+
+        # 2. Eliminar perfil si existe tabla separada
+        try:
+            supabase.table('perfiles').delete().eq('user_id', user_id).execute()
+        except Exception:
+            pass  # la tabla puede no existir según el esquema
+
+        # 3. Eliminar el usuario en Supabase Auth (requiere service_role key)
+        # Si no está disponible el admin client, el usuario quedará sin datos pero
+        # el auth record permanecerá — documentamos esto en el log.
+        try:
+            from database import supabase_admin
+            if supabase_admin:
+                supabase_admin.auth.admin.delete_user(user_id)
+                logger.info(f"Usuario {user_id} eliminado de Auth")
+            else:
+                logger.warning(f"supabase_admin no disponible — usuario {user_id} sin borrar de Auth")
+        except (ImportError, Exception) as e:
+            logger.warning(f"No se pudo eliminar de Auth (falta SUPABASE_SERVICE_ROLE_KEY): {e}")
+
+        log_evento_seguridad('CUENTA_ELIMINADA', f"user={user_id}", request)
+        return jsonify({'success': True})
+
+    except Exception as e:
+        logger.error(f"Error eliminando cuenta {user_id}: {e}")
+        return jsonify({'success': False, 'error': 'Error interno. Intenta de nuevo.'}), 500
+
+
+@app.route('/api/auth/magic-link', methods=['POST'])
+@limit("5 per hour")
+def api_magic_link():
+    """
+    Envía un magic link (OTP) a través de Supabase.
+    El usuario recibe un email con un enlace que lo autentica directamente.
+    Supabase redirige de vuelta a /auth con #access_token=...&type=magiclink
+    donde el callback JS en auth.html completa el login automáticamente.
+    """
+    try:
+        from database import supabase, DB_DISPONIBLE
+        data         = request.get_json(silent=True) or {}
+        email        = sanitizar_texto(data.get('email', ''), 254).lower()
+        redirect_url = data.get('redirect_url', '')
+
+        # Siempre responder éxito — no revelar si el email existe
+        if not email or not es_email_valido(email):
+            return jsonify({'success': True})
+
+        if not DB_DISPONIBLE or supabase is None:
+            return jsonify({'success': True})
+
+        # Validar redirect_url contra el dominio propio
+        dominio_permitido = os.environ.get('SITE_URL', '')
+        if redirect_url and dominio_permitido and not redirect_url.startswith(dominio_permitido):
+            redirect_url = dominio_permitido + '/auth'
+
+        opts = {'redirect_to': redirect_url} if redirect_url else {}
+        supabase.auth.sign_in_with_otp({'email': email, **opts})
+        log_evento_seguridad('MAGIC_LINK_ENVIADO', f"email={email}", request)
+        return jsonify({'success': True})
+
+    except Exception as e:
+        logger.error(f"Error enviando magic link: {e}")
+        return jsonify({'success': True})   # siempre éxito al exterior
 
 
 @app.route('/api/auth/recuperar', methods=['POST'])
