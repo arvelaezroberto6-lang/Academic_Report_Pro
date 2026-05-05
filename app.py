@@ -1805,6 +1805,77 @@ def api_actualizar_perfil(user_id):
         return jsonify({'success': False, 'error': 'Error interno'}), 500
 
 
+@app.route('/api/perfil/avatar', methods=['POST'])
+@requiere_auth
+def api_subir_avatar(user_id):
+    """
+    Recibe una imagen en base64, la sube a Supabase Storage (bucket 'avatars')
+    y guarda la URL pública en el perfil del usuario.
+    """
+    try:
+        from database import supabase, DB_DISPONIBLE
+        import base64, mimetypes
+
+        if not DB_DISPONIBLE or supabase is None:
+            return jsonify({'success': False, 'error': 'Base de datos no disponible'}), 503
+
+        data          = request.get_json(silent=True) or {}
+        imagen_b64    = data.get('imagen', '')      # data:image/jpeg;base64,....
+        nombre_archivo = sanitizar_texto(data.get('nombre_archivo', 'avatar.jpg'), 100)
+
+        if not imagen_b64 or ',' not in imagen_b64:
+            return jsonify({'success': False, 'error': 'Imagen inválida'}), 400
+
+        # Separar header y datos
+        header, b64data = imagen_b64.split(',', 1)
+        # Detectar mime type desde el header (data:image/jpeg;base64)
+        mime_type = 'image/jpeg'
+        if 'image/png' in header:
+            mime_type = 'image/png'
+        elif 'image/webp' in header:
+            mime_type = 'image/webp'
+        elif 'image/gif' in header:
+            mime_type = 'image/gif'
+
+        # Decodificar
+        try:
+            imagen_bytes = base64.b64decode(b64data)
+        except Exception:
+            return jsonify({'success': False, 'error': 'Error decodificando imagen'}), 400
+
+        # Validar tamaño (máx 3MB)
+        if len(imagen_bytes) > 3 * 1024 * 1024:
+            return jsonify({'success': False, 'error': 'La imagen supera el límite de 3MB'}), 400
+
+        # Nombre único en el bucket
+        ext       = mime_type.split('/')[-1].replace('jpeg', 'jpg')
+        path      = f"{user_id}/avatar.{ext}"
+
+        # Subir a Supabase Storage (upsert para sobreescribir si ya existe)
+        supabase.storage.from_('avatars').upload(
+            path,
+            imagen_bytes,
+            {'content-type': mime_type, 'upsert': 'true'}
+        )
+
+        # Obtener URL pública
+        url_data  = supabase.storage.from_('avatars').get_public_url(path)
+        avatar_url = url_data if isinstance(url_data, str) else url_data.get('publicUrl', '')
+
+        if not avatar_url:
+            return jsonify({'success': False, 'error': 'No se pudo obtener la URL pública'}), 500
+
+        # Guardar URL en el perfil
+        supabase.table('perfiles').update({'avatar_url': avatar_url}).eq('user_id', user_id).execute()
+
+        logger.info(f"Avatar actualizado para usuario {user_id}")
+        return jsonify({'success': True, 'avatar_url': avatar_url})
+
+    except Exception as e:
+        logger.error(f"Error subiendo avatar: {e}")
+        return jsonify({'success': False, 'error': 'No se pudo subir la foto. Verifica que el bucket "avatars" esté creado en Supabase Storage.'}), 500
+
+
 @app.route('/api/mis-informes', methods=['GET'])
 @requiere_auth
 def api_mis_informes(user_id):
