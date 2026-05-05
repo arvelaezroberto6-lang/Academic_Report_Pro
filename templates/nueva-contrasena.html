@@ -95,31 +95,54 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-// Supabase manda el token en el hash de la URL: #access_token=xxx&type=recovery
-let accessToken = null;
+const _SUPA_URL = 'https://yvcllhtklulbyxfidham.supabase.co';
+const _SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2Y2xsaHRrbHVsYnl4ZmlkaGFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTU3NTQsImV4cCI6MjA5MjczMTc1NH0.Sx5aAQ2427V3GHjfhE5S-HLw6XPPpe_eJhXFU7-62cM';
+const supabase = window.supabase.createClient(_SUPA_URL, _SUPA_KEY);
 
-(function init() {
-  // Parsear el hash o los query params (Supabase puede usar ambos)
+// Supabase manda el token en el hash: #access_token=xxx&type=recovery
+(async function init() {
   const hash   = location.hash.substring(1);
   const query  = location.search.substring(1);
   const params = new URLSearchParams(hash || query);
 
-  accessToken   = params.get('access_token');
-  const type    = params.get('type');
-  const error   = params.get('error_description') || params.get('error');
+  const accessToken  = params.get('access_token');
+  const refreshToken = params.get('refresh_token') || '';
+  const type         = params.get('type');
+  const error        = params.get('error_description') || params.get('error');
 
-  if (error || !accessToken) {
+  if (error) {
     document.getElementById('formNueva').style.display    = 'none';
     document.getElementById('formInvalido').style.display = 'block';
-    if (error) {
-      document.getElementById('msgErr').textContent   = decodeURIComponent(error.replace(/\+/g,' '));
-      document.getElementById('msgErr').style.display = 'block';
-    }
+    document.getElementById('msgErr').textContent   = decodeURIComponent(error.replace(/\+/g,' '));
+    document.getElementById('msgErr').style.display = 'block';
     return;
   }
-  // NO limpiar el hash aquí — el token ya está guardado en accessToken
-  // Se limpia después de usarlo exitosamente
+
+  if (!accessToken) {
+    document.getElementById('formNueva').style.display    = 'none';
+    document.getElementById('formInvalido').style.display = 'block';
+    return;
+  }
+
+  // Establecer la sesión con el token de recuperación directamente en Supabase JS
+  try {
+    const { error: sessionError } = await supabase.auth.setSession({
+      access_token:  accessToken,
+      refresh_token: refreshToken
+    });
+    if (sessionError) {
+      document.getElementById('formNueva').style.display    = 'none';
+      document.getElementById('formInvalido').style.display = 'block';
+      return;
+    }
+    // Sesión establecida — limpiar el hash
+    history.replaceState(null, '', location.pathname);
+  } catch(e) {
+    document.getElementById('formNueva').style.display    = 'none';
+    document.getElementById('formInvalido').style.display = 'block';
+  }
 })();
 
 function togglePass(id, btn) {
@@ -145,20 +168,18 @@ function checkStrength(v) {
 
 function mostrarErr(msg) {
   const el = document.getElementById('msgErr');
-  el.textContent    = msg;
-  el.style.display  = 'block';
+  el.textContent   = msg;
+  el.style.display = 'block';
   document.getElementById('msgOk').style.display = 'none';
 }
 
 async function cambiarContrasena() {
   const pass  = document.getElementById('nuevaPass').value;
   const pass2 = document.getElementById('nuevaPass2').value;
-
   document.getElementById('msgErr').style.display = 'none';
 
   if (pass.length < 6)  { mostrarErr('La contraseña debe tener al menos 6 caracteres.'); return; }
   if (pass !== pass2)   { mostrarErr('Las contraseñas no coinciden.'); return; }
-  if (!accessToken)     { mostrarErr('Enlace inválido. Solicita uno nuevo.'); return; }
 
   const btn = document.getElementById('btnCambiar');
   btn.disabled = true;
@@ -166,26 +187,22 @@ async function cambiarContrasena() {
   document.getElementById('btnTxt').textContent   = 'Guardando...';
 
   try {
-    const res  = await fetch('/api/auth/nueva-contrasena', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ access_token: accessToken, password: pass })
-    });
-    const data = await res.json();
-
-    if (data.success) {
-      history.replaceState(null, '', location.pathname);
-      document.getElementById('formNueva').style.display = 'none';
-      document.getElementById('msgOk').innerHTML =
-        '✅ <strong>¡Contraseña actualizada!</strong><br>Ya puedes iniciar sesión con tu nueva contraseña.';
-      document.getElementById('msgOk').style.display = 'block';
-      setTimeout(() => { location.href = '/auth'; }, 2500);
-    } else {
-      mostrarErr(data.error || 'No se pudo cambiar la contraseña. Solicita un nuevo enlace.');
+    // Actualizar contraseña directamente con el SDK de Supabase
+    const { error } = await supabase.auth.updateUser({ password: pass });
+    if (error) {
+      mostrarErr(error.message || 'No se pudo cambiar la contraseña. Solicita un nuevo enlace.');
       btn.disabled = false;
       document.getElementById('btnSpn').style.display = 'none';
       document.getElementById('btnTxt').textContent   = 'Guardar nueva contraseña';
+      return;
     }
+    // Éxito
+    document.getElementById('formNueva').style.display = 'none';
+    document.getElementById('msgOk').innerHTML =
+      '✅ <strong>¡Contraseña actualizada!</strong><br>Ya puedes iniciar sesión con tu nueva contraseña.';
+    document.getElementById('msgOk').style.display = 'block';
+    await supabase.auth.signOut();
+    setTimeout(() => { location.href = '/auth'; }, 2500);
   } catch(e) {
     mostrarErr('Error de conexión. Intenta de nuevo.');
     btn.disabled = false;
