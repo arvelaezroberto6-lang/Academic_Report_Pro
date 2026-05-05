@@ -95,8 +95,8 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+// Supabase ya fue cargado en base.html — solo creamos el cliente aquí
 const _SUPA_URL = 'https://yvcllhtklulbyxfidham.supabase.co';
 const _SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2Y2xsaHRrbHVsYnl4ZmlkaGFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTU3NTQsImV4cCI6MjA5MjczMTc1NH0.Sx5aAQ2427V3GHjfhE5S-HLw6XPPpe_eJhXFU7-62cM';
 const supabase = window.supabase.createClient(_SUPA_URL, _SUPA_KEY);
