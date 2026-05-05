@@ -109,8 +109,6 @@ let accessToken = null;
   const type    = params.get('type');
   const error   = params.get('error_description') || params.get('error');
 
-  // Supabase puede mandar type=recovery o simplemente el token sin type
-  // Solo rechazar si hay error explícito o no hay token en absoluto
   if (error || !accessToken) {
     document.getElementById('formNueva').style.display    = 'none';
     document.getElementById('formInvalido').style.display = 'block';
@@ -120,10 +118,8 @@ let accessToken = null;
     }
     return;
   }
-  // Si hay token pero type no es recovery, igual mostramos el form
-  // (Supabase a veces omite el type o usa valores distintos según versión)
-  // Limpiar el hash de la URL sin recargar
-  history.replaceState(null, '', location.pathname);
+  // NO limpiar el hash aquí — el token ya está guardado en accessToken
+  // Se limpia después de usarlo exitosamente
 })();
 
 function togglePass(id, btn) {
@@ -178,6 +174,7 @@ async function cambiarContrasena() {
     const data = await res.json();
 
     if (data.success) {
+      history.replaceState(null, '', location.pathname);
       document.getElementById('formNueva').style.display = 'none';
       document.getElementById('msgOk').innerHTML =
         '✅ <strong>¡Contraseña actualizada!</strong><br>Ya puedes iniciar sesión con tu nueva contraseña.';
