@@ -2458,6 +2458,10 @@ def api_guardar_informe(user_id):
 def recuperar_page():
     return render_template('recuperar.html')
 
+@app.route('/nueva-contrasena')
+def nueva_contrasena_page():
+    return render_template('nueva-contrasena.html')
+
 @app.route('/sugerencias')
 def sugerencias_page():
     return render_template('sugerencias.html')
