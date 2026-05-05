@@ -32,6 +32,8 @@
 .btn-auth{width:100%;padding:.9rem;background:linear-gradient(135deg,var(--gold) 0%,#9a6e18 100%);color:#000;font-weight:700;font-size:.92rem;border:none;border-radius:var(--radius);cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;margin-top:.5rem;display:flex;align-items:center;justify-content:center;gap:.5rem}
 .btn-auth:hover{transform:translateY(-2px);box-shadow:0 8px 28px var(--gold-glow)}
 .btn-auth:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-magic{width:100%;padding:.62rem 1rem;background:transparent;color:var(--text2);font-weight:500;font-size:.8rem;border:1px solid var(--border2);border-radius:var(--radius);cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;text-align:center;letter-spacing:.01em}
+.btn-magic:hover{border-color:rgba(212,168,67,.3);color:var(--gold)}
 .btn-spinner{display:none;width:16px;height:16px;border:2px solid rgba(0,0,0,.3);border-top-color:#000;border-radius:50%;animation:spin .6s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .auth-error{background:rgba(224,92,92,.12);border:1px solid rgba(224,92,92,.3);border-radius:var(--radius);padding:.7rem 1rem;font-size:.82rem;color:var(--red);margin-bottom:1rem;display:none;line-height:1.5}
@@ -107,6 +109,25 @@
           <span class="btn-spinner" id="spnLogin"></span>
           <span id="btnLoginArrow">→</span>
         </button>
+        <!-- Magic link -->
+        <div id="magicLinkSection" style="margin-top:.9rem;">
+          <button type="button" class="btn-magic" id="btnMagic" onclick="toggleMagicForm()">
+            ✉️ Entrar sin contraseña (magic link)
+          </button>
+          <div id="magicForm" style="display:none; margin-top:.7rem;">
+            <div class="field" style="margin-bottom:.6rem;">
+              <input type="email" id="magicEmail" placeholder="tu@correo.com" autocomplete="email"
+                     style="width:100%;padding:.7rem 1rem;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;transition:border-color .18s;"
+                     onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor=''">
+            </div>
+            <div id="msgMagicOk"  style="display:none;background:rgba(82,196,138,.1);border:1px solid rgba(82,196,138,.25);border-radius:var(--radius);padding:.65rem .9rem;font-size:.8rem;color:var(--green);margin-bottom:.5rem;line-height:1.5;"></div>
+            <div id="msgMagicErr" style="display:none;background:rgba(224,92,92,.1);border:1px solid rgba(224,92,92,.25);border-radius:var(--radius);padding:.6rem .9rem;font-size:.8rem;color:var(--red);margin-bottom:.5rem;"></div>
+            <button type="button" class="btn-auth" id="btnEnviarMagic" onclick="enviarMagicLink()" style="font-size:.82rem;padding:.7rem 1rem;">
+              <span id="btnMagicTxt">Enviar enlace de acceso</span>
+              <span class="btn-spinner" id="spnMagic" style="display:none;"></span>
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- REGISTRO -->
@@ -169,7 +190,8 @@
   if (!token) return;
 
   // type=signup → el usuario confirmó su correo, hacer login automático
-  if (tipo === 'signup' || tipo === 'magiclink') {
+  // type=magiclink / type=email → Supabase magic-link OTP (ambos valores posibles según versión)
+  if (tipo === 'signup' || tipo === 'magiclink' || tipo === 'email') {
     mostrarOk('✅ Correo verificado. Iniciando sesión...');
     try {
       // Obtener datos del usuario con el token
@@ -340,6 +362,59 @@ function guardarSesionYRedirigir(d, nombre, email) {
   setTimeout(() => {
     location.href = new URLSearchParams(location.search).get('next') || '/';
   }, 800);
+}
+
+// ── MAGIC LINK ───────────────────────────────────────────────
+function toggleMagicForm() {
+  const mf = document.getElementById('magicForm');
+  const open = mf.style.display === 'none' || !mf.style.display;
+  mf.style.display = open ? 'block' : 'none';
+  document.getElementById('btnMagic').textContent = open
+    ? '✕ Cancelar enlace de acceso'
+    : '✉️ Entrar sin contraseña (magic link)';
+  if (open) {
+    // Pre-llenar con el email del campo de login si ya fue escrito
+    const loginEmail = document.getElementById('loginEmail');
+    const magicEmail = document.getElementById('magicEmail');
+    if (loginEmail && loginEmail.value && !magicEmail.value) {
+      magicEmail.value = loginEmail.value;
+    }
+    setTimeout(() => magicEmail.focus(), 80);
+  }
+}
+
+async function enviarMagicLink() {
+  const email = document.getElementById('magicEmail').value.trim();
+  const errEl = document.getElementById('msgMagicErr');
+  const okEl  = document.getElementById('msgMagicOk');
+  errEl.style.display = 'none';
+  okEl.style.display  = 'none';
+  if (!email) { errEl.textContent = 'Ingresa tu correo.'; errEl.style.display = 'block'; return; }
+
+  const btn = document.getElementById('btnEnviarMagic');
+  btn.disabled = true;
+  document.getElementById('spnMagic').style.display = 'inline-block';
+  document.getElementById('btnMagicTxt').textContent = 'Enviando...';
+
+  try {
+    const res  = await fetch('/api/auth/magic-link', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ email, redirect_url: location.origin + '/auth' })
+    });
+    // Siempre mostrar éxito para no revelar si el correo existe
+    okEl.innerHTML = '📬 Si ese correo está registrado, recibirás un enlace de acceso en segundos.<br><small style="opacity:.7">Revisa tu carpeta de spam si no lo ves.</small>';
+    okEl.style.display = 'block';
+    btn.disabled = false;
+    document.getElementById('spnMagic').style.display = 'none';
+    document.getElementById('btnMagicTxt').textContent = 'Enviar enlace de acceso';
+  } catch(e) {
+    errEl.textContent = 'Error de conexión. Intenta de nuevo.';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    document.getElementById('spnMagic').style.display = 'none';
+    document.getElementById('btnMagicTxt').textContent = 'Enviar enlace de acceso';
+  }
 }
 
 document.addEventListener('keydown', e => {
