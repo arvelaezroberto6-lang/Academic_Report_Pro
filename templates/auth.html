@@ -5,14 +5,18 @@
 <style>
 .auth-wrap{min-height:calc(100vh - 60px);display:flex;align-items:center;justify-content:center;padding:2rem 1rem}
 .auth-box{width:100%;max-width:420px}
-.auth-logo{text-align:center;margin-bottom:2rem}
-.auth-logo-icon{width:60px;height:60px;border-radius:16px;background:linear-gradient(135deg,var(--gold) 0%,#8b6412 100%);display:inline-flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:.9rem;box-shadow:0 8px 24px rgba(212,168,67,.3)}
+.auth-logo{text-align:center;margin-bottom:1.8rem}
+.auth-logo-icon{width:60px;height:60px;border-radius:16px;display:inline-flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:.9rem;box-shadow:0 8px 24px rgba(212,168,67,.3)}
 .auth-logo h1{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;color:var(--text);margin-bottom:.3rem}
-.auth-tagline{display:inline-flex;align-items:center;gap:.4rem;font-size:.72rem;color:var(--text2);background:var(--surface);border:1px solid var(--border2);padding:.25rem .8rem;border-radius:100px;margin-top:.3rem}
-.auth-tagline span{color:var(--gold)}
+.auth-subtitle{font-size:.75rem;color:var(--text2);margin-top:.25rem}
 .auth-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.8rem}
-.value-badges{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1.4rem;padding-bottom:1.2rem;border-bottom:1px solid var(--border)}
-.vbadge{font-size:.67rem;font-weight:600;padding:.2rem .6rem;border-radius:100px;background:var(--gold-dim);border:1px solid rgba(212,168,67,.2);color:var(--gold)}
+/* ── Welcome strip ── */
+.welcome-strip{background:linear-gradient(135deg,rgba(212,168,67,.07) 0%,rgba(212,168,67,.03) 100%);border:1px solid rgba(212,168,67,.15);border-radius:12px;padding:1rem 1.1rem;margin-bottom:1.4rem}
+.welcome-text{display:flex;align-items:flex-start;gap:.55rem;font-size:.82rem;color:var(--text2);line-height:1.5;margin-bottom:.75rem}
+.welcome-emoji{font-size:1.1rem;flex-shrink:0;margin-top:.05rem}
+.welcome-features{display:flex;flex-wrap:wrap;gap:.4rem}
+.wf{font-size:.67rem;font-weight:600;padding:.2rem .65rem;border-radius:100px;background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.18);color:var(--gold)}
+/* ── Tabs ── */
 .auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-bottom:1.4rem;background:var(--surface2);border-radius:10px;padding:.3rem}
 .auth-tab{padding:.6rem;border:none;border-radius:8px;background:transparent;color:var(--text2);font-weight:600;font-size:.84rem;cursor:pointer;transition:all .18s;font-family:'DM Sans',sans-serif}
 .auth-tab.active{background:var(--gold-dim);color:var(--gold);border:1px solid rgba(212,168,67,.25)}
@@ -32,15 +36,10 @@
 .btn-auth{width:100%;padding:.9rem;background:linear-gradient(135deg,var(--gold) 0%,#9a6e18 100%);color:#000;font-weight:700;font-size:.92rem;border:none;border-radius:var(--radius);cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;margin-top:.5rem;display:flex;align-items:center;justify-content:center;gap:.5rem}
 .btn-auth:hover{transform:translateY(-2px);box-shadow:0 8px 28px var(--gold-glow)}
 .btn-auth:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
-.btn-magic{width:100%;padding:.62rem 1rem;background:transparent;color:var(--text2);font-weight:500;font-size:.8rem;border:1px solid var(--border2);border-radius:var(--radius);cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;text-align:center;letter-spacing:.01em}
-.btn-magic:hover{border-color:rgba(212,168,67,.3);color:var(--gold)}
 .btn-spinner{display:none;width:16px;height:16px;border:2px solid rgba(0,0,0,.3);border-top-color:#000;border-radius:50%;animation:spin .6s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .auth-error{background:rgba(224,92,92,.12);border:1px solid rgba(224,92,92,.3);border-radius:var(--radius);padding:.7rem 1rem;font-size:.82rem;color:var(--red);margin-bottom:1rem;display:none;line-height:1.5}
 .auth-success{background:rgba(82,196,138,.12);border:1px solid rgba(82,196,138,.3);border-radius:var(--radius);padding:.7rem 1rem;font-size:.82rem;color:var(--green);margin-bottom:1rem;display:none}
-.auth-divider{text-align:center;font-size:.72rem;color:var(--text3);margin:1.1rem 0 .8rem;position:relative}
-.auth-divider::before,.auth-divider::after{content:'';position:absolute;top:50%;width:42%;height:1px;background:var(--border)}
-.auth-divider::before{left:0}.auth-divider::after{right:0}
 .privacy-note{font-size:.68rem;color:var(--text3);text-align:center;margin-top:.9rem;line-height:1.5}
 </style>
 {% endblock %}
@@ -71,15 +70,20 @@
         </svg>
       </div>
       <h1>Academic Report Pro</h1>
-      <div class="auth-tagline"><span>✦</span> Informes académicos listos para entregar</div>
+      <p class="auth-subtitle">Informes académicos listos para entregar</p>
     </div>
 
     <div class="auth-card">
-      <div class="value-badges">
-        <span class="vbadge">📋 Estructura completa</span>
-        <span class="vbadge">📚 8 normas</span>
-        <span class="vbadge">⚡ Listo en 60s</span>
-        <span class="vbadge">🇨🇴 Contexto Colombia</span>
+      <div class="welcome-strip">
+        <div class="welcome-text">
+          <span class="welcome-emoji">👋</span>
+          <span>Bienvenido — genera tu primer informe en menos de 60 segundos</span>
+        </div>
+        <div class="welcome-features">
+          <span class="wf">📋 Estructura completa</span>
+          <span class="wf">📚 8 normas</span>
+          <span class="wf">🇨🇴 Contexto Colombia</span>
+        </div>
       </div>
 
       <div class="auth-tabs">
@@ -109,25 +113,6 @@
           <span class="btn-spinner" id="spnLogin"></span>
           <span id="btnLoginArrow">→</span>
         </button>
-        <!-- Magic link -->
-        <div id="magicLinkSection" style="margin-top:.9rem;">
-          <button type="button" class="btn-magic" id="btnMagic" onclick="toggleMagicForm()">
-            ✉️ Entrar sin contraseña (magic link)
-          </button>
-          <div id="magicForm" style="display:none; margin-top:.7rem;">
-            <div class="field" style="margin-bottom:.6rem;">
-              <input type="email" id="magicEmail" placeholder="tu@correo.com" autocomplete="email"
-                     style="width:100%;padding:.7rem 1rem;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;transition:border-color .18s;"
-                     onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor=''">
-            </div>
-            <div id="msgMagicOk"  style="display:none;background:rgba(82,196,138,.1);border:1px solid rgba(82,196,138,.25);border-radius:var(--radius);padding:.65rem .9rem;font-size:.8rem;color:var(--green);margin-bottom:.5rem;line-height:1.5;"></div>
-            <div id="msgMagicErr" style="display:none;background:rgba(224,92,92,.1);border:1px solid rgba(224,92,92,.25);border-radius:var(--radius);padding:.6rem .9rem;font-size:.8rem;color:var(--red);margin-bottom:.5rem;"></div>
-            <button type="button" class="btn-auth" id="btnEnviarMagic" onclick="enviarMagicLink()" style="font-size:.82rem;padding:.7rem 1rem;">
-              <span id="btnMagicTxt">Enviar enlace de acceso</span>
-              <span class="btn-spinner" id="spnMagic" style="display:none;"></span>
-            </button>
-          </div>
-        </div>
       </div>
 
       <!-- REGISTRO -->
@@ -362,59 +347,6 @@ function guardarSesionYRedirigir(d, nombre, email) {
   setTimeout(() => {
     location.href = new URLSearchParams(location.search).get('next') || '/';
   }, 800);
-}
-
-// ── MAGIC LINK ───────────────────────────────────────────────
-function toggleMagicForm() {
-  const mf = document.getElementById('magicForm');
-  const open = mf.style.display === 'none' || !mf.style.display;
-  mf.style.display = open ? 'block' : 'none';
-  document.getElementById('btnMagic').textContent = open
-    ? '✕ Cancelar enlace de acceso'
-    : '✉️ Entrar sin contraseña (magic link)';
-  if (open) {
-    // Pre-llenar con el email del campo de login si ya fue escrito
-    const loginEmail = document.getElementById('loginEmail');
-    const magicEmail = document.getElementById('magicEmail');
-    if (loginEmail && loginEmail.value && !magicEmail.value) {
-      magicEmail.value = loginEmail.value;
-    }
-    setTimeout(() => magicEmail.focus(), 80);
-  }
-}
-
-async function enviarMagicLink() {
-  const email = document.getElementById('magicEmail').value.trim();
-  const errEl = document.getElementById('msgMagicErr');
-  const okEl  = document.getElementById('msgMagicOk');
-  errEl.style.display = 'none';
-  okEl.style.display  = 'none';
-  if (!email) { errEl.textContent = 'Ingresa tu correo.'; errEl.style.display = 'block'; return; }
-
-  const btn = document.getElementById('btnEnviarMagic');
-  btn.disabled = true;
-  document.getElementById('spnMagic').style.display = 'inline-block';
-  document.getElementById('btnMagicTxt').textContent = 'Enviando...';
-
-  try {
-    const res  = await fetch('/api/auth/magic-link', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ email, redirect_url: location.origin + '/auth' })
-    });
-    // Siempre mostrar éxito para no revelar si el correo existe
-    okEl.innerHTML = '📬 Si ese correo está registrado, recibirás un enlace de acceso en segundos.<br><small style="opacity:.7">Revisa tu carpeta de spam si no lo ves.</small>';
-    okEl.style.display = 'block';
-    btn.disabled = false;
-    document.getElementById('spnMagic').style.display = 'none';
-    document.getElementById('btnMagicTxt').textContent = 'Enviar enlace de acceso';
-  } catch(e) {
-    errEl.textContent = 'Error de conexión. Intenta de nuevo.';
-    errEl.style.display = 'block';
-    btn.disabled = false;
-    document.getElementById('spnMagic').style.display = 'none';
-    document.getElementById('btnMagicTxt').textContent = 'Enviar enlace de acceso';
-  }
 }
 
 document.addEventListener('keydown', e => {
