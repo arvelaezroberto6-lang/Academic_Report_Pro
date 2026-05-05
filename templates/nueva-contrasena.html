@@ -109,14 +109,19 @@ let accessToken = null;
   const type    = params.get('type');
   const error   = params.get('error_description') || params.get('error');
 
-  if (error || !accessToken || type !== 'recovery') {
+  // Supabase puede mandar type=recovery o simplemente el token sin type
+  // Solo rechazar si hay error explícito o no hay token en absoluto
+  if (error || !accessToken) {
     document.getElementById('formNueva').style.display    = 'none';
     document.getElementById('formInvalido').style.display = 'block';
     if (error) {
       document.getElementById('msgErr').textContent   = decodeURIComponent(error.replace(/\+/g,' '));
       document.getElementById('msgErr').style.display = 'block';
     }
+    return;
   }
+  // Si hay token pero type no es recovery, igual mostramos el form
+  // (Supabase a veces omite el type o usa valores distintos según versión)
   // Limpiar el hash de la URL sin recargar
   history.replaceState(null, '', location.pathname);
 })();
