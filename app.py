@@ -2369,14 +2369,17 @@ def api_recuperar_password():
             return jsonify({'success': True})   # silencioso para no revelar estado del sistema
 
         redirect_url = data.get('redirect_url', '')
+        # Fallback: construir URL desde el request si el frontend no la envió
+        if not redirect_url:
+            redirect_url = request.host_url.rstrip('/') + '/nueva-contrasena'
         # Validar que el redirect_url sea del propio dominio
         dominio_permitido = os.environ.get('SITE_URL', '')
-        if redirect_url and dominio_permitido and not redirect_url.startswith(dominio_permitido):
-            redirect_url = dominio_permitido
+        if dominio_permitido and not redirect_url.startswith(dominio_permitido):
+            redirect_url = dominio_permitido.rstrip('/') + '/nueva-contrasena'
 
-        opts = {'redirect_to': redirect_url} if redirect_url else {}
-        supabase.auth.reset_password_email(email, opts)
+        supabase.auth.reset_password_for_email(email, {'redirect_to': redirect_url})
         log_evento_seguridad('RECUPERAR_PASSWORD', f"email={email}", request)
+        logger.info(f"Email de recuperacion enviado a {email} — redirect: {redirect_url}")
         return jsonify({'success': True})
     except Exception as e:
         logger.error(f"Error recuperando contraseña: {e}")
@@ -2457,10 +2460,6 @@ def api_guardar_informe(user_id):
 @app.route('/recuperar')
 def recuperar_page():
     return render_template('recuperar.html')
-
-@app.route('/nueva-contrasena')
-def nueva_contrasena_page():
-    return render_template('nueva-contrasena.html')
 
 @app.route('/sugerencias')
 def sugerencias_page():
