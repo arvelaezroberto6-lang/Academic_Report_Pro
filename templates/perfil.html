@@ -69,6 +69,21 @@
     width:100%; font-size:.62rem; font-weight:700; color:var(--text3);
     text-transform:uppercase; letter-spacing:.07em; margin-bottom:.2rem;
 }
+/* ── Botón subir foto ── */
+.avatar-upload-btn {
+    width:100%; padding:.55rem .7rem; margin-bottom:.5rem;
+    background:var(--gold-dim); border:1px solid rgba(212,168,67,.25);
+    border-radius:var(--radius); cursor:pointer; transition:all .18s;
+    font-size:.72rem; font-weight:700; color:var(--gold);
+    font-family:'DM Sans',sans-serif; text-align:center;
+    display:flex; align-items:center; justify-content:center; gap:.4rem;
+}
+.avatar-upload-btn:hover { background:rgba(212,168,67,.2); border-color:rgba(212,168,67,.4); }
+.avatar-upload-btn:disabled { opacity:.5; cursor:not-allowed; }
+/* ── Preview de foto subida ── */
+.pf-avatar img {
+    width:100%; height:100%; border-radius:inherit; object-fit:cover;
+}
 .avatar-opt {
     width:36px; height:36px; border-radius:10px;
     display:flex; align-items:center; justify-content:center;
@@ -433,9 +448,58 @@ const AVATARS = ['📄','🎓','🔬','💡','📚','🧪','💼','🚀','🧠',
 let _currentAvatar = null;
 
 function renderAvatarPicker(currentEmoji) {
-    return `<div class="avatar-picker-title">Elige tu avatar</div>${
-        AVATARS.map(e => `<div class="avatar-opt${e===currentEmoji?' selected':''}" onclick="selectAvatar('${e}')">${e}</div>`).join('')
-    }`;
+    return `
+    <div class="avatar-picker-title">Elige tu avatar</div>
+    <button class="avatar-upload-btn" onclick="triggerFotoUpload(event)" id="btnSubirFoto">📷 Subir foto</button>
+    <input type="file" id="fotoInput" accept="image/*" style="display:none" onchange="subirFoto(this)">
+    ${AVATARS.map(e => `<div class="avatar-opt${e===currentEmoji?' selected':''}" onclick="selectAvatar('${e}')">${e}</div>`).join('')}
+    `;
+}
+
+function triggerFotoUpload(e) {
+    e.stopPropagation();
+    document.getElementById('fotoInput')?.click();
+}
+
+async function subirFoto(input) {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) {
+        if (typeof arpToast === 'function') arpToast('La foto no puede superar 3MB', 'error');
+        else alert('La foto no puede superar 3MB');
+        return;
+    }
+    if (!file.type.startsWith('image/')) {
+        if (typeof arpToast === 'function') arpToast('Solo se aceptan imágenes', 'error');
+        return;
+    }
+    const btn = document.getElementById('btnSubirFoto');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Subiendo...'; }
+    try {
+        const reader = new FileReader();
+        reader.onload = async function(ev) {
+            const data = await authFetch('/api/perfil/avatar', {
+                method: 'POST',
+                body: JSON.stringify({ imagen: ev.target.result, nombre_archivo: file.name })
+            });
+            if (data && data.success && data.avatar_url) {
+                const av = document.getElementById('pfAvatar');
+                if (av) av.innerHTML = `<img src="${data.avatar_url}?t=${Date.now()}" alt="Avatar" style="width:100%;height:100%;border-radius:inherit;object-fit:cover;">`;
+                const u = _getUser();
+                if (u) { u.avatar_url = data.avatar_url; u.avatar = null; localStorage.setItem('arp_user', JSON.stringify(u)); }
+                document.getElementById('avatarPicker')?.classList.remove('open');
+                if (typeof arpToast === 'function') arpToast('¡Foto actualizada!', 'success');
+            } else {
+                if (typeof arpToast === 'function') arpToast((data && data.error) || 'No se pudo subir la foto', 'error');
+            }
+            if (btn) { btn.disabled = false; btn.innerHTML = '📷 Subir foto'; }
+        };
+        reader.readAsDataURL(file);
+    } catch(e) {
+        if (typeof arpToast === 'function') arpToast('Error de conexión', 'error');
+        if (btn) { btn.disabled = false; btn.innerHTML = '📷 Subir foto'; }
+    }
+    input.value = '';
 }
 
 function toggleAvatarPicker() {
@@ -518,9 +582,12 @@ async function cargarPerfil() {
         const mesNombre = du.success ? du.mes_nombre : '';
 
         // Avatar guardado
+        const avatarUrl     = _getUser()?.avatar_url || perfil.avatar_url || null;
         const avatarGuardado = _getUser()?.avatar || null;
         _currentAvatar = avatarGuardado;
-        const avatarDisplay = avatarGuardado || inicialLetra(perfil.nombre || user.nombre || user.email);
+        const avatarDisplay = avatarUrl
+            ? `<img src="${avatarUrl}?t=${Date.now()}" alt="Avatar" style="width:100%;height:100%;border-radius:inherit;object-fit:cover;">`
+            : (avatarGuardado || inicialLetra(perfil.nombre || user.nombre || user.email));
         const isEmoji = avatarGuardado !== null;
 
         // Norma usage
