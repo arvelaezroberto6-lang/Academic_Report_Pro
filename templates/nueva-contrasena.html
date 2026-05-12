@@ -116,21 +116,19 @@
 
 {% block extra_js %}
 <script>
-// Carga el SDK solo si base.html no lo cargó ya
-(function() {
-  if (window.supabase && window.supabase.createClient) { initSupabase(); return; }
-  var s = document.createElement('script');
-  s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-  s.onload = initSupabase;
-  document.head.appendChild(s);
-})();
-
+// El SDK de Supabase ya está cargado en base.html — no se carga dos veces
 var _supaClient = null;
 function initSupabase() {
   var url = 'https://yvcllhtklulbyxfidham.supabase.co';
   var key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2Y2xsaHRrbHVsYnl4ZmlkaGFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTU3NTQsImV4cCI6MjA5MjczMTc1NH0.Sx5aAQ2427V3GHjfhE5S-HLw6XPPpe_eJhXFU7-62cM';
   _supaClient = window.supabase.createClient(url, key);
 }
+// Inicializar cuando el DOM esté listo (SDK ya cargado por base.html)
+document.addEventListener('DOMContentLoaded', function() {
+  if (window.supabase && window.supabase.createClient) {
+    initSupabase();
+  }
+});
 // Alias para que el resto del código use "supabase" igual que antes
 Object.defineProperty(window, 'supabase_nc', { get: function(){ return _supaClient; } });
 
