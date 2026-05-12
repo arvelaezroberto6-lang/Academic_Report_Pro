@@ -82,6 +82,25 @@
 .msg-err { background:rgba(224,92,92,.1);  border:1px solid rgba(224,92,92,.25);  border-radius:var(--radius); padding:.7rem 1rem; font-size:.82rem; color:var(--red); display:none; margin-bottom:1rem; }
 
 .note { font-size:.7rem; color:var(--text3); margin-top:.7rem; text-align:center; line-height:1.5; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 480px) {
+    .page-wrap { padding: 1.5rem .75rem 4rem; }
+    .page-hd   { flex-direction: column; gap: .6rem; }
+    .page-hd h1 { font-size: 1.3rem; }
+    .fcard     { padding: 1.3rem 1rem; }
+    .tipo-grid { grid-template-columns: 1fr 1fr; gap: .4rem; }
+    .tipo-btn  { padding: .75rem .7rem; }
+    .tipo-btn-ico { width: 28px; height: 28px; }
+    .g2c { grid-template-columns: 1fr; }
+    .field input, .field textarea { font-size: 16px !important; }
+    .btn-send { padding: .85rem; font-size: .86rem; }
+}
+@media (min-width: 481px) and (max-width: 768px) {
+    .page-wrap { padding: 2rem 1.5rem 4rem; }
+    .tipo-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
 </style>
 {% endblock %}
 
