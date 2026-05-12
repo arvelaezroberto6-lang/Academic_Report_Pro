@@ -359,6 +359,41 @@ select option { background: var(--surface); }
     color: var(--gold); text-decoration: none;
     font-weight: 600; font-size: .75rem; white-space: nowrap;
 }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 480px) {
+    .form-wrap { padding: 1.5rem .75rem 5rem; }
+    .page-header { padding: 2rem .75rem .75rem; }
+    .page-title { font-size: clamp(1.5rem, 8vw, 2rem); }
+    .page-sub { font-size: .82rem; }
+    .mode-tabs { grid-template-columns: 1fr; gap: .35rem; }
+    .mode-tab  { padding: .65rem; font-size: .82rem; }
+    .tipo-grid { grid-template-columns: repeat(2, 1fr); gap: .45rem; }
+    .tipo-card { padding: .75rem .45rem; font-size: .73rem; }
+    .chip { padding: .3rem .65rem; font-size: .68rem; }
+    .autor-row { grid-template-columns: 1fr auto; }
+    .autor-row input:first-child { grid-column: 1 / -1; }
+    input, select, textarea { font-size: 16px !important; }
+    .btn-gen { padding: 1rem; font-size: .92rem; }
+    .editor-tabs { gap: .3rem; }
+    .editor-tab  { padding: .38rem .65rem; font-size: .72rem; }
+    #editorTexto { font-size: .78rem; min-height: 300px; }
+    .editor-actions { flex-direction: column; }
+    .editor-actions button { min-width: unset; width: 100%; }
+    .ref-tabs { flex-direction: column; }
+    #usoBannerMes { flex-direction: column; align-items: flex-start; gap: .4rem; }
+    .seccion-chips { gap: .3rem; }
+}
+@media (min-width: 481px) and (max-width: 768px) {
+    .form-wrap { padding: 2rem 1.2rem 5rem; }
+    .tipo-grid { grid-template-columns: repeat(2, 1fr); }
+    .mode-tabs { grid-template-columns: repeat(3, 1fr); }
+    .autor-row { grid-template-columns: 1fr 1fr auto; }
+}
+@media (min-width: 769px) and (max-width: 1024px) {
+    .form-wrap { padding: 2.5rem 2rem 5rem; }
+}
+
 #usoBannerMes a:hover { text-decoration: underline; }
 </style>
 {% endblock %}
