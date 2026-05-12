@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <!-- ── SEO ──────────────────────────────────────────────── -->
     <meta name="description" content="{% block meta_description %}Academic Report Pro — Genera informes académicos profesionales con IA en segundos. 8 normas (APA 7, ICONTEC, Vancouver…), referencias reales y exportación a PDF y Word.{% endblock %}">
     <meta name="keywords" content="{% block meta_keywords %}informes académicos, generador de informes, APA 7, ICONTEC, normas bibliográficas, inteligencia artificial, informe de laboratorio, tesis{% endblock %}">
@@ -356,6 +356,40 @@
             box-shadow: 0 4px 32px rgba(0,0,0,.4);
         }
     </style>
+
+        /* ── RESPONSIVE GLOBAL EXTRAS ────────────────────── */
+        /* Tap target mínimo 44px para accesibilidad móvil */
+        @media (max-width: 680px) {
+            .btn-gold, .btn-outline { padding: .85rem 1.5rem; font-size: .85rem; width: 100%; justify-content: center; }
+            footer { padding: 1.8rem 1rem; font-size: .7rem; }
+            /* Evitar overflow horizontal global */
+            body { overflow-x: hidden; }
+            /* Nav mobile mejorado */
+            .nav-mobile { padding: .75rem 1rem 1.2rem; backdrop-filter: blur(18px); }
+            .nav-mobile .nav-link { padding: .85rem 1rem; font-size: .92rem; min-height: 44px; display: flex; align-items: center; }
+            .nav-mobile .nav-cta  { padding: .85rem; font-size: .88rem; }
+            /* Theme toggle más grande en móvil */
+            .theme-toggle { width: 40px; height: 40px; font-size: 1.1rem; }
+        }
+        @media (max-width: 400px) {
+            .navbar { padding: 0 .9rem; }
+            .nav-brand { font-size: .92rem; }
+        }
+        /* Tablet */
+        @media (min-width: 681px) and (max-width: 1024px) {
+            .container { padding: 0 1.5rem; }
+        }
+        /* Safe area para notch de iPhone */
+        @supports (padding: max(0px)) {
+            .navbar {
+                padding-left: max(2rem, env(safe-area-inset-left));
+                padding-right: max(2rem, env(safe-area-inset-right));
+            }
+            footer {
+                padding-bottom: max(2.5rem, env(safe-area-inset-bottom));
+            }
+        }
+
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -668,332 +702,6 @@
     });
     </script>
 
-    <!-- ══════════════════════════════════════════════════════
-         ONBOARDING — aparece solo la primera vez
-         Guía al usuario nuevo por los 4 pasos clave de la app.
-         Se guarda en localStorage: arp_onboarding_done = "1"
-         ══════════════════════════════════════════════════════ -->
-    <style>
-    /* ── Overlay ── */
-    #arpOnboarding {
-        position: fixed; inset: 0; z-index: 9999;
-        display: flex; align-items: center; justify-content: center;
-        padding: 1.5rem;
-        background: rgba(0,0,0,.72);
-        backdrop-filter: blur(6px);
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity .35s ease;
-    }
-    #arpOnboarding.visible {
-        opacity: 1;
-        pointer-events: all;
-    }
-
-    /* ── Modal card ── */
-    .ob-card {
-        width: 100%; max-width: 480px;
-        background: var(--surface);
-        border: 1px solid rgba(212,168,67,.2);
-        border-radius: 22px;
-        overflow: hidden;
-        box-shadow: 0 32px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(212,168,67,.08);
-        transform: translateY(20px) scale(.97);
-        transition: transform .35s cubic-bezier(.34,1.56,.64,1);
-    }
-    #arpOnboarding.visible .ob-card {
-        transform: translateY(0) scale(1);
-    }
-
-    /* ── Header con gradiente ── */
-    .ob-header {
-        padding: 2rem 2rem 1.4rem;
-        background: linear-gradient(145deg, rgba(212,168,67,.08) 0%, transparent 60%);
-        border-bottom: 1px solid var(--border);
-        text-align: center;
-    }
-    .ob-logo-wrap {
-        width: 56px; height: 56px; border-radius: 16px;
-        background: linear-gradient(135deg, var(--gold) 0%, #8b6412 100%);
-        display: inline-flex; align-items: center; justify-content: center;
-        font-size: 26px; margin-bottom: 1rem;
-        box-shadow: 0 8px 24px rgba(212,168,67,.3);
-    }
-    .ob-header h2 {
-        font-family: 'Playfair Display', serif;
-        font-size: 1.35rem; font-weight: 700;
-        color: var(--text); margin-bottom: .4rem;
-    }
-    .ob-header p {
-        font-size: .83rem; color: var(--text2); line-height: 1.55;
-    }
-
-    /* ── Steps ── */
-    .ob-steps {
-        padding: 1.5rem 2rem;
-        display: flex; flex-direction: column; gap: .85rem;
-    }
-    .ob-step {
-        display: flex; align-items: flex-start; gap: 1rem;
-        padding: .85rem 1rem;
-        border-radius: 12px;
-        border: 1px solid var(--border);
-        background: var(--surface2);
-        opacity: 0; transform: translateX(-12px);
-        transition: opacity .3s ease, transform .3s ease, border-color .2s ease;
-        cursor: default;
-    }
-    .ob-step.revealed { opacity: 1; transform: translateX(0); }
-    .ob-step:hover { border-color: rgba(212,168,67,.25); }
-
-    .ob-step-ico {
-        width: 38px; height: 38px; flex-shrink: 0;
-        border-radius: 10px;
-        background: var(--gold-dim);
-        border: 1px solid rgba(212,168,67,.18);
-        display: flex; align-items: center; justify-content: center;
-        font-size: 1.1rem;
-    }
-    .ob-step-body { flex: 1; min-width: 0; }
-    .ob-step-title {
-        font-size: .88rem; font-weight: 700;
-        color: var(--text); margin-bottom: .2rem;
-    }
-    .ob-step-desc {
-        font-size: .75rem; color: var(--text2); line-height: 1.5;
-    }
-    .ob-step-tag {
-        display: inline-block; font-size: .62rem; font-weight: 700;
-        text-transform: uppercase; letter-spacing: .06em;
-        padding: .15rem .5rem; border-radius: 4px;
-        background: var(--gold-dim); color: var(--gold);
-        margin-top: .35rem;
-    }
-
-    /* ── Progress dots ── */
-    .ob-dots {
-        display: flex; justify-content: center; gap: .4rem;
-        padding: .2rem 2rem 0;
-    }
-    .ob-dot {
-        width: 6px; height: 6px; border-radius: 50%;
-        background: var(--border2);
-        transition: background .3s ease, transform .3s ease;
-    }
-    .ob-dot.active { background: var(--gold); transform: scale(1.3); }
-
-    /* ── Footer buttons ── */
-    .ob-footer {
-        padding: 1.2rem 2rem 1.8rem;
-        display: flex; flex-direction: column; gap: .6rem;
-    }
-    .ob-btn-primary {
-        width: 100%; padding: .85rem;
-        background: linear-gradient(135deg, var(--gold) 0%, #9a6e18 100%);
-        color: #000; font-weight: 700; font-size: .9rem;
-        border: none; border-radius: var(--radius);
-        cursor: pointer; font-family: 'DM Sans', sans-serif;
-        display: flex; align-items: center; justify-content: center; gap: .4rem;
-        transition: transform .18s ease, box-shadow .18s ease !important;
-    }
-    .ob-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px var(--gold-glow); }
-
-    .ob-btn-skip {
-        width: 100%; padding: .6rem;
-        background: none; border: none;
-        color: var(--text3); font-size: .78rem;
-        cursor: pointer; font-family: 'DM Sans', sans-serif;
-        transition: color .18s ease !important;
-    }
-    .ob-btn-skip:hover { color: var(--text2); }
-
-    /* Confetti particle */
-    .ob-confetti {
-        position: fixed; pointer-events: none; z-index: 10000;
-        width: 8px; height: 8px; border-radius: 2px;
-        animation: ob-fall linear forwards;
-    }
-    @keyframes ob-fall {
-        0%   { opacity: 1; transform: translateY(0) rotate(0deg); }
-        100% { opacity: 0; transform: translateY(300px) rotate(720deg); }
-    }
-
-    @media (max-width: 520px) {
-        .ob-card { border-radius: 16px; }
-        .ob-header { padding: 1.5rem 1.5rem 1.2rem; }
-        .ob-steps { padding: 1.2rem 1.5rem; }
-        .ob-footer { padding: 1rem 1.5rem 1.5rem; }
-    }
-    </style>
-
-    <!-- Onboarding HTML (oculto, se activa por JS) -->
-    <div id="arpOnboarding" role="dialog" aria-modal="true" aria-label="Bienvenida a Academic Report Pro">
-        <div class="ob-card">
-            <div class="ob-header">
-                <div class="ob-logo-wrap">📄</div>
-                <h2>Bienvenido a Academic Report Pro</h2>
-                <p>Genera informes académicos completos con IA en minutos.<br>Aquí te explicamos cómo funciona.</p>
-            </div>
-
-            <div class="ob-steps" id="obSteps">
-                <div class="ob-step" data-step="0">
-                    <div class="ob-step-ico">✦</div>
-                    <div class="ob-step-body">
-                        <div class="ob-step-title">Escribe tu tema y configura</div>
-                        <div class="ob-step-desc">Ingresa el tema del informe, elige la norma (APA, ICONTEC, Vancouver…) y el tipo de documento.</div>
-                        <span class="ob-step-tag">Paso 1</span>
-                    </div>
-                </div>
-                <div class="ob-step" data-step="1">
-                    <div class="ob-step-ico">⚡</div>
-                    <div class="ob-step-body">
-                        <div class="ob-step-title">La IA redacta sección por sección</div>
-                        <div class="ob-step-desc">Introducción, marco teórico, metodología, conclusiones… todo con referencias reales de CrossRef y OpenAlex.</div>
-                        <span class="ob-step-tag">Paso 2</span>
-                    </div>
-                </div>
-                <div class="ob-step" data-step="2">
-                    <div class="ob-step-ico">📥</div>
-                    <div class="ob-step-body">
-                        <div class="ob-step-title">Descarga en PDF o Word</div>
-                        <div class="ob-step-desc">Obtén tu informe formateado listo para entregar. También puedes editarlo antes de descargar.</div>
-                        <span class="ob-step-tag">Paso 3</span>
-                    </div>
-                </div>
-                <div class="ob-step" data-step="3">
-                    <div class="ob-step-ico">📁</div>
-                    <div class="ob-step-body">
-                        <div class="ob-step-title">Todos tus informes guardados</div>
-                        <div class="ob-step-desc">En «Mis informes» encuentras el historial completo. Puedes volver a descargarlos cuando quieras.</div>
-                        <span class="ob-step-tag">Paso 4</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="ob-dots" id="obDots">
-                <div class="ob-dot active"></div>
-                <div class="ob-dot"></div>
-                <div class="ob-dot"></div>
-                <div class="ob-dot"></div>
-            </div>
-
-            <div class="ob-footer">
-                <button class="ob-btn-primary" id="obNextBtn" onclick="obNext()">
-                    <span id="obNextTxt">Siguiente →</span>
-                </button>
-                <button class="ob-btn-skip" onclick="obSkip()">Saltar introducción</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-    // ── Onboarding logic ──────────────────────────────────────
-    (function initOnboarding() {
-        // Solo mostrar si nunca se completó
-        if (localStorage.getItem('arp_onboarding_done') === '1') return;
-
-        // Pequeño delay para que la página cargue primero
-        setTimeout(() => {
-            const el = document.getElementById('arpOnboarding');
-            if (!el) return;
-            el.classList.add('visible');
-            // Revelar steps con stagger
-            obRevealSteps(0);
-        }, 600);
-    })();
-
-    let _obCurrentStep = 0;
-    const _obTotalSteps = 4;
-
-    function obRevealSteps(fromStep) {
-        const steps = document.querySelectorAll('.ob-step');
-        steps.forEach((s, i) => {
-            if (i >= fromStep) {
-                setTimeout(() => s.classList.add('revealed'), (i - fromStep) * 120);
-            }
-        });
-        _updateObDots(fromStep < _obTotalSteps ? fromStep : _obTotalSteps - 1);
-    }
-
-    function _updateObDots(active) {
-        document.querySelectorAll('.ob-dot').forEach((d, i) => {
-            d.classList.toggle('active', i === active);
-        });
-    }
-
-    function obNext() {
-        _obCurrentStep++;
-
-        if (_obCurrentStep >= _obTotalSteps) {
-            // Último paso: cerrar con confetti
-            _obLaunchConfetti();
-            setTimeout(obClose, 500);
-            return;
-        }
-
-        // Actualizar dots y texto del botón
-        _updateObDots(_obCurrentStep);
-        const btn = document.getElementById('obNextTxt');
-        if (_obCurrentStep === _obTotalSteps - 1) {
-            btn.textContent = '¡Empezar! 🚀';
-        } else {
-            btn.textContent = 'Siguiente →';
-        }
-
-        // Highlight del step activo
-        document.querySelectorAll('.ob-step').forEach((s, i) => {
-            s.style.borderColor = i === _obCurrentStep
-                ? 'rgba(212,168,67,.4)'
-                : '';
-            s.style.background = i === _obCurrentStep
-                ? 'var(--gold-dim)'
-                : '';
-        });
-    }
-
-    function obSkip() { obClose(); }
-
-    function obClose() {
-        localStorage.setItem('arp_onboarding_done', '1');
-        const el = document.getElementById('arpOnboarding');
-        if (el) {
-            el.classList.remove('visible');
-            // Quitar del DOM tras la transición
-            setTimeout(() => el.remove(), 400);
-        }
-    }
-
-    function _obLaunchConfetti() {
-        const colors = ['#d4a843','#f0c96a','#52c48a','#e05c5c','#7eb8f7'];
-        const count  = 28;
-        for (let i = 0; i < count; i++) {
-            const el = document.createElement('div');
-            el.className = 'ob-confetti';
-            el.style.cssText = `
-                left: ${20 + Math.random() * 60}%;
-                top: ${20 + Math.random() * 30}%;
-                background: ${colors[Math.floor(Math.random() * colors.length)]};
-                animation-duration: ${0.8 + Math.random() * 0.8}s;
-                animation-delay: ${Math.random() * 0.3}s;
-                width: ${6 + Math.random() * 6}px;
-                height: ${6 + Math.random() * 6}px;
-                border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
-            `;
-            document.body.appendChild(el);
-            setTimeout(() => el.remove(), 1600);
-        }
-    }
-
-    // Cerrar con Escape
-    document.addEventListener('keydown', e => {
-        if (e.key === 'Escape') obSkip();
-    });
-
-    // Cerrar al hacer click fuera del modal
-    document.getElementById('arpOnboarding')?.addEventListener('click', function(e) {
-        if (e.target === this) obSkip();
-    });
-    </script>
 
     <!-- ── Supabase SDK (cargado una sola vez para toda la app) ── -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
