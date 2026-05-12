@@ -217,59 +217,59 @@ def validar_params_informe(data: dict) -> tuple[bool, str]:
 def aplicar_headers_seguridad(response):
     """
     Agrega headers de seguridad a todas las respuestas HTTP.
-    Protege contra XSS, clickjacking, sniffing de contenido, etc.
+    Protege contra XSS, sniffing de contenido, etc.
 
     Registrar en app.py con:
         app.after_request(aplicar_headers_seguridad)
 
-    NOTA: X-Frame-Options se omite intencionalmente porque 'DENY' hace que
-    el WebView de WhatsApp e Instagram en iOS rechace renderizar la página
-    y muestre pantalla negra. La protección contra clickjacking se mantiene
-    a través del CSP con frame-ancestors.
+    NOTAS IMPORTANTES:
+    - X-Frame-Options ELIMINADO: causaba pantalla negra en WebViews de
+      WhatsApp, Instagram, Facebook, Telegram en iOS y Android.
+    - CSP sin default-src restrictivo: 'self' bloqueaba CDNs externos
+      (Supabase SDK, Google Fonts, SweetAlert2) causando pantalla negra
+      incluso en Chrome/Firefox de escritorio.
+    - La seguridad se mantiene con X-Content-Type-Options, HSTS y
+      restricciones específicas por directiva donde es seguro hacerlo.
     """
-    from flask import request as flask_request
-
-    # Previene que el navegador ejecute JS inyectado en respuestas
+    # Previene MIME-type sniffing (seguro en todos los contextos)
     response.headers['X-Content-Type-Options'] = 'nosniff'
-    # Activa el filtro XSS del navegador (compatibilidad legacy)
+
+    # Filtro XSS legacy (compatibilidad con navegadores viejos)
     response.headers['X-XSS-Protection'] = '1; mode=block'
-    # Controla qué URL se envía como Referer
+
+    # Referrer controlado
     response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
 
-    # Detectar si la petición viene de un WebView de app social (WhatsApp, Instagram, etc.)
-    # para no romper la carga con headers demasiado restrictivos
-    ua = flask_request.headers.get('User-Agent', '')
-    es_webview_social = any(x in ua for x in [
-        'WhatsApp', 'Instagram', 'FBAN', 'FBAV', 'FB_IAB',
-        'LinkedInApp', 'Twitter', 'Snapchat', 'TikTok', 'Line/'
-    ])
+    # CSP funcional: permite los CDNs que usa la app sin romper nada
+    # Se listan explícitamente todos los dominios externos usados:
+    #   - cdn.jsdelivr.net      → Supabase JS SDK, SweetAlert2
+    #   - fonts.googleapis.com  → Google Fonts CSS
+    #   - fonts.gstatic.com     → Google Fonts archivos de fuente
+    #   - *.supabase.co         → Auth, base de datos, storage
+    #   - api.deepseek.com      → Generación de informes con IA
+    response.headers['Content-Security-Policy'] = (
+        "default-src 'self' 'unsafe-inline' 'unsafe-eval' "
+        "cdn.jsdelivr.net cdnjs.cloudflare.com unpkg.com; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' "
+        "cdn.jsdelivr.net cdnjs.cloudflare.com unpkg.com; "
+        "style-src 'self' 'unsafe-inline' "
+        "fonts.googleapis.com cdn.jsdelivr.net cdnjs.cloudflare.com; "
+        "font-src 'self' fonts.gstatic.com cdn.jsdelivr.net data:; "
+        "img-src 'self' data: https: blob:; "
+        "connect-src 'self' "
+        "*.supabase.co wss://*.supabase.co "
+        "api.deepseek.com "
+        "cdn.jsdelivr.net "
+        "https://crossref.org https://*.crossref.org "
+        "https://api.openalex.org; "
+        "frame-src 'none'; "
+        "object-src 'none';"
+    )
 
-    if es_webview_social:
-        # CSP relajado para WebViews: sin frame-ancestors DENY que bloquea el render
-        response.headers['Content-Security-Policy'] = (
-            "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; "
-            "script-src * 'unsafe-inline' 'unsafe-eval'; "
-            "style-src * 'unsafe-inline'; "
-            "img-src * data: blob: https:; "
-            "font-src * data:; "
-            "connect-src *;"
-        )
-    else:
-        # CSP estricto para navegadores normales
-        # frame-ancestors reemplaza X-Frame-Options (más moderno y compatible)
-        response.headers['Content-Security-Policy'] = (
-            "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' cdn.jsdelivr.net unpkg.com cdn.sweetalert2.io cdnjs.cloudflare.com; "
-            "style-src 'self' 'unsafe-inline' fonts.googleapis.com cdn.jsdelivr.net; "
-            "font-src 'self' fonts.gstatic.com; "
-            "img-src 'self' data: https:; "
-            "connect-src 'self' api.deepseek.com *.supabase.co https://cdn.jsdelivr.net; "
-            "frame-ancestors 'none';"
-        )
-
-    # Fuerza HTTPS en navegadores que ya visitaron el sitio
+    # HSTS: fuerza HTTPS (solo activo si el sitio ya usa HTTPS en Render)
     response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-    # Evita enviar información sensible en logs de red
+
+    # Deshabilitar APIs de hardware innecesarias
     response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
 
     return response
