@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <!-- Previene zoom automático en iOS y detección de teléfonos -->
+    <meta name="format-detection" content="telephone=no, date=no, email=no, address=no">
     <!-- ── SEO ──────────────────────────────────────────────── -->
     <meta name="description" content="{% block meta_description %}Academic Report Pro — Genera informes académicos profesionales con IA en segundos. 8 normas (APA 7, ICONTEC, Vancouver…), referencias reales y exportación a PDF y Word.{% endblock %}">
     <meta name="keywords" content="{% block meta_keywords %}informes académicos, generador de informes, APA 7, ICONTEC, normas bibliográficas, inteligencia artificial, informe de laboratorio, tesis{% endblock %}">
@@ -123,6 +125,7 @@
             padding: 0 2rem;
             height: 60px;
             background: var(--navbar-bg);
+            -webkit-backdrop-filter: blur(14px);
             backdrop-filter: blur(14px);
             border-bottom: 1px solid var(--border);
         }
@@ -364,7 +367,7 @@
             /* Evitar overflow horizontal global */
             body { overflow-x: hidden; }
             /* Nav mobile mejorado */
-            .nav-mobile { padding: .75rem 1rem 1.2rem; backdrop-filter: blur(18px); }
+            .nav-mobile { padding: .75rem 1rem 1.2rem; -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); }
             .nav-mobile .nav-link { padding: .85rem 1rem; font-size: .92rem; min-height: 44px; display: flex; align-items: center; }
             .nav-mobile .nav-cta  { padding: .85rem; font-size: .88rem; }
             /* Theme toggle más grande en móvil */
@@ -388,9 +391,44 @@
                 padding-bottom: max(2.5rem, env(safe-area-inset-bottom));
             }
         }
-    </style>
-
-    {% block extra_css %}{% endblock %}
+        /* ── FIX PANTALLA NEGRA EN WEBVIEW iOS (WhatsApp, Instagram, etc.) ──
+           El WebView interno de estas apps tiene bugs con:
+           1. backdrop-filter → se desactiva y se usa fondo sólido
+           2. body::before con position:fixed y SVG filter → se oculta
+           3. -webkit-background-clip:text en animaciones → se usa color sólido
+           Esto NO afecta a Safari nativo ni a Chrome en iOS.
+        ── */
+        @supports (-webkit-touch-callout: none) {
+            /* Desactivar grain overlay (causa render negro en WA WebView) */
+            body::before {
+                display: none !important;
+            }
+            /* Navbar: fondo sólido en lugar de blur (blur falla en WA WebView) */
+            .navbar {
+                -webkit-backdrop-filter: none !important;
+                backdrop-filter: none !important;
+                background: #07090f !important;
+            }
+            [data-theme="light"] .navbar {
+                background: #f5f3ee !important;
+            }
+            /* Nav mobile menu */
+            .nav-mobile {
+                -webkit-backdrop-filter: none !important;
+                backdrop-filter: none !important;
+                background: #07090f !important;
+            }
+            [data-theme="light"] .nav-mobile {
+                background: #f5f3ee !important;
+            }
+            /* Asegurar que body tenga fondo visible siempre */
+            body {
+                background-color: #07090f !important;
+            }
+            [data-theme="light"] body {
+                background-color: #f5f3ee !important;
+            }
+        }
 </head>
 <body>
     <nav class="navbar">
