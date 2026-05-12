@@ -76,10 +76,19 @@
 }
 .hero-title em {
     font-style: italic;
+    /* Fallback para WebViews que fallan con background-clip:text */
+    color: var(--gold);
     background: linear-gradient(135deg, var(--gold) 0%, var(--gold2) 60%, #e8b84b 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+}
+/* En WebView iOS (WhatsApp/Instagram) usar color sólido */
+@supports (-webkit-touch-callout: none) {
+    .hero-title em {
+        -webkit-text-fill-color: var(--gold) !important;
+        background: none !important;
+    }
 }
 
 .hero-sub {
