@@ -217,59 +217,33 @@ def validar_params_informe(data: dict) -> tuple[bool, str]:
 def aplicar_headers_seguridad(response):
     """
     Agrega headers de seguridad a todas las respuestas HTTP.
-    Protege contra XSS, sniffing de contenido, etc.
+    Protege contra XSS, clickjacking, sniffing de contenido, etc.
 
     Registrar en app.py con:
         app.after_request(aplicar_headers_seguridad)
-
-    NOTAS IMPORTANTES:
-    - X-Frame-Options ELIMINADO: causaba pantalla negra en WebViews de
-      WhatsApp, Instagram, Facebook, Telegram en iOS y Android.
-    - CSP sin default-src restrictivo: 'self' bloqueaba CDNs externos
-      (Supabase SDK, Google Fonts, SweetAlert2) causando pantalla negra
-      incluso en Chrome/Firefox de escritorio.
-    - La seguridad se mantiene con X-Content-Type-Options, HSTS y
-      restricciones específicas por directiva donde es seguro hacerlo.
     """
-    # Previene MIME-type sniffing (seguro en todos los contextos)
+    # Previene que el navegador ejecute JS inyectado en respuestas
     response.headers['X-Content-Type-Options'] = 'nosniff'
-
-    # Filtro XSS legacy (compatibilidad con navegadores viejos)
+    # Previene que la app se cargue en un iframe (clickjacking)
+    response.headers['X-Frame-Options'] = 'DENY'
+    # Activa el filtro XSS del navegador (compatibilidad legacy)
     response.headers['X-XSS-Protection'] = '1; mode=block'
-
-    # Referrer controlado
+    # Controla qué URL se envía como Referer
     response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
-
-    # CSP funcional: permite los CDNs que usa la app sin romper nada
-    # Se listan explícitamente todos los dominios externos usados:
-    #   - cdn.jsdelivr.net      → Supabase JS SDK, SweetAlert2
-    #   - fonts.googleapis.com  → Google Fonts CSS
-    #   - fonts.gstatic.com     → Google Fonts archivos de fuente
-    #   - *.supabase.co         → Auth, base de datos, storage
-    #   - api.deepseek.com      → Generación de informes con IA
+    # Restricción de recursos: solo carga desde el propio origen + CDNs necesarios
+    # IMPORTANTE: cuando agregues pagos, incluir dominios de Stripe/PayU aquí
     response.headers['Content-Security-Policy'] = (
-        "default-src 'self' 'unsafe-inline' 'unsafe-eval' "
-        "cdn.jsdelivr.net cdnjs.cloudflare.com unpkg.com; "
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' "
-        "cdn.jsdelivr.net cdnjs.cloudflare.com unpkg.com; "
-        "style-src 'self' 'unsafe-inline' "
-        "fonts.googleapis.com cdn.jsdelivr.net cdnjs.cloudflare.com; "
-        "font-src 'self' fonts.gstatic.com cdn.jsdelivr.net data:; "
-        "img-src 'self' data: https: blob:; "
-        "connect-src 'self' "
-        "*.supabase.co wss://*.supabase.co "
-        "api.deepseek.com "
-        "cdn.jsdelivr.net "
-        "https://crossref.org https://*.crossref.org "
-        "https://api.openalex.org; "
-        "frame-src 'none'; "
-        "object-src 'none';"
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' cdn.jsdelivr.net unpkg.com cdn.sweetalert2.io cdnjs.cloudflare.com; "
+        "style-src 'self' 'unsafe-inline' fonts.googleapis.com cdn.jsdelivr.net; "
+        "font-src 'self' fonts.gstatic.com; "
+        "img-src 'self' data: https:; "
+        "connect-src 'self' api.deepseek.com *.supabase.co https://cdn.jsdelivr.net; "
+        "frame-ancestors 'none';"
     )
-
-    # HSTS: fuerza HTTPS (solo activo si el sitio ya usa HTTPS en Render)
+    # Fuerza HTTPS en navegadores que ya visitaron el sitio
     response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-
-    # Deshabilitar APIs de hardware innecesarias
+    # Evita enviar información sensible en logs de red
     response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
 
     return response
