@@ -455,8 +455,25 @@
 .toast.info    { background: var(--gold-dim); border: 1px solid rgba(212,168,67,.25); color: var(--gold); }
 
 /* ── Mobile ── */
+
 @media (max-width: 860px) {
     .editor-wrap { grid-template-columns: 1fr; }
+@media (max-width: 480px) {
+    .editor-sidebar { display: none; }
+    .editor-sidebar.open { display: flex; position: fixed; top: 60px; left: 0; right: 0; bottom: 0; z-index: 200; background: var(--surface); border-radius: 0; overflow-y: auto; width: 100%; max-width: 100%; }
+    .editor-main { padding: 1rem .75rem 3rem; }
+    .editor-header { flex-direction: column; align-items: flex-start; gap: .6rem; }
+    .editor-toolbar { flex-wrap: wrap; gap: .3rem; }
+    .editor-toolbar button { padding: .4rem .6rem; font-size: .75rem; }
+    .editor-actions-bar { flex-direction: column; gap: .4rem; }
+    .editor-actions-bar button { width: 100%; }
+    .btn-sidebar-toggle { display: flex; }
+}
+@media (min-width: 481px) and (max-width: 860px) {
+    .editor-sidebar { width: 220px; }
+    .editor-main { padding: 1.5rem 1.5rem 3rem; }
+}
+
     .sidebar {
         position: static;
         height: auto;
