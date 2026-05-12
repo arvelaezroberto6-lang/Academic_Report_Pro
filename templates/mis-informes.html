@@ -239,6 +239,26 @@ mark {
     border-radius: 3px;
     padding: 0 1px;
 }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 480px) {
+    .page-wrap { padding: 1.5rem .75rem 4rem; }
+    .page-hd { flex-direction: column; align-items: flex-start; gap: .6rem; }
+    .page-hd h1 { font-size: 1.3rem; }
+    .filtros-wrap { flex-direction: column; gap: .5rem; }
+    .filtros-wrap input[type="search"],
+    .filtros-wrap select { min-width: unset; width: 100%; font-size: 16px !important; }
+    .inf-card { padding: 1rem 1.1rem; }
+    .inf-actions { flex-wrap: wrap; gap: .4rem; }
+    .inf-actions button,
+    .inf-actions a { flex: 1; min-width: 80px; font-size: .75rem; padding: .5rem .6rem; text-align:center; }
+    .inf-norma-badge { font-size: .62rem; }
+}
+@media (min-width: 481px) and (max-width: 768px) {
+    .page-wrap { padding: 2rem 1.2rem 4rem; }
+    .filtros-wrap { flex-wrap: wrap; }
+}
+
 </style>
 {% endblock %}
 
