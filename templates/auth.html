@@ -41,6 +41,27 @@
 .auth-error{background:rgba(224,92,92,.12);border:1px solid rgba(224,92,92,.3);border-radius:var(--radius);padding:.7rem 1rem;font-size:.82rem;color:var(--red);margin-bottom:1rem;display:none;line-height:1.5}
 .auth-success{background:rgba(82,196,138,.12);border:1px solid rgba(82,196,138,.3);border-radius:var(--radius);padding:.7rem 1rem;font-size:.82rem;color:var(--green);margin-bottom:1rem;display:none}
 .privacy-note{font-size:.68rem;color:var(--text3);text-align:center;margin-top:.9rem;line-height:1.5}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 480px) {
+    .auth-wrap { padding: 1rem .75rem; align-items: flex-start; padding-top: 1.5rem; }
+    .auth-box  { max-width: 100%; }
+    .auth-card { padding: 1.3rem 1.1rem; border-radius: 14px; }
+    .auth-logo-icon { width: 48px !important; height: 48px !important; }
+    .auth-logo h1 { font-size: 1.15rem; }
+    .auth-tab  { font-size: .8rem; padding: .55rem .3rem; }
+    .field input { font-size: 16px !important; padding: .75rem .9rem; }
+    .btn-auth { padding: .85rem; font-size: .88rem; }
+    .welcome-strip { padding: .8rem .9rem; }
+    .welcome-text  { font-size: .78rem; }
+    .wf { font-size: .63rem; }
+    .privacy-note { font-size: .65rem; }
+}
+@media (min-width: 481px) and (max-width: 768px) {
+    .auth-wrap { padding: 2rem 2rem; }
+    .auth-box  { max-width: 460px; }
+}
+
 </style>
 {% endblock %}
 
