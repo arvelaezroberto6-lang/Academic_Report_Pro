@@ -585,6 +585,25 @@
     .cta-buttons { flex-direction: column; align-items: center; }
     .cta-buttons a { width: 100%; max-width: 300px; justify-content: center; }
 }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 480px) {
+    .hero { padding: 3rem .75rem 2.5rem; }
+    .hero-btns { flex-direction: column; align-items: stretch; }
+    .hero-btns a, .hero-btns button { text-align: center; justify-content: center; }
+    .hero-demo { margin: 0 -.75rem; border-radius: 0; border-left: none; border-right: none; }
+    .stats-strip { flex-direction: column; gap: .5rem; align-items: flex-start; padding: 1.2rem; }
+    .section { padding: 3rem 0; }
+    .section-title { font-size: clamp(1.4rem, 6vw, 2rem); }
+    .features-grid, .normas-grid { grid-template-columns: 1fr; }
+    .example-card { margin: 0 -.75rem; border-radius: 0; }
+}
+@media (min-width: 481px) and (max-width: 768px) {
+    .hero { padding: 3.5rem 1.5rem 3rem; }
+    .features-grid { grid-template-columns: repeat(2, 1fr); }
+    .normas-grid   { grid-template-columns: repeat(2, 1fr); }
+}
+
 </style>
 {% endblock %}
 
