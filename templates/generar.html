@@ -434,23 +434,169 @@ select option { background: var(--surface); }
 }
 
 /* ── GENERATE BUTTON ── */
+@keyframes btnWave {
+    0%   { transform: scaleX(0) translateX(-50%); opacity: .6; }
+    100% { transform: scaleX(2.5) translateX(-50%); opacity: 0; }
+}
+@keyframes btnOrbit {
+    from { transform: rotate(0deg) translateX(22px) rotate(0deg); }
+    to   { transform: rotate(360deg) translateX(22px) rotate(-360deg); }
+}
+@keyframes btnOrbit2 {
+    from { transform: rotate(180deg) translateX(18px) rotate(-180deg); }
+    to   { transform: rotate(540deg) translateX(18px) rotate(-540deg); }
+}
+@keyframes btnGlowPulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(212,168,67,.0), 0 6px 28px rgba(212,168,67,.35); }
+    50%     { box-shadow: 0 0 0 8px rgba(212,168,67,.08), 0 8px 36px rgba(212,168,67,.55); }
+}
+@keyframes btnShimmerSlide {
+    0%   { left: -80%; }
+    100% { left: 130%; }
+}
+@keyframes btnTextFlicker {
+    0%,100% { opacity: 1; }
+    48%     { opacity: 1; }
+    50%     { opacity: .85; }
+    52%     { opacity: 1; }
+}
+@keyframes dotBounce {
+    0%,100% { transform: translateY(0); }
+    50%     { transform: translateY(-4px); }
+}
+
+.btn-gen-wrap {
+    position: relative;
+    margin-top: 1rem;
+    /* isolate stacking context for ::before wave */
+}
 .btn-gen {
+    position: relative;
     width: 100%;
-    padding: 1.1rem;
-    background: linear-gradient(135deg, var(--gold) 0%, #8e6412 100%);
+    padding: 1.15rem 1.5rem;
+    background: linear-gradient(135deg, #d4a843 0%, #b8892a 50%, #8e6412 100%);
+    background-size: 200% 200%;
     color: #000;
     border: none;
     border-radius: var(--radius);
     font-weight: 800;
     cursor: pointer;
-    margin-top: 1rem;
     font-family: 'DM Sans', sans-serif;
     font-size: 1rem;
-    letter-spacing: .03em;
-    transition: all .2s;
+    letter-spacing: .04em;
+    transition: transform .2s, box-shadow .2s;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .6rem;
+    z-index: 0;
 }
-.btn-gen:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 36px rgba(212,168,67,.4); }
-.btn-gen:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+/* Shimmer slide on idle */
+.btn-gen::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -80%;
+    width: 60%; height: 100%;
+    background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,.22) 50%, transparent 70%);
+    transform: skewX(-15deg);
+    animation: btnShimmerSlide 3.2s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 1;
+}
+.btn-gen:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 40px rgba(212,168,67,.45);
+}
+.btn-gen:active:not(:disabled) { transform: translateY(0); }
+.btn-gen:disabled {
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ── GENERATING STATE ── */
+.btn-gen.is-generating {
+    background: linear-gradient(135deg, #1a140a 0%, #211808 100%);
+    color: var(--gold);
+    border: 1px solid rgba(212,168,67,.25);
+    animation: btnGlowPulse 2s ease infinite;
+}
+.btn-gen.is-generating::before { display: none; }
+
+/* Orbit particles */
+.btn-orbit-wrap {
+    position: relative;
+    width: 22px; height: 22px;
+    flex-shrink: 0;
+}
+.btn-orbit-dot {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    margin: -3px;
+    background: var(--gold);
+    box-shadow: 0 0 6px rgba(212,168,67,.7);
+    animation: btnOrbit 1.4s linear infinite;
+}
+.btn-orbit-dot-2 {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    margin: -2px;
+    background: rgba(212,168,67,.6);
+    animation: btnOrbit2 1.4s linear infinite;
+}
+.btn-orbit-core {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    margin: -5px;
+    border: 1.5px solid rgba(212,168,67,.5);
+    animation: statusDot 1.5s ease infinite;
+}
+
+/* Animated dots for "Generando" text */
+.gen-dots span {
+    display: inline-block;
+    animation: dotBounce .9s ease infinite;
+}
+.gen-dots span:nth-child(2) { animation-delay: .15s; }
+.gen-dots span:nth-child(3) { animation-delay: .30s; }
+
+/* Section progress mini-bar under button */
+.btn-gen-progress {
+    height: 3px;
+    background: rgba(212,168,67,.12);
+    border-radius: 0 0 var(--radius) var(--radius);
+    overflow: hidden;
+    transition: opacity .3s;
+    opacity: 0;
+}
+.btn-gen-progress.visible { opacity: 1; }
+.btn-gen-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #b8892a, #f0c96a, #d4a843);
+    background-size: 300% 100%;
+    border-radius: 0 0 var(--radius) var(--radius);
+    width: 0%;
+    transition: width .7s cubic-bezier(.4,0,.2,1);
+    animation: shimmer 2s linear infinite;
+}
+
+/* Wave ripple on click */
+.btn-ripple {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 100%; height: 200%;
+    border-radius: 50%;
+    background: rgba(212,168,67,.15);
+    transform: scaleX(0) translateX(-50%);
+    transform-origin: left center;
+    pointer-events: none;
+}
 
 /* ── EDITOR ── */
 .editor-tabs { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: 1rem; }
@@ -885,9 +1031,18 @@ select option { background: var(--surface); }
     </div>
 
     <!-- BOTÓN PRINCIPAL -->
-    <button type="button" class="btn-gen" id="generarBtn">
-        🚀 Generar informe completo
-    </button>
+    <div class="btn-gen-wrap">
+        <button type="button" class="btn-gen" id="generarBtn">
+            <span id="generarBtnContent" style="display:inline-flex;align-items:center;gap:.55rem;">
+                <span id="generarBtnIcon">🚀</span>
+                <span id="generarBtnText">Generar informe completo</span>
+            </span>
+            <span class="btn-ripple" id="btnRipple"></span>
+        </button>
+        <div class="btn-gen-progress" id="btnGenProgress">
+            <div class="btn-gen-progress-fill" id="btnGenProgressFill"></div>
+        </div>
+    </div>
 
     <!-- EDITOR -->
     <div id="editorPanel" class="card" style="display:none; margin-top:1.5rem;">
@@ -1435,7 +1590,25 @@ document.getElementById('generarBtn').onclick = async () => {
 
   const btn = document.getElementById('generarBtn');
   btn.disabled = true;
-  btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:.5rem;"><span style="width:14px;height:14px;border:2px solid rgba(0,0,0,.3);border-top-color:#000;border-radius:50%;animation:spinOnce .7s linear infinite;display:inline-block;"></span>Generando...</span>';
+  btn.classList.add('is-generating');
+  document.getElementById('generarBtnContent').innerHTML = `
+    <span class="btn-orbit-wrap">
+      <span class="btn-orbit-core"></span>
+      <span class="btn-orbit-dot"></span>
+      <span class="btn-orbit-dot-2"></span>
+    </span>
+    <span>Generando<span class="gen-dots"><span>.</span><span>.</span><span>.</span></span></span>`;
+  // Ripple animation on click
+  const ripple = document.getElementById('btnRipple');
+  if (ripple) {
+    ripple.style.animation = 'none';
+    ripple.offsetHeight; // reflow
+    ripple.style.animation = 'btnWave .7s ease-out forwards';
+  }
+  // Show mini progress bar under button
+  const btnProgress = document.getElementById('btnGenProgress');
+  const btnProgressFill = document.getElementById('btnGenProgressFill');
+  if (btnProgress) btnProgress.classList.add('visible');
   document.getElementById('progressContainer').style.display = 'block';
   document.getElementById('progressFill').style.width = '0%';
   document.getElementById('editorPanel').style.display = 'none';
@@ -1477,6 +1650,7 @@ document.getElementById('generarBtn').onclick = async () => {
     document.getElementById('progressCount').textContent   = `${i + 1}/${SECCIONES_INFO.length}`;
     document.getElementById('progressPct').textContent     = pct + '%';
     document.getElementById('progressFill').style.width   = pct + '%';
+    if (btnProgressFill) btnProgressFill.style.width = pct + '%';
     // Cambiar ícono según sección
     const iconos = {introduccion:'📝',objetivos:'🎯',marco_teorico:'📚',metodologia:'🔬',desarrollo:'⚡',conclusiones:'💡',recomendaciones:'🗂',referencias:'📖'};
     document.getElementById('genIcon').textContent = iconos[clave] || '📄';
@@ -1647,7 +1821,9 @@ document.getElementById('generarBtn').onclick = async () => {
   }
 
   btn.disabled = false;
-  btn.innerHTML = '🚀 Generar informe completo';
+  btn.classList.remove('is-generating');
+  btn.innerHTML = `<span id="generarBtnContent" style="display:inline-flex;align-items:center;gap:.55rem;"><span id="generarBtnIcon">🚀</span><span id="generarBtnText">Generar informe completo</span></span><span class="btn-ripple" id="btnRipple"></span>`;
+  if (btnProgress) { btnProgressFill.style.width = '100%'; setTimeout(() => btnProgress.classList.remove('visible'), 800); }
 };
 
 // ═══ MOSTRAR EDITOR ═══
