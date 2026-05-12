@@ -1,8 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Página no encontrada — Academic Report Pro{% endblock %}
+{% block meta_robots %}noindex, nofollow{% endblock %}
+{% block canonical %}{% endblock %}
 
 {% block extra_css %}
 <style>
+/* noindex: esta página no debe aparecer en buscadores */
 .err-wrap {
     min-height: calc(100vh - 60px);
     display: flex;
