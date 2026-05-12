@@ -6,7 +6,8 @@
     <!-- ── SEO ──────────────────────────────────────────────── -->
     <meta name="description" content="{% block meta_description %}Academic Report Pro — Genera informes académicos profesionales con IA en segundos. 8 normas (APA 7, ICONTEC, Vancouver…), referencias reales y exportación a PDF y Word.{% endblock %}">
     <meta name="keywords" content="{% block meta_keywords %}informes académicos, generador de informes, APA 7, ICONTEC, normas bibliográficas, inteligencia artificial, informe de laboratorio, tesis{% endblock %}">
-    <meta name="robots" content="index, follow">
+    <meta name="robots" content="{% block meta_robots %}index, follow{% endblock %}">
+    <link rel="canonical" href="{% block canonical %}{{ request.url_root.rstrip('/') }}{{ request.path }}{% endblock %}">
     <meta name="author" content="Academic Report Pro">
     <!-- ── Open Graph (WhatsApp, Facebook, LinkedIn) ────────── -->
     <meta property="og:type" content="website">
@@ -30,7 +31,10 @@
     })();
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"></noscript>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         :root {
@@ -633,6 +637,43 @@
         }
 
         return res.json();
+    }
+
+    /**
+     * arpSubmit — protección global contra doble submit
+     * Uso:
+     *   const ok = await arpSubmit(btnEl, asyncFn)
+     *   - Deshabilita el botón y muestra spinner mientras asyncFn() corre
+     *   - Lo rehabilita al terminar (éxito o error)
+     *   - Devuelve el resultado de asyncFn()
+     */
+    window.arpSubmit = async function(btn, asyncFn) {
+        if (!btn || btn.dataset.submitting === '1') return;
+        btn.dataset.submitting = '1';
+        const originalHtml = btn.innerHTML;
+        const originalDisabled = btn.disabled;
+        btn.disabled = true;
+        // Agregar spinner si no tiene uno ya
+        if (!btn.querySelector('.arp-btn-spinner')) {
+            const sp = document.createElement('span');
+            sp.className = 'arp-btn-spinner';
+            sp.style.cssText = 'display:inline-block;width:14px;height:14px;border:2px solid rgba(0,0,0,.25);border-top-color:currentColor;border-radius:50%;animation:arp-spin .6s linear infinite;margin-left:.4rem;vertical-align:middle;';
+            btn.appendChild(sp);
+        }
+        try {
+            return await asyncFn();
+        } finally {
+            btn.disabled = originalDisabled;
+            btn.innerHTML = originalHtml;
+            delete btn.dataset.submitting;
+        }
+    };
+    // Keyframes para el spinner global
+    if (!document.getElementById('arp-spin-style')) {
+        const s = document.createElement('style');
+        s.id = 'arp-spin-style';
+        s.textContent = '@keyframes arp-spin{to{transform:rotate(360deg)}}';
+        document.head.appendChild(s);
     }
     </script>
 
