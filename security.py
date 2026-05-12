@@ -221,26 +221,52 @@ def aplicar_headers_seguridad(response):
 
     Registrar en app.py con:
         app.after_request(aplicar_headers_seguridad)
+
+    NOTA: X-Frame-Options se omite intencionalmente porque 'DENY' hace que
+    el WebView de WhatsApp e Instagram en iOS rechace renderizar la página
+    y muestre pantalla negra. La protección contra clickjacking se mantiene
+    a través del CSP con frame-ancestors.
     """
+    from flask import request as flask_request
+
     # Previene que el navegador ejecute JS inyectado en respuestas
     response.headers['X-Content-Type-Options'] = 'nosniff'
-    # Previene que la app se cargue en un iframe (clickjacking)
-    response.headers['X-Frame-Options'] = 'DENY'
     # Activa el filtro XSS del navegador (compatibilidad legacy)
     response.headers['X-XSS-Protection'] = '1; mode=block'
     # Controla qué URL se envía como Referer
     response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
-    # Restricción de recursos: solo carga desde el propio origen + CDNs necesarios
-    # IMPORTANTE: cuando agregues pagos, incluir dominios de Stripe/PayU aquí
-    response.headers['Content-Security-Policy'] = (
-        "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' cdn.jsdelivr.net unpkg.com cdn.sweetalert2.io cdnjs.cloudflare.com; "
-        "style-src 'self' 'unsafe-inline' fonts.googleapis.com cdn.jsdelivr.net; "
-        "font-src 'self' fonts.gstatic.com; "
-        "img-src 'self' data: https:; "
-        "connect-src 'self' api.deepseek.com *.supabase.co https://cdn.jsdelivr.net; "
-        "frame-ancestors 'none';"
-    )
+
+    # Detectar si la petición viene de un WebView de app social (WhatsApp, Instagram, etc.)
+    # para no romper la carga con headers demasiado restrictivos
+    ua = flask_request.headers.get('User-Agent', '')
+    es_webview_social = any(x in ua for x in [
+        'WhatsApp', 'Instagram', 'FBAN', 'FBAV', 'FB_IAB',
+        'LinkedInApp', 'Twitter', 'Snapchat', 'TikTok', 'Line/'
+    ])
+
+    if es_webview_social:
+        # CSP relajado para WebViews: sin frame-ancestors DENY que bloquea el render
+        response.headers['Content-Security-Policy'] = (
+            "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; "
+            "script-src * 'unsafe-inline' 'unsafe-eval'; "
+            "style-src * 'unsafe-inline'; "
+            "img-src * data: blob: https:; "
+            "font-src * data:; "
+            "connect-src *;"
+        )
+    else:
+        # CSP estricto para navegadores normales
+        # frame-ancestors reemplaza X-Frame-Options (más moderno y compatible)
+        response.headers['Content-Security-Policy'] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' cdn.jsdelivr.net unpkg.com cdn.sweetalert2.io cdnjs.cloudflare.com; "
+            "style-src 'self' 'unsafe-inline' fonts.googleapis.com cdn.jsdelivr.net; "
+            "font-src 'self' fonts.gstatic.com; "
+            "img-src 'self' data: https:; "
+            "connect-src 'self' api.deepseek.com *.supabase.co https://cdn.jsdelivr.net; "
+            "frame-ancestors 'none';"
+        )
+
     # Fuerza HTTPS en navegadores que ya visitaron el sitio
     response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
     # Evita enviar información sensible en logs de red
