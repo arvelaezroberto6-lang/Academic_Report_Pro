@@ -695,6 +695,83 @@ select option { background: var(--surface); }
 const _arpRaw  = localStorage.getItem('arp_user');
 const _arpUser = _arpRaw ? JSON.parse(_arpRaw) : null;
 
+// ═══ GUARDADO AUTOMÁTICO DEL FORMULARIO ═══
+// Guarda el estado del formulario cada vez que el usuario escribe o selecciona algo.
+// Al recargar la página, restaura los valores guardados.
+const ARP_FORM_KEY = 'arp_generar_draft';
+const ARP_FORM_FIELDS = ['tema', 'nombre', 'institucion', 'ciudad', 'nivel'];
+
+function arpGuardarDraft() {
+    try {
+        const draft = {};
+        ARP_FORM_FIELDS.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) draft[id] = el.value;
+        });
+        // Guardar norma activa
+        const normaActiva = document.querySelector('.chip.active[data-norma]');
+        if (normaActiva) draft.norma = normaActiva.dataset.norma;
+        // Guardar tipo de informe activo
+        const tipoActivo = document.querySelector('.type-btn.active[data-tipo]');
+        if (tipoActivo) draft.tipo = tipoActivo.dataset.tipo;
+        // Guardar modo activo
+        const modoActivo = document.querySelector('.mode-btn.active[data-modo]');
+        if (modoActivo) draft.modo = modoActivo.dataset.modo;
+
+        draft._ts = Date.now();
+        localStorage.setItem(ARP_FORM_KEY, JSON.stringify(draft));
+    } catch(e) { /* silencioso */ }
+}
+
+function arpRestaurarDraft() {
+    try {
+        const raw = localStorage.getItem(ARP_FORM_KEY);
+        if (!raw) return;
+        const draft = JSON.parse(raw);
+        // Solo restaurar si el draft tiene menos de 24 horas
+        if (!draft._ts || Date.now() - draft._ts > 86400000) {
+            localStorage.removeItem(ARP_FORM_KEY);
+            return;
+        }
+        ARP_FORM_FIELDS.forEach(id => {
+            const el = document.getElementById(id);
+            if (el && draft[id]) el.value = draft[id];
+        });
+        // Restaurar norma
+        if (draft.norma) {
+            const chip = document.querySelector(`[data-norma="${draft.norma}"]`);
+            if (chip) chip.click();
+        }
+        // Restaurar tipo de informe
+        if (draft.tipo) {
+            const btn = document.querySelector(`[data-tipo="${draft.tipo}"]`);
+            if (btn) btn.click();
+        }
+        // Restaurar modo
+        if (draft.modo) {
+            const btn = document.querySelector(`[data-modo="${draft.modo}"]`);
+            if (btn) btn.click();
+        }
+    } catch(e) { /* silencioso */ }
+}
+
+// Escuchar cambios en campos de texto
+document.addEventListener('DOMContentLoaded', function() {
+    ARP_FORM_FIELDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', arpGuardarDraft);
+        if (el && el.tagName === 'SELECT') el.addEventListener('change', arpGuardarDraft);
+    });
+    // Escuchar clicks en chips y botones de selección
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.chip') || e.target.closest('.type-btn') || e.target.closest('.mode-btn')) {
+            setTimeout(arpGuardarDraft, 50);
+        }
+    });
+    // Restaurar después de que autoFillPerfil pueda haber rellenado campos
+    setTimeout(arpRestaurarDraft, 300);
+});
+
 // ═══ AUTOCOMPLETAR DATOS DESDE PERFIL ═══
 (async function autoFillPerfil() {
   if (!_arpUser || !_arpUser.access_token) return;
@@ -1270,6 +1347,8 @@ document.getElementById('generarBtn').onclick = async () => {
           saveStatusEl.style.color = 'var(--green)';
           saveStatusEl.innerHTML = '✅ Informe guardado en <a href="/mis-informes" style="color:var(--green);font-weight:700;">Mis informes</a>';
           console.log('Informe guardado en BD:', d.informe_id);
+          // Limpiar el draft guardado — el informe ya está en la BD
+          try { localStorage.removeItem(ARP_FORM_KEY); } catch(e) {}
         } else {
           saveStatusEl.style.background = 'rgba(224,92,92,.08)';
           saveStatusEl.style.border = '1px solid rgba(224,92,92,.25)';
