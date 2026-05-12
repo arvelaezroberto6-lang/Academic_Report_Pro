@@ -26,7 +26,249 @@
     from { opacity:0; transform:translateY(6px); }
     to   { opacity:1; transform:translateY(0); }
 }
-.sec-chip { animation: fadeSlideIn .3s ease both; }
+@keyframes ringPulse {
+    0%,100% { transform: translate(-50%,-50%) scale(1);   opacity:.5; }
+    50%     { transform: translate(-50%,-50%) scale(1.18); opacity:.15; }
+}
+@keyframes ringPulse2 {
+    0%,100% { transform: translate(-50%,-50%) scale(1);   opacity:.3; }
+    50%     { transform: translate(-50%,-50%) scale(1.3);  opacity:.08; }
+}
+@keyframes ringPulse3 {
+    0%,100% { transform: translate(-50%,-50%) scale(1);   opacity:.15; }
+    50%     { transform: translate(-50%,-50%) scale(1.45); opacity:.04; }
+}
+@keyframes floatIcon {
+    0%,100% { transform: translateY(0) scale(1); }
+    50%     { transform: translateY(-8px) scale(1.04); }
+}
+@keyframes statusDot {
+    0%,100% { opacity:1; box-shadow: 0 0 0 0 rgba(212,168,67,.4); }
+    50%     { opacity:.7; box-shadow: 0 0 0 6px rgba(212,168,67,0); }
+}
+@keyframes countUp {
+    from { opacity:0; transform:translateY(4px); }
+    to   { opacity:1; transform:translateY(0); }
+}
+
+/* ── NUEVA PANTALLA DE GENERACIÓN ── */
+#generatingScreen {
+    background: var(--surface);
+    border: 1px solid rgba(212,168,67,.2);
+    border-radius: var(--radius-lg);
+    padding: 2.8rem 2rem 2.4rem;
+    margin-bottom: 1.2rem;
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+}
+
+/* Fondos de luz */
+.gen-bg-glow {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+}
+.gen-bg-glow-1 {
+    top: -80px; left: 50%;
+    transform: translateX(-50%);
+    width: 500px; height: 280px;
+    background: radial-gradient(ellipse, rgba(212,168,67,.07) 0%, transparent 70%);
+    animation: glowPulse 4s ease infinite;
+}
+.gen-bg-glow-2 {
+    bottom: -60px; left: 30%;
+    width: 300px; height: 200px;
+    background: radial-gradient(ellipse, rgba(82,196,138,.04) 0%, transparent 70%);
+    animation: glowPulse 5s ease infinite reverse;
+}
+
+/* Ícono con anillos */
+.gen-icon-wrap {
+    position: relative;
+    width: 80px; height: 80px;
+    margin: 0 auto 1.6rem;
+}
+.gen-icon-ring {
+    position: absolute;
+    top: 50%; left: 50%;
+    border-radius: 50%;
+    border: 1px solid rgba(212,168,67,.3);
+}
+.gen-ring-1 { width:80px; height:80px; animation: ringPulse  2.5s ease infinite; }
+.gen-ring-2 { width:110px;height:110px; animation: ringPulse2 2.5s ease infinite .4s; }
+.gen-ring-3 { width:140px;height:140px; animation: ringPulse3 2.5s ease infinite .8s; }
+.gen-icon-main {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    width: 60px; height: 60px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(212,168,67,.18), rgba(212,168,67,.06));
+    border: 1px solid rgba(212,168,67,.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    animation: floatIcon 3s ease infinite;
+    z-index: 1;
+}
+
+/* Textos */
+.gen-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: .35rem;
+}
+.gen-subtitle {
+    font-size: .78rem;
+    color: var(--gold);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 1.4em;
+    margin-bottom: 1.8rem;
+    transition: opacity .3s;
+}
+
+/* Barra de progreso */
+.gen-progress-wrap { margin-bottom: 1.4rem; }
+.gen-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: .5rem;
+}
+.gen-progress-label {
+    font-size: .7rem;
+    color: var(--text3);
+    font-family: 'JetBrains Mono', monospace;
+}
+.gen-progress-pct {
+    font-size: .8rem;
+    color: var(--gold);
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+}
+.gen-bar-track {
+    height: 8px;
+    background: var(--surface2);
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+}
+.gen-bar-fill {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, #b8892a, #d4a843, #f0c96a, #d4a843);
+    background-size: 300% 100%;
+    border-radius: 8px;
+    transition: width .7s cubic-bezier(.4,0,.2,1);
+    animation: shimmer 2.5s linear infinite;
+    position: relative;
+}
+/* Brillo al frente de la barra */
+.gen-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 40px; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.3));
+    border-radius: 8px;
+}
+
+/* Status box */
+.gen-status-box {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: .75rem 1.1rem;
+    text-align: left;
+    margin-bottom: .9rem;
+}
+.gen-status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--gold);
+    flex-shrink: 0;
+    animation: statusDot 1.5s ease infinite;
+}
+.gen-status-msg {
+    font-size: .76rem;
+    color: var(--text2);
+    font-family: 'JetBrains Mono', monospace;
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* Tip */
+.gen-tip {
+    padding: .6rem 1rem;
+    border-left: 2px solid rgba(212,168,67,.25);
+    font-size: .72rem;
+    color: var(--text3);
+    line-height: 1.6;
+    font-style: italic;
+    text-align: left;
+    transition: opacity .4s;
+    margin-bottom: 1.4rem;
+    min-height: 2.5em;
+}
+
+/* Estadísticas en vivo */
+.gen-stats {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+}
+.gen-stat {
+    flex: 1;
+    padding: .8rem .5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .2rem;
+}
+.gen-stat-sep {
+    width: 1px;
+    height: 32px;
+    background: var(--border2);
+    flex-shrink: 0;
+}
+.gen-stat-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--gold);
+    animation: countUp .3s ease both;
+}
+.gen-stat-lbl {
+    font-size: .62rem;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+/* Chips dentro del generando */
+#seccionesStatus {
+    justify-content: center;
+    gap: .35rem;
+    margin-bottom: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    #generatingScreen { padding: 2rem 1.1rem 1.8rem; }
+    .gen-title { font-size: 1.1rem; }
+    .gen-stats { gap: 0; }
+    .gen-stat-num { font-size: .95rem; }
+    .gen-ring-2, .gen-ring-3 { display: none; }
+}
 
 /* ── SECTION CHIPS ── */
 .seccion-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .8rem; }
@@ -421,70 +663,65 @@ select option { background: var(--surface); }
 
     <!-- PANTALLA DE GENERACIÓN -->
     <div id="progressContainer" style="display:none;">
-        <div id="generatingScreen" style="
-            background: var(--surface);
-            border: 1px solid rgba(212,168,67,.2);
-            border-radius: var(--radius-lg);
-            padding: 2rem 1.8rem 2.2rem;
-            margin-bottom: 1.2rem;
-            position: relative;
-            overflow: hidden;
-        ">
-            <div style="
-                position:absolute; top:-60px; left:50%; transform:translateX(-50%);
-                width:400px; height:200px; border-radius:50%;
-                background: radial-gradient(ellipse, rgba(212,168,67,.06) 0%, transparent 70%);
-                pointer-events:none; animation: glowPulse 3s ease infinite;
-            "></div>
-            <div style="text-align:center; margin-bottom:1.6rem; position:relative;">
-                <div id="genIcon" style="
-                    width:60px; height:60px; border-radius:16px; margin:0 auto 1rem;
-                    background: linear-gradient(135deg,rgba(212,168,67,.15),rgba(212,168,67,.05));
-                    border: 1px solid rgba(212,168,67,.25);
-                    display:flex; align-items:center; justify-content:center;
-                    font-size:26px;
-                    animation: iconBounce 2.5s ease infinite;
-                ">📄</div>
-                <div style="font-family:'Playfair Display',serif; font-size:1.15rem; font-weight:700; color:var(--text); margin-bottom:.3rem;">
-                    Generando tu informe
+        <div id="generatingScreen">
+
+            <!-- Fondo animado -->
+            <div class="gen-bg-glow gen-bg-glow-1"></div>
+            <div class="gen-bg-glow gen-bg-glow-2"></div>
+
+            <!-- Ícono central animado -->
+            <div class="gen-icon-wrap">
+                <div class="gen-icon-ring gen-ring-1"></div>
+                <div class="gen-icon-ring gen-ring-2"></div>
+                <div class="gen-icon-ring gen-ring-3"></div>
+                <div class="gen-icon-main" id="genIcon">📄</div>
+            </div>
+
+            <!-- Título y subtítulo -->
+            <div class="gen-title">Generando tu informe</div>
+            <div class="gen-subtitle" id="genSubtitle">Iniciando...</div>
+
+            <!-- Barra de progreso -->
+            <div class="gen-progress-wrap">
+                <div class="gen-progress-header">
+                    <span class="gen-progress-label" id="progressCount"></span>
+                    <span class="gen-progress-pct" id="progressPct">0%</span>
                 </div>
-                <div id="genSubtitle" style="font-size:.78rem; color:var(--text2); font-family:'JetBrains Mono',monospace; min-height:1.4em;">
-                    Iniciando...
+                <div class="gen-bar-track">
+                    <div class="gen-bar-fill" id="progressFill"></div>
                 </div>
             </div>
-            <div style="margin-bottom:1.4rem;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.5rem;">
-                    <span id="progressCount" style="font-size:.7rem; color:var(--text3); font-family:'JetBrains Mono',monospace;"></span>
-                    <span id="progressPct" style="font-size:.75rem; color:var(--gold); font-weight:700; font-family:'JetBrains Mono',monospace;">0%</span>
+
+            <!-- Chips de secciones -->
+            <div class="seccion-chips" id="seccionesStatus"></div>
+
+            <!-- Mensaje de estado actual -->
+            <div class="gen-status-box">
+                <span class="gen-status-dot"></span>
+                <p class="gen-status-msg" id="progressMessage"></p>
+            </div>
+
+            <!-- Tip rotativo -->
+            <div class="gen-tip" id="genTip"></div>
+
+            <!-- Estadísticas en vivo -->
+            <div class="gen-stats">
+                <div class="gen-stat">
+                    <span class="gen-stat-num" id="statSecciones">0</span>
+                    <span class="gen-stat-lbl">secciones listas</span>
                 </div>
-                <div style="height:6px; background:var(--surface2); border-radius:6px; overflow:hidden; position:relative;">
-                    <div id="progressFill" style="
-                        height:100%; width:0%;
-                        background: linear-gradient(90deg, #d4a843, #f0c96a, #d4a843);
-                        background-size: 200% 100%;
-                        border-radius:6px;
-                        transition: width .6s cubic-bezier(.4,0,.2,1);
-                        animation: shimmer 2s linear infinite;
-                    "></div>
+                <div class="gen-stat-sep"></div>
+                <div class="gen-stat">
+                    <span class="gen-stat-num" id="statTiempo">0s</span>
+                    <span class="gen-stat-lbl">tiempo transcurrido</span>
+                </div>
+                <div class="gen-stat-sep"></div>
+                <div class="gen-stat">
+                    <span class="gen-stat-num" id="statPalabras">~0</span>
+                    <span class="gen-stat-lbl">palabras escritas</span>
                 </div>
             </div>
-            <div class="seccion-chips" id="seccionesStatus" style="justify-content:center; gap:.35rem;"></div>
-            <div style="
-                margin-top:1.2rem;
-                background: var(--surface2);
-                border: 1px solid var(--border);
-                border-radius: 10px;
-                padding: .7rem 1rem;
-                display:flex; align-items:center; gap:.7rem;
-            ">
-                <div id="stageIcon" style="font-size:16px; flex-shrink:0;">⚙️</div>
-                <p id="progressMessage" style="font-size:.75rem; color:var(--text2); font-family:'JetBrains Mono',monospace; margin:0; line-height:1.5;"></p>
-            </div>
-            <div id="genTip" style="
-                margin-top:.9rem; padding:.55rem 1rem;
-                border-left: 2px solid rgba(212,168,67,.3);
-                font-size:.72rem; color:var(--text3); line-height:1.5; font-style:italic;
-            "></div>
+
         </div>
     </div>
     <!-- 1. MODO -->
@@ -1102,6 +1339,20 @@ function iniciarIndicadores() {
     chip.textContent = s.nombre;
     cont.appendChild(chip);
   });
+
+  // Estadísticas en vivo
+  window._genStartTime = Date.now();
+  window._genSeccionesOk = 0;
+  window._genPalabras = 0;
+
+  if (window._statsInterval) clearInterval(window._statsInterval);
+  window._statsInterval = setInterval(() => {
+    const seg = Math.round((Date.now() - window._genStartTime) / 1000);
+    const el = document.getElementById('statTiempo');
+    if (el) el.textContent = seg >= 60
+      ? Math.floor(seg/60) + 'm ' + (seg%60) + 's'
+      : seg + 's';
+  }, 1000);
 }
 
 function marcarChip(clave, estado) {
@@ -1119,6 +1370,12 @@ function marcarChip(clave, estado) {
     chip.style.borderColor  = e.bc;
     chip.style.color        = e.color;
     chip.textContent        = e.icon + nombre;
+  }
+  // Actualizar contador de secciones listas
+  if (estado === 'ok') {
+    window._genSeccionesOk = (window._genSeccionesOk || 0) + 1;
+    const el = document.getElementById('statSecciones');
+    if (el) { el.textContent = window._genSeccionesOk; el.style.animation = 'none'; requestAnimationFrame(() => { el.style.animation = ''; }); }
   }
 }
 
@@ -1246,6 +1503,11 @@ document.getElementById('generarBtn').onclick = async () => {
       if (data.success && data.contenido) {
         seccionesGeneradas[clave] = data.contenido;
         marcarChip(clave, 'ok');
+        // Actualizar contador de palabras estimado
+        const palabras = data.contenido.split(/\s+/).length;
+        window._genPalabras = (window._genPalabras || 0) + palabras;
+        const elP = document.getElementById('statPalabras');
+        if (elP) { elP.textContent = '~' + Math.round(window._genPalabras / 100) * 100; elP.style.animation = 'none'; requestAnimationFrame(() => { elP.style.animation = ''; }); }
       } else {
         seccionesGeneradas[clave] = '';
         marcarChip(clave, 'error');
@@ -1267,6 +1529,7 @@ document.getElementById('generarBtn').onclick = async () => {
     ? 'Informe generado correctamente. Ya puedes editarlo y descargarlo.'
     : `${SECCIONES_INFO.length - errores} secciones OK, ${errores} con error.`;
   if (window._tipsInterval) clearInterval(window._tipsInterval);
+  if (window._statsInterval) clearInterval(window._statsInterval);
   // Borrar el borrador guardado — el informe ya fue generado
   if (errores === 0 && typeof window._arpClearDraft === 'function') window._arpClearDraft();
 
