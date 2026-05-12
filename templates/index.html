@@ -558,7 +558,196 @@
     position: relative;
 }
 
-/* ── ANIMATIONS ── */
+/* ── TIPOS SHOWCASE ── */
+.tipos-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: .7rem;
+    margin-top: 2.5rem;
+}
+@media(max-width:640px) { .tipos-grid { grid-template-columns: repeat(2,1fr); } }
+
+.tipo-showcase {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.2rem;
+    cursor: pointer;
+    transition: all .2s;
+}
+.tipo-showcase:hover { border-color: rgba(212,168,67,.3); transform: translateY(-2px); }
+.tipo-showcase.active {
+    background: rgba(212,168,67,.07);
+    border-color: rgba(212,168,67,.35);
+}
+.tipo-sc-head { display:flex; align-items:center; gap:.7rem; }
+.tipo-sc-ico { font-size:1.3rem; flex-shrink:0; }
+.tipo-sc-name { font-weight:700; font-size:.85rem; }
+.tipo-sc-sub { font-size:.68rem; color:var(--text3); margin-top:.1rem; }
+.tipo-sc-check {
+    margin-left:auto;
+    font-size:.75rem;
+    color: var(--gold);
+    opacity: 0;
+    transition: opacity .2s;
+}
+.tipo-showcase.active .tipo-sc-check { opacity:1; }
+.tipo-showcase.active .tipo-sc-name { color: var(--gold); }
+
+/* Tipo preview panel */
+.tipo-preview-wrap { margin-top:1.4rem; }
+.tipo-preview {
+    background: var(--surface);
+    border: 1px solid rgba(212,168,67,.18);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: all .3s;
+}
+.tp-head {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    padding: .85rem 1.4rem;
+    display:flex; align-items:center; justify-content:space-between;
+}
+.tp-label { font-weight:700; font-size:.88rem; }
+.tp-badge {
+    font-family:'JetBrains Mono',monospace;
+    font-size:.6rem; color:var(--gold);
+    background:var(--gold-dim); border:1px solid rgba(212,168,67,.2);
+    padding:.2rem .6rem; border-radius:100px;
+}
+.tp-sections {
+    display:flex; flex-wrap:wrap; gap:.5rem;
+    padding:1.2rem 1.4rem .6rem;
+}
+.tp-sec {
+    font-size:.76rem; padding:.3rem .8rem;
+    border-radius:100px;
+    border:1px solid var(--border2);
+    background:var(--surface2);
+    color:var(--text2);
+    font-family:'JetBrains Mono',monospace;
+}
+.tp-sec.highlight {
+    border-color:rgba(212,168,67,.3);
+    background:var(--gold-dim);
+    color:var(--gold);
+}
+.tp-desc {
+    font-size:.8rem; color:var(--text2);
+    padding:.6rem 1.4rem 1.2rem;
+    line-height:1.6;
+    border-left: 2px solid rgba(212,168,67,.2);
+    margin: 0 1.4rem 1rem;
+    font-style:italic;
+}
+
+/* ── MINI GENERADOR ── */
+.mini-gen-wrap {
+    margin-top:2.5rem;
+    background: var(--surface);
+    border:1px solid rgba(212,168,67,.18);
+    border-radius: var(--radius-lg);
+    overflow:hidden;
+}
+.mini-gen-input-row {
+    display:flex; gap:0;
+    border-bottom:1px solid var(--border);
+}
+.mini-gen-input {
+    flex:1;
+    background:transparent;
+    border:none;
+    padding:1rem 1.2rem;
+    font-family:'DM Sans',sans-serif;
+    font-size:.92rem;
+    color:var(--text);
+    outline:none;
+}
+.mini-gen-input::placeholder { color:var(--text3); }
+.mini-gen-norma-sel {
+    border-left:1px solid var(--border);
+    display:flex; align-items:center;
+}
+.mini-gen-norma-sel select {
+    background:transparent;
+    border:none;
+    color:var(--gold);
+    font-family:'JetBrains Mono',monospace;
+    font-size:.75rem;
+    font-weight:700;
+    padding:.5rem 1rem;
+    cursor:pointer;
+    outline:none;
+    width:auto;
+}
+.mini-gen-output { min-height:130px; position:relative; }
+.mini-gen-placeholder {
+    display:flex; align-items:center; gap:.8rem;
+    padding:2rem 1.4rem;
+    color:var(--text3); font-size:.84rem;
+}
+.mg-ico { font-size:1.4rem; }
+.mini-gen-result { padding:1.2rem 1.4rem; animation: fadeInUp .4s ease both; }
+.mg-result-head {
+    display:flex; align-items:center; gap:.6rem;
+    margin-bottom:.75rem;
+}
+.mg-result-label {
+    font-family:'JetBrains Mono',monospace;
+    font-size:.68rem; color:var(--gold);
+    background:var(--gold-dim); border:1px solid rgba(212,168,67,.2);
+    padding:.2rem .6rem; border-radius:100px;
+}
+.mg-typing-dot {
+    width:7px; height:7px; border-radius:50%;
+    background:var(--gold);
+    animation: statusDot 1s ease infinite;
+    display:none;
+}
+.mg-typing-dot.visible { display:inline-block; }
+.mg-result-text {
+    font-size:.88rem; color:var(--text2);
+    line-height:1.75;
+    border-left:2px solid rgba(212,168,67,.25);
+    padding-left:1rem;
+    margin-bottom:1rem;
+    min-height:3.5em;
+    font-style:italic;
+}
+.mg-result-footer {
+    display:flex; align-items:center; justify-content:space-between;
+    gap:1rem; flex-wrap:wrap;
+}
+.mg-footer-note { font-size:.7rem; color:var(--text3); }
+.mg-cta-link {
+    font-size:.78rem; font-weight:700;
+    color:var(--gold); text-decoration:none;
+    padding:.4rem .9rem;
+    border:1px solid rgba(212,168,67,.3);
+    border-radius:8px;
+    background:var(--gold-dim);
+    transition:all .18s;
+}
+.mg-cta-link:hover { background:rgba(212,168,67,.2); }
+.mini-gen-loading {
+    display:flex; align-items:center; justify-content:center;
+    padding:2.2rem 1.4rem;
+}
+.mg-loading-inner { display:flex; align-items:center; gap:.9rem; color:var(--text2); font-size:.84rem; }
+.mg-spinner {
+    width:18px; height:18px;
+    border:2px solid rgba(212,168,67,.2);
+    border-top-color:var(--gold);
+    border-radius:50%;
+    animation:btnArcSpin 1s linear infinite;
+    flex-shrink:0;
+}
+@media(max-width:480px) {
+    .mini-gen-input-row { flex-direction:column; }
+    .mini-gen-norma-sel { border-left:none; border-top:1px solid var(--border); }
+    .mini-gen-norma-sel select { padding:.6rem 1.2rem; }
+}
 @keyframes fadeInDown {
     from { opacity: 0; transform: translateY(-16px); }
     to   { opacity: 1; transform: translateY(0); }
@@ -630,7 +819,7 @@
 
     <div class="hero-actions" id="heroActions">
         <a href="/auth" class="btn-gold" style="font-size:.95rem; padding:.95rem 2.4rem;" id="heroBtnCuenta">
-            ✦ Crear cuenta gratis
+            ✦ Crear cuenta
         </a>
         <a href="#como-funciona" class="btn-outline" style="font-size:.95rem; padding:.95rem 2.4rem;">
             ¿Cómo funciona?
@@ -638,14 +827,14 @@
     </div>
 
     <div class="hero-trust">
-        <span>✓ Registro gratuito</span>
+        <span>✓ Registro en segundos</span>
         <span class="hero-trust-dot"></span>
-        <span>✓ Sin tarjeta de crédito</span>
+        <span>✓ Sin formularios largos</span>
         <span class="hero-trust-dot"></span>
         <span>✓ Listo en &lt;60 segundos</span>
     </div>
 
-    <!-- Mini demo del generador -->
+    <!-- Mini demo del generador — animado -->
     <div class="hero-demo">
         <div class="hero-demo-frame">
             <div class="hero-demo-bar">
@@ -654,10 +843,10 @@
                     <div class="demo-dot demo-dot-y"></div>
                     <div class="demo-dot demo-dot-g"></div>
                 </div>
-                <span class="demo-filename">informe_impacto_ia_educacion.pdf</span>
-                <div class="demo-status">
+                <span class="demo-filename" id="demoFilename">informe_impacto_ia_educacion.pdf</span>
+                <div class="demo-status" id="demoStatus">
                     <div class="demo-status-dot"></div>
-                    Generado · listo
+                    <span id="demoStatusTxt">generando…</span>
                 </div>
             </div>
             <div class="hero-demo-body">
@@ -666,25 +855,25 @@
                     <span class="demo-tag">APA 7</span>
                     <span class="demo-tag">Académico</span>
                     <span class="demo-tag">Universitario</span>
-                    <span class="demo-tag">12 referencias reales</span>
+                    <span class="demo-tag" id="demoRefsTag">buscando refs…</span>
                 </div>
                 <div class="demo-progress">
                     <div class="demo-prog-row">
-                        <span class="demo-prog-label">Progreso de generación</span>
-                        <span class="demo-prog-pct">100%</span>
+                        <span class="demo-prog-label" id="demoProgLabel">Consultando CrossRef y OpenAlex…</span>
+                        <span class="demo-prog-pct" id="demoProgPct">0%</span>
                     </div>
                     <div class="demo-bar-wrap">
-                        <div class="demo-bar-fill" style="width:100%"></div>
+                        <div class="demo-bar-fill" id="demoBarFill" style="width:0%;transition:width .6s cubic-bezier(.4,0,.2,1)"></div>
                     </div>
                 </div>
-                <div class="demo-sections">
-                    <span class="demo-sec done">✓ Introducción</span>
-                    <span class="demo-sec done">✓ Objetivos</span>
-                    <span class="demo-sec done">✓ Marco teórico</span>
-                    <span class="demo-sec done">✓ Metodología</span>
-                    <span class="demo-sec done">✓ Desarrollo</span>
-                    <span class="demo-sec done">✓ Conclusiones</span>
-                    <span class="demo-sec done">✓ Referencias</span>
+                <div class="demo-sections" id="demoSections">
+                    <span class="demo-sec" id="ds-intro">Introducción</span>
+                    <span class="demo-sec" id="ds-obj">Objetivos</span>
+                    <span class="demo-sec" id="ds-marco">Marco teórico</span>
+                    <span class="demo-sec" id="ds-meto">Metodología</span>
+                    <span class="demo-sec" id="ds-dev">Desarrollo</span>
+                    <span class="demo-sec" id="ds-conc">Conclusiones</span>
+                    <span class="demo-sec" id="ds-refs">Referencias</span>
                 </div>
             </div>
         </div>
@@ -738,7 +927,191 @@
     </div>
 </section>
 
-<!-- ══ COMPARATIVA ══ -->
+<!-- ══ TIPOS DE INFORME ══ -->
+<section class="section container reveal" style="padding-top:1rem;" id="tipos">
+    <span class="section-label">Tipos de informe</span>
+    <h2 class="section-title">Para cada tarea, su estructura</h2>
+    <p class="section-sub">Cada tipo genera una estructura diferente. La IA adapta el tono, las secciones y el lenguaje automáticamente.</p>
+
+    <div class="tipos-grid">
+        <div class="tipo-showcase active" data-tipo="academico" onclick="selTipoShowcase(this)">
+            <div class="tipo-sc-head">
+                <span class="tipo-sc-ico">📄</span>
+                <div>
+                    <div class="tipo-sc-name">Académico</div>
+                    <div class="tipo-sc-sub">El más solicitado</div>
+                </div>
+                <span class="tipo-sc-check">✓</span>
+            </div>
+        </div>
+        <div class="tipo-showcase" data-tipo="laboratorio" onclick="selTipoShowcase(this)">
+            <div class="tipo-sc-head">
+                <span class="tipo-sc-ico">🔬</span>
+                <div>
+                    <div class="tipo-sc-name">Laboratorio</div>
+                    <div class="tipo-sc-sub">Con tablas y datos</div>
+                </div>
+                <span class="tipo-sc-check">✓</span>
+            </div>
+        </div>
+        <div class="tipo-showcase" data-tipo="ejecutivo" onclick="selTipoShowcase(this)">
+            <div class="tipo-sc-head">
+                <span class="tipo-sc-ico">💼</span>
+                <div>
+                    <div class="tipo-sc-name">Ejecutivo</div>
+                    <div class="tipo-sc-sub">KPIs y recomendaciones</div>
+                </div>
+                <span class="tipo-sc-check">✓</span>
+            </div>
+        </div>
+        <div class="tipo-showcase" data-tipo="tesis" onclick="selTipoShowcase(this)">
+            <div class="tipo-sc-head">
+                <span class="tipo-sc-ico">🎓</span>
+                <div>
+                    <div class="tipo-sc-name">Tesis</div>
+                    <div class="tipo-sc-sub">Profundidad académica</div>
+                </div>
+                <span class="tipo-sc-check">✓</span>
+            </div>
+        </div>
+        <div class="tipo-showcase" data-tipo="pasantia" onclick="selTipoShowcase(this)">
+            <div class="tipo-sc-head">
+                <span class="tipo-sc-ico">🏢</span>
+                <div>
+                    <div class="tipo-sc-name">Pasantía</div>
+                    <div class="tipo-sc-sub">Reflexivo y profesional</div>
+                </div>
+                <span class="tipo-sc-check">✓</span>
+            </div>
+        </div>
+        <div class="tipo-showcase" data-tipo="proyecto" onclick="selTipoShowcase(this)">
+            <div class="tipo-sc-head">
+                <span class="tipo-sc-ico">📊</span>
+                <div>
+                    <div class="tipo-sc-name">Proyecto</div>
+                    <div class="tipo-sc-sub">Fases y entregables</div>
+                </div>
+                <span class="tipo-sc-check">✓</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview de estructura -->
+    <div class="tipo-preview-wrap">
+        <div class="tipo-preview" id="tipoPreview">
+            <div class="tp-head">
+                <span class="tp-label" id="tpLabel">📄 Informe Académico</span>
+                <span class="tp-badge">Estructura generada</span>
+            </div>
+            <div class="tp-sections" id="tpSections"></div>
+            <div class="tp-desc" id="tpDesc"></div>
+        </div>
+    </div>
+</section>
+
+<!-- ══ TESTIMONIOS ══ -->
+<section class="section container reveal" style="padding-top:1rem;">
+    <span class="section-label">Lo dicen sus usuarios</span>
+    <h2 class="section-title">Estudiantes que ya lo usan</h2>
+
+    <div class="testimonios-grid">
+        <div class="testimonio-card">
+            <div class="test-stars">⭐⭐⭐⭐⭐</div>
+            <p class="test-text">
+                "Tenía un informe de laboratorio para entregar en 4 horas y no tenía nada. En 2 minutos tenía la estructura completa con resultados, análisis y referencias. Me salvó el semestre."
+            </p>
+            <div class="test-author">
+                <div class="test-avatar">S</div>
+                <div>
+                    <div class="test-name">Sara M.</div>
+                    <div class="test-role">Ingeniería Química · Uniandes</div>
+                </div>
+                <span class="test-badge">Lab · Vancouver</span>
+            </div>
+        </div>
+        <div class="testimonio-card">
+            <div class="test-stars">⭐⭐⭐⭐⭐</div>
+            <p class="test-text">
+                "Lo que más me sorprendió es que las referencias son reales. En otros generadores te inventan artículos que no existen. Aquí busca en bases de datos académicas de verdad."
+            </p>
+            <div class="test-author">
+                <div class="test-avatar">J</div>
+                <div>
+                    <div class="test-name">Julián R.</div>
+                    <div class="test-role">Posgrado en Educación · UNAL</div>
+                </div>
+                <span class="test-badge">Tesis · APA 7</span>
+            </div>
+        </div>
+        <div class="testimonio-card">
+            <div class="test-stars">⭐⭐⭐⭐⭐</div>
+            <p class="test-text">
+                "Llevo 3 semestres usándolo para mis informes de pasantía. El formato ICONTEC queda perfecto y el tono profesional es exactamente lo que pide mi empresa."
+            </p>
+            <div class="test-author">
+                <div class="test-avatar">V</div>
+                <div>
+                    <div class="test-name">Valentina C.</div>
+                    <div class="test-role">Administración · EAFIT</div>
+                </div>
+                <span class="test-badge">Pasantía · ICONTEC</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ══ MINI GENERADOR INTERACTIVO ══ -->
+<section class="section container reveal" style="padding-top:1rem;" id="prueba">
+    <span class="section-label">Pruébalo ahora</span>
+    <h2 class="section-title">¿Cómo quedaría tu introducción?</h2>
+    <p class="section-sub">Escribe cualquier tema y mira cómo la IA construye la primera oración de tu introducción en tiempo real.</p>
+
+    <div class="mini-gen-wrap">
+        <div class="mini-gen-input-row">
+            <input
+                type="text"
+                id="miniGenInput"
+                class="mini-gen-input"
+                placeholder="Ej: El impacto del cambio climático en Colombia…"
+                maxlength="120"
+                autocomplete="off"
+                oninput="miniGenOnInput()"
+            >
+            <div class="mini-gen-norma-sel">
+                <select id="miniGenNorma" onchange="miniGenTrigger()">
+                    <option value="APA 7">APA 7</option>
+                    <option value="ICONTEC">ICONTEC</option>
+                    <option value="IEEE">IEEE</option>
+                    <option value="Vancouver">Vancouver</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="mini-gen-output" id="miniGenOutput">
+            <div class="mini-gen-placeholder" id="miniGenPlaceholder">
+                <span class="mg-ico">✍️</span>
+                <span>Escribe un tema y verás cómo empieza tu introducción…</span>
+            </div>
+            <div class="mini-gen-result" id="miniGenResult" style="display:none">
+                <div class="mg-result-head">
+                    <span class="mg-result-label">Introducción · <span id="mgNormaLabel">APA 7</span></span>
+                    <span class="mg-typing-dot" id="mgTypingDot"></span>
+                </div>
+                <p class="mg-result-text" id="mgResultText"></p>
+                <div class="mg-result-footer">
+                    <span class="mg-footer-note">Vista previa — el informe completo incluye 7 secciones</span>
+                    <a href="/generar" class="mg-cta-link">Generar completo →</a>
+                </div>
+            </div>
+            <div class="mini-gen-loading" id="miniGenLoading" style="display:none">
+                <div class="mg-loading-inner">
+                    <div class="mg-spinner"></div>
+                    <span id="mgLoadingTxt">Construyendo introducción…</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 <section class="section container reveal" style="padding-top: 1rem;">
     <span class="section-label">¿Por qué Academic Report Pro?</span>
     <h2 class="section-title">Horas de trabajo, en minutos</h2>
@@ -953,8 +1326,8 @@
             <div class="faq-a">Sí, ICONTEC es una de las 8 normas soportadas. El formato incluye los márgenes correctos (4 cm izquierdo, 3 cm derecho, superior e inferior), la portada con los datos institucionales, y las citas según las especificaciones ICONTEC más recientes.</div>
         </div>
         <div class="faq-item">
-            <div class="faq-q" onclick="toggleFaq(this)">¿Es gratis? ¿Cuáles son los límites?</div>
-            <div class="faq-a">La cuenta básica es completamente gratuita y te permite generar informes sin costo. Puedes crear una cuenta en segundos sin necesidad de tarjeta de crédito.</div>
+            <div class="faq-q" onclick="toggleFaq(this)">¿Necesito registrarme para usarlo?</div>
+            <div class="faq-a">Sí, solo necesitas crear una cuenta con tu correo. El proceso toma menos de 30 segundos y no pedimos ningún dato de pago.</div>
         </div>
         <div class="faq-item">
             <div class="faq-q" onclick="toggleFaq(this)">¿Mis informes se guardan en la plataforma?</div>
@@ -973,16 +1346,16 @@
         </p>
         <div class="cta-buttons" id="ctaButtons">
             <a href="/auth" class="btn-gold" style="font-size:1rem; padding:1rem 2.6rem;" id="ctaBtnCuenta">
-                ✦ Crear cuenta gratis
+                ✦ Crear cuenta
             </a>
             <a href="/generar" class="btn-outline" style="font-size:1rem; padding:1rem 2.6rem;">
                 Ver el generador →
             </a>
         </div>
         <div class="cta-trust">
-            <span>✓ Cuenta gratuita</span>
+            <span>✓ Lista en segundos</span>
             <span class="hero-trust-dot" style="width:3px;height:3px;border-radius:50%;background:var(--text3)"></span>
-            <span>✓ Sin tarjeta</span>
+            <span>✓ Solo email y contraseña</span>
             <span class="hero-trust-dot" style="width:3px;height:3px;border-radius:50%;background:var(--text3)"></span>
             <span>✓ Empieza en segundos</span>
         </div>
@@ -993,7 +1366,211 @@
 
 {% block extra_js %}
 <script>
-// FAQ toggle
+// ── HERO DEMO ANIMATION ─────────────────────────────────────
+(function() {
+    const secciones = [
+        { id: 'ds-intro', label: 'Redactando: Introducción…',  pct: 14  },
+        { id: 'ds-obj',   label: 'Redactando: Objetivos…',     pct: 28  },
+        { id: 'ds-marco', label: 'Redactando: Marco teórico…', pct: 42  },
+        { id: 'ds-meto',  label: 'Redactando: Metodología…',   pct: 57  },
+        { id: 'ds-dev',   label: 'Redactando: Desarrollo…',    pct: 71  },
+        { id: 'ds-conc',  label: 'Redactando: Conclusiones…',  pct: 85  },
+        { id: 'ds-refs',  label: 'Buscando referencias…',      pct: 100 },
+    ];
+    let idx = 0;
+    let loopCount = 0;
+
+    function resetDemo() {
+        secciones.forEach(s => {
+            const el = document.getElementById(s.id);
+            if (el) { el.className = 'demo-sec'; el.textContent = el.textContent.replace('✓ ',''); }
+        });
+        document.getElementById('demoBarFill').style.width = '0%';
+        document.getElementById('demoProgPct').textContent = '0%';
+        document.getElementById('demoProgLabel').textContent = 'Consultando CrossRef y OpenAlex…';
+        document.getElementById('demoStatusTxt').textContent = 'generando…';
+        document.getElementById('demoRefsTag').textContent = 'buscando refs…';
+        idx = 0;
+    }
+
+    function stepDemo() {
+        if (idx >= secciones.length) {
+            // Done state
+            document.getElementById('demoStatusTxt').textContent = 'listo ✓';
+            document.getElementById('demoRefsTag').textContent = '12 referencias reales';
+            document.getElementById('demoProgLabel').textContent = 'Informe generado completo';
+            loopCount++;
+            setTimeout(() => { resetDemo(); setTimeout(runDemo, 400); }, 4000);
+            return;
+        }
+        const s = secciones[idx];
+        const el = document.getElementById(s.id);
+        // Mark previous as done
+        if (idx > 0) {
+            const prev = document.getElementById(secciones[idx-1].id);
+            if (prev) { prev.className = 'demo-sec done'; prev.textContent = '✓ ' + prev.textContent.replace('✓ ',''); }
+        }
+        // Mark current as active
+        if (el) el.className = 'demo-sec active';
+        document.getElementById('demoBarFill').style.width = s.pct + '%';
+        document.getElementById('demoProgPct').textContent = s.pct + '%';
+        document.getElementById('demoProgLabel').textContent = s.label;
+        idx++;
+        setTimeout(stepDemo, 900 + Math.random() * 400);
+    }
+
+    function runDemo() {
+        // Mark last done on repeat
+        if (idx === secciones.length) {
+            const last = document.getElementById(secciones[secciones.length-1].id);
+            if (last) { last.className = 'demo-sec done'; last.textContent = '✓ ' + last.textContent.replace('✓ ',''); }
+        }
+        setTimeout(stepDemo, 600);
+    }
+
+    // Start after 1.2s so page loads first
+    setTimeout(runDemo, 1200);
+})();
+
+// ── TIPOS SHOWCASE ──────────────────────────────────────────
+const TIPOS_DATA = {
+    academico: {
+        label: '📄 Informe Académico',
+        secciones: ['Portada','Introducción','Objetivos','Marco teórico','Metodología','Desarrollo','Conclusiones','Recomendaciones','Referencias'],
+        highlight: ['Marco teórico','Metodología','Desarrollo'],
+        desc: 'Redacción formal con análisis crítico, citas en texto y revisión bibliográfica exhaustiva. Ideal para trabajos universitarios de cualquier área.'
+    },
+    laboratorio: {
+        label: '🔬 Informe de Laboratorio',
+        secciones: ['Portada','Introducción','Hipótesis','Materiales','Procedimiento','Resultados','Análisis de error','Conclusiones','Referencias'],
+        highlight: ['Materiales','Procedimiento','Resultados','Análisis de error'],
+        desc: 'Incluye tablas de datos, análisis de error experimental y procedimientos paso a paso. Estructura científica estándar.'
+    },
+    ejecutivo: {
+        label: '💼 Informe Ejecutivo',
+        secciones: ['Portada','Resumen ejecutivo','Contexto','Hallazgos clave','KPIs','Análisis','Recomendaciones','Conclusiones'],
+        highlight: ['Resumen ejecutivo','KPIs','Recomendaciones'],
+        desc: 'Lenguaje conciso y orientado a decisiones. Incluye indicadores de gestión, análisis costo-beneficio y acciones concretas.'
+    },
+    tesis: {
+        label: '🎓 Tesis',
+        secciones: ['Portada','Resumen / Abstract','Introducción','Planteamiento','Marco teórico','Metodología','Resultados','Discusión','Conclusiones','Bibliografía','Anexos'],
+        highlight: ['Planteamiento','Marco teórico','Resultados','Discusión'],
+        desc: 'Argumentación profunda, revisión exhaustiva de literatura y marco metodológico robusto. Nivel posgrado.'
+    },
+    pasantia: {
+        label: '🏢 Informe de Pasantía',
+        secciones: ['Portada','Introducción','Descripción de la empresa','Rol del practicante','Actividades realizadas','Competencias desarrolladas','Lecciones aprendidas','Conclusiones'],
+        highlight: ['Actividades realizadas','Competencias desarrolladas','Lecciones aprendidas'],
+        desc: 'Tono reflexivo y profesional. Documenta la experiencia, herramientas utilizadas y aprendizajes del proceso.'
+    },
+    proyecto: {
+        label: '📊 Informe de Proyecto',
+        secciones: ['Portada','Resumen','Alcance','Fases del proyecto','Recursos','Entregables','Gestión de riesgos','KPIs','Estado de avance','Lecciones aprendidas'],
+        highlight: ['Fases del proyecto','Gestión de riesgos','KPIs','Estado de avance'],
+        desc: 'Orientado a resultados medibles. Gestión de fases, recursos y riesgos. Ideal para proyectos de grado o empresariales.'
+    }
+};
+
+function selTipoShowcase(btn) {
+    document.querySelectorAll('.tipo-showcase').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const tipo = btn.dataset.tipo;
+    const d = TIPOS_DATA[tipo];
+    if (!d) return;
+    document.getElementById('tpLabel').textContent = d.label;
+    const secsEl = document.getElementById('tpSections');
+    secsEl.innerHTML = d.secciones.map(s =>
+        `<span class="tp-sec${d.highlight.includes(s) ? ' highlight' : ''}">${s}</span>`
+    ).join('');
+    document.getElementById('tpDesc').textContent = d.desc;
+}
+
+// Init tipos with academico
+selTipoShowcase(document.querySelector('.tipo-showcase[data-tipo="academico"]'));
+
+// ── MINI GENERADOR INTERACTIVO ───────────────────────────────
+let mgTimer = null;
+let mgCurrentTema = '';
+
+const MG_INTROS = {
+    default: [
+        'El presente informe aborda la problemática de {tema} desde una perspectiva académica rigurosa. A lo largo del documento se analiza el estado actual del conocimiento, los factores determinantes y las implicaciones prácticas derivadas del estudio de esta temática.',
+        'La comprensión de {tema} representa uno de los desafíos centrales en el campo académico contemporáneo. Este informe examina los fundamentos teóricos, el desarrollo histórico y las perspectivas actuales que permiten comprender en profundidad este fenómeno.',
+        'El estudio de {tema} ha cobrado especial relevancia en los últimos años, impulsado por transformaciones sociales, tecnológicas y científicas que demandan nuevos marcos de análisis. Este trabajo presenta una revisión sistemática de la literatura disponible y propone un análisis crítico del estado del arte.',
+    ]
+};
+
+function miniGenOnInput() {
+    clearTimeout(mgTimer);
+    const v = document.getElementById('miniGenInput').value.trim();
+    if (!v) {
+        showMgPlaceholder();
+        return;
+    }
+    mgTimer = setTimeout(() => miniGenTrigger(), 1200);
+}
+
+function miniGenTrigger() {
+    const tema = document.getElementById('miniGenInput').value.trim();
+    const norma = document.getElementById('miniGenNorma').value;
+    if (!tema) return;
+    if (tema === mgCurrentTema) return;
+    mgCurrentTema = tema;
+    showMgLoading();
+
+    // Simulate thinking time, then show a contextual preview
+    setTimeout(() => {
+        const templates = MG_INTROS.default;
+        const tpl = templates[Math.floor(Math.random() * templates.length)];
+        const texto = tpl.replace('{tema}', tema.toLowerCase().replace(/\.$/, ''));
+        showMgResult(texto, norma);
+    }, 1400 + Math.random() * 600);
+}
+
+function showMgPlaceholder() {
+    document.getElementById('miniGenPlaceholder').style.display = 'flex';
+    document.getElementById('miniGenResult').style.display = 'none';
+    document.getElementById('miniGenLoading').style.display = 'none';
+    mgCurrentTema = '';
+}
+function showMgLoading() {
+    document.getElementById('miniGenPlaceholder').style.display = 'none';
+    document.getElementById('miniGenResult').style.display = 'none';
+    document.getElementById('miniGenLoading').style.display = 'flex';
+    // Rotate loading messages
+    const msgs = ['Construyendo introducción…','Aplicando norma ' + document.getElementById('miniGenNorma').value + '…','Analizando el tema…'];
+    let mi = 0;
+    clearInterval(window._mgLoadInterval);
+    window._mgLoadInterval = setInterval(() => {
+        mi = (mi+1) % msgs.length;
+        const el = document.getElementById('mgLoadingTxt');
+        if(el) el.textContent = msgs[mi];
+    }, 500);
+}
+function showMgResult(texto, norma) {
+    clearInterval(window._mgLoadInterval);
+    document.getElementById('miniGenLoading').style.display = 'none';
+    document.getElementById('miniGenPlaceholder').style.display = 'none';
+    document.getElementById('mgNormaLabel').textContent = norma;
+    document.getElementById('mgResultText').textContent = '';
+    document.getElementById('miniGenResult').style.display = 'block';
+    document.getElementById('mgTypingDot').classList.add('visible');
+
+    // Typewriter effect
+    let i = 0;
+    const el = document.getElementById('mgResultText');
+    clearInterval(window._mgTypeInterval);
+    window._mgTypeInterval = setInterval(() => {
+        if (i >= texto.length) {
+            clearInterval(window._mgTypeInterval);
+            document.getElementById('mgTypingDot').classList.remove('visible');
+            return;
+        }
+        el.textContent += texto[i];
+        i += Math.random() > .7 ? 2 : 1; // vary speed slightly
+    }, 22);
+}
 function toggleFaq(el) {
     const item = el.closest('.faq-item');
     const wasOpen = item.classList.contains('open');
@@ -1012,9 +1589,9 @@ function toggleFaq(el) {
         btn.href = '/generar';
         btn.innerHTML = '✦ Ir al generador';
     });
-    // Ocultar textos de "Registro gratuito" del hero-trust
+    // Ocultar textos de registro del hero-trust cuando hay sesión
     document.querySelectorAll('.hero-trust span').forEach(s => {
-        if (s.textContent.includes('Registro')) s.style.display = 'none';
+        if (s.textContent.includes('segundos') || s.textContent.includes('formularios')) s.style.display = 'none';
     });
     document.querySelectorAll('.hero-trust .hero-trust-dot').forEach((d, i) => {
         if (i === 0) d.style.display = 'none';
