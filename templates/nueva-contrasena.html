@@ -119,41 +119,62 @@ function initSupabase() {
   }
 })();
 
-// ── 2. Lógica de recuperación (se ejecuta DESPUÉS de que _supaClient existe) ──
+// ── 2. Lógica de recuperación ─────────────────────────────────
+// Soporta dos flujos:
+//   - Nuevo:   ?token_hash=xxx&type=recovery   (usando verifyOtp)
+//   - Antiguo: #access_token=xxx               (usando setSession)
 async function initRecovery() {
-  const hash   = location.hash.substring(1);
-  const query  = location.search.substring(1);
-  const params = new URLSearchParams(hash || query);
+  const queryParams  = new URLSearchParams(location.search);
+  const tokenHash    = queryParams.get('token_hash');
+  const type         = queryParams.get('type');
+  const errorDesc    = queryParams.get('error_description') || queryParams.get('error');
 
-  const accessToken  = params.get('access_token');
-  const refreshToken = params.get('refresh_token') || '';
-  const type         = params.get('type');
-  const error        = params.get('error_description') || params.get('error');
+  const hashParams   = new URLSearchParams(location.hash.substring(1));
+  const accessToken  = hashParams.get('access_token');
+  const refreshToken = hashParams.get('refresh_token') || '';
 
-  if (error) {
+  // Mostrar error si Supabase lo mandó en la URL
+  if (errorDesc) {
     mostrarFormInvalido();
-    document.getElementById('msgErr').textContent   = decodeURIComponent(error.replace(/\+/g, ' '));
+    document.getElementById('msgErr').textContent   = decodeURIComponent(errorDesc.replace(/\+/g, ' '));
     document.getElementById('msgErr').style.display = 'block';
     return;
   }
 
-  if (!accessToken) {
-    mostrarFormInvalido();
-    return;
-  }
-
   try {
-    const { error: sessionError } = await _supaClient.auth.setSession({
-      access_token:  accessToken,
-      refresh_token: refreshToken
-    });
-    if (sessionError) {
+    if (tokenHash && type === 'recovery') {
+      // ── Flujo nuevo: token_hash en query string ──
+      const { error: verifyError } = await _supaClient.auth.verifyOtp({
+        token_hash: tokenHash,
+        type: 'recovery'
+      });
+      if (verifyError) {
+        console.error('verifyOtp error:', verifyError);
+        mostrarFormInvalido();
+        return;
+      }
+    } else if (accessToken) {
+      // ── Flujo antiguo: access_token en hash ──
+      const { error: sessionError } = await _supaClient.auth.setSession({
+        access_token:  accessToken,
+        refresh_token: refreshToken
+      });
+      if (sessionError) {
+        console.error('setSession error:', sessionError);
+        mostrarFormInvalido();
+        return;
+      }
+    } else {
+      // No hay token de ningún tipo
       mostrarFormInvalido();
       return;
     }
-    // Sesión establecida — limpiar el hash de la URL
+
+    // Limpiar tokens de la URL
     history.replaceState(null, '', location.pathname);
+
   } catch (e) {
+    console.error('initRecovery exception:', e);
     mostrarFormInvalido();
   }
 }
